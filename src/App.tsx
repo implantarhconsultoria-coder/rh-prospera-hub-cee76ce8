@@ -60,7 +60,16 @@ const App = () => (
       <Toaster />
       <Sonner />
       <AppProvider>
-        <AuthGate />
+        <BrowserRouter>
+          <Routes>
+            {/* Print routes — outside auth gate, no login required */}
+            <Route path="/relatorio-impressao" element={<RelatorioImpressaoPage />} />
+            <Route path="/entrega-impressao" element={<EntregaImpressaoPage />} />
+            <Route path="/relatorio-vr-impressao" element={<RelatorioVRImpressaoPage />} />
+            <Route path="/relatorio-vt-impressao" element={<RelatorioVTImpressaoPage />} />
+            <Route path="/*" element={<AuthGate />} />
+          </Routes>
+        </BrowserRouter>
       </AppProvider>
     </TooltipProvider>
   </QueryClientProvider>
