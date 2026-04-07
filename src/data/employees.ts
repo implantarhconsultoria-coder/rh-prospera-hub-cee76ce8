@@ -64,7 +64,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '1150414770', celular: '11050414770',
     email: '', endereco: 'R Assis Brasil, 23, CS 1, Conjunto Residencial Morada do, São Paulo, SP, 05281-130',
-    pix: '14295919861', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '', banco: 'Itau', agencia: '8374', conta: '02407-6', observacoes: '',
   },
   {
     id: 'alqui-40', companyId: 'alqui', registro: '40', matriculaEsocial: '',
@@ -77,7 +77,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '11033937610', celular: '11033937610',
     email: '', endereco: 'R Santa Terezinha, 17, CS 2, Jardim Nova Conquista, São Paulo, SP, 08346-515',
-    pix: '53844759867', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '11938202261', banco: 'Inter', agencia: '0001', conta: '33910932-0', observacoes: '',
   },
   {
     id: 'alqui-50', companyId: 'alqui', registro: '50', matriculaEsocial: '',
@@ -90,7 +90,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '11948292122', celular: '11948292122',
     email: '', endereco: 'R Nice, 47, Vila Gustavo, São Paulo, SP, 02266-090',
-    pix: '52891005805', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '11948292122', banco: 'Nubank', agencia: '0001', conta: '12291014-3', observacoes: '',
   },
   {
     id: 'alqui-17', companyId: 'alqui', registro: '17', matriculaEsocial: '',
@@ -103,7 +103,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '1150414770', celular: '',
     email: '', endereco: 'R Sebastião Batista, 242, CASA 01, Cidade Tiradentes, São Paulo, SP, 08470-330',
-    pix: '02960408519', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '', banco: 'Nu pro', agencia: '0001', conta: '2773848-8', observacoes: '',
   },
   {
     id: 'alqui-46', companyId: 'alqui', registro: '46', matriculaEsocial: '',
@@ -116,7 +116,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '11033937610', celular: '11033937610',
     email: '', endereco: 'R Arpão, 71, Jardim Santa Izabel, Cotia, SP, 06709-560',
-    pix: '16113592871', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '', banco: 'B.Brasil', agencia: '9164-0', conta: '403709-8', observacoes: '',
   },
   {
     id: 'alqui-51', companyId: 'alqui', registro: '51', matriculaEsocial: '',
@@ -129,7 +129,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '11949188090', celular: '11949188090',
     email: '', endereco: 'AV Deputado Emílio Carlos, 72, Vila Caldas, Carapicuíba, SP, 06310-160',
-    pix: '45217307870', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '', banco: 'C6Bank', agencia: '0001', conta: '38695033-1', observacoes: '',
   },
   {
     id: 'alqui-53', companyId: 'alqui', registro: '53', matriculaEsocial: '',
@@ -142,7 +142,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '11937592097', celular: '11937592097',
     email: '', endereco: 'AV Mendes da Rocha, 1093, AP 18 TORRE B, Jardim Brasil (Zona Norte), São Paulo, SP, 02227-001',
-    pix: '38665547886', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '11998898090', banco: 'Nu pro', agencia: '0001', conta: '1406165-7', observacoes: '',
   },
   {
     id: 'alqui-54', companyId: 'alqui', registro: '54', matriculaEsocial: '',
@@ -155,7 +155,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '11033937610', celular: '11937592097',
     email: '', endereco: 'R Pedro Medeiros, 61, casa 2, Jardim Vila Carrão, São Paulo, SP, 08340-510',
-    pix: '58520946844', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '58520946844', banco: 'Banco Inter', agencia: '0001', conta: '11030455-3', observacoes: '',
   },
   {
     id: 'alqui-45', companyId: 'alqui', registro: '45', matriculaEsocial: '',
@@ -168,7 +168,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '11994600000', celular: '11978649057',
     email: '', endereco: 'EST Keiichi Matsumoto, 1505, Prado Rangel, Embu das Artes, SP, 06805-440',
-    pix: '10315762586', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '', banco: 'Inter', agencia: '0001', conta: '13921413-5', observacoes: '',
   },
   {
     id: 'alqui-41', companyId: 'alqui', registro: '41', matriculaEsocial: '',
@@ -181,7 +181,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '1133937610', celular: '11979166820',
     email: '', endereco: 'R São Januário, 46, Jardim São Miguel, Cotia, SP, 06719-290',
-    pix: '32348689804', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '', banco: 'Banco Itau', agencia: '0001', conta: '15347992-4', observacoes: '',
   },
 
   // ═══════════════════════════════════════════════════
@@ -198,7 +198,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '11966301582', celular: '11966301582',
     email: '', endereco: 'AV Deputado Emílio Carlos, 920, Vila Caldas, Carapicuíba, SP, 06310-160',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '11966301582', banco: 'Nu', agencia: '0001', conta: '883711723-5', observacoes: '',
   },
   {
     id: 'topac-matriz-96', companyId: 'topac-matriz', registro: '96', matriculaEsocial: '',
@@ -211,7 +211,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '1133926653', celular: '',
     email: '', endereco: 'R Semyon Kirlian, 75, CASA 4, Parque Edu Chaves, São Paulo, SP, 02230-090',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '', banco: 'Itau', agencia: '0054', conta: '252906', observacoes: '',
   },
   {
     id: 'topac-matriz-2', companyId: 'topac-matriz', registro: '2', matriculaEsocial: '',
@@ -224,7 +224,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '1133926653', celular: '',
     email: '', endereco: 'R JOSE PEDRESCHI, 325, VILA FRANCOS, São Paulo, SP, 02881-000',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '', banco: 'Banco Brasil', agencia: '383-2', conta: '23189-4', observacoes: '',
   },
   {
     id: 'topac-matriz-134', companyId: 'topac-matriz', registro: '134', matriculaEsocial: '',
@@ -250,7 +250,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '81987189111', celular: '81971217850',
     email: '', endereco: 'R Frei Damião, 17, Jardim Nova Conquista, São Paulo, SP, 08346-505',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '11940353221', banco: 'B.Brasi', agencia: '0001', conta: '82589748-0', observacoes: '',
   },
   {
     id: 'topac-matriz-97', companyId: 'topac-matriz', registro: '97', matriculaEsocial: '',
@@ -276,7 +276,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '11943616905', celular: '11943616905',
     email: '', endereco: 'R Santa Terezinha, 25, casa 2, Jardim Nova Conquista, São Paulo, SP, 08346-515',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '50577928813', banco: 'Bradesco', agencia: '6240', conta: '54148-5', observacoes: '',
   },
   {
     id: 'topac-matriz-131', companyId: 'topac-matriz', registro: '131', matriculaEsocial: '',
@@ -289,7 +289,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '11944454946', celular: '11944454946',
     email: '', endereco: 'R Primavera, 21, Vila Ana Rosa, São Paulo, SP, 02997-100',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '42014147876', banco: 'Pix', agencia: '', conta: '', observacoes: '',
   },
   {
     id: 'topac-matriz-122', companyId: 'topac-matriz', registro: '122', matriculaEsocial: '',
@@ -302,7 +302,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '14996324345', celular: '14996324345',
     email: '', endereco: 'R Cristóvão Colombo, 210, APTO 24, Jardim Vila Galvão, Guarulhos, SP, 07054-030',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '', banco: 'Nu pro', agencia: '', conta: '3657675-7', observacoes: '',
   },
   {
     id: 'topac-matriz-121', companyId: 'topac-matriz', registro: '121', matriculaEsocial: '',
@@ -315,7 +315,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '11964584687', celular: '11964584687',
     email: '', endereco: 'R Doutor Joaquim do Valle Neto, 75, Chora Menino, São Paulo, SP, 02463-010',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '', banco: 'Itau', agencia: '7564', conta: '33269-2', observacoes: '',
   },
   {
     id: 'topac-matriz-126', companyId: 'topac-matriz', registro: '126', matriculaEsocial: '',
@@ -328,7 +328,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '14998041727', celular: '14998041727',
     email: '', endereco: 'R Cristóvão Colombo, 210, AP 24, Jardim Vila Galvão, Guarulhos, SP, 07054-030',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '', banco: 'Itau', agencia: '7153', conta: '5132-5', observacoes: '',
   },
   {
     id: 'topac-matriz-133', companyId: 'topac-matriz', registro: '133', matriculaEsocial: '',
@@ -341,7 +341,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '11937592097', celular: '11937592097',
     email: '', endereco: 'R Galia, 196, Cidade Soberana, Guarulhos, SP, 07162-520',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '11988373738', banco: 'Nu pro', agencia: '0001', conta: '29082546-9', observacoes: '',
   },
 
   // ═══════════════════════════════════════════════════
@@ -405,7 +405,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '11934281388', celular: '11934281388',
     email: '', endereco: 'R Pedro Medeiros, 766, Jardim Vila Carrão, São Paulo, SP, 08340-510',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '', banco: 'Nu Bank', agencia: '1665', conta: '426134-6', observacoes: '',
   },
   {
     id: 'lmt-13', companyId: 'lmt', registro: '13', matriculaEsocial: '',
@@ -418,7 +418,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '1133937610', celular: '',
     email: '', endereco: 'R Reverendo Izac Silvério, 26, Jardim Belém, São Paulo, SP, 03810-030',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '', banco: 'Bradesco', agencia: '1010-5', conta: '071784-1', observacoes: '',
   },
   {
     id: 'lmt-3', companyId: 'lmt', registro: '3', matriculaEsocial: '',
@@ -431,7 +431,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '1133937610', celular: '',
     email: '', endereco: 'R Araguaguá, 14, Vila Carolina, São Paulo, SP, 08040-140',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '', banco: 'Bradesco', agencia: '01600', conta: '2035193-2', observacoes: '',
   },
   {
     id: 'lmt-23', companyId: 'lmt', registro: '23', matriculaEsocial: '',
@@ -444,7 +444,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '', celular: '11979949617',
     email: '', endereco: 'R Dona Carolina, 67, Parque Industrial San José, Cotia, SP, 06715-861',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '', banco: 'Bradesco', agencia: '1015-4', conta: '000869-9', observacoes: '',
   },
   {
     id: 'lmt-38', companyId: 'lmt', registro: '38', matriculaEsocial: '',
@@ -470,7 +470,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '11989856060', celular: '11989856060',
     email: '', endereco: 'EST do Furquim, 820, Chácara Santa Maria, Cotia, SP, 06720-250',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '11989856060', banco: 'Bradesco', agencia: '01600', conta: '0825619-2', observacoes: '',
   },
   {
     id: 'lmt-37', companyId: 'lmt', registro: '37', matriculaEsocial: '',
@@ -496,7 +496,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '1125852790', celular: '11970267457',
     email: '', endereco: 'R Antônio Requião, 136, Vila Helena, São Paulo, SP, 08081-200',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '11979865050', banco: 'Bradesco', agencia: '1247', conta: '356-2', observacoes: '',
   },
   // === TOPAC PRAIA GRANDE ===
   {
@@ -521,7 +521,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '11033937610', celular: '11033926653',
     email: '', endereco: 'R Cornélio Procópio, 6, Parque Rizzo, Cotia, SP, 06702-620',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '', banco: 'Nu pro', agencia: '0001', conta: '6273362-6', observacoes: '',
   },
   {
     id: 'topac-pg-31', companyId: 'topac-pg', registro: '31', matriculaEsocial: '',
@@ -533,7 +533,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '13991712740', celular: '13991712740',
     email: '', endereco: 'AV Ascenso Ferreira, 690, Ribeirópolis, Praia Grande, SP, 11714-490',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '', banco: 'Pix Pag', agencia: '0001', conta: '2833320-0', observacoes: '',
   },
   {
     id: 'topac-pg-23', companyId: 'topac-pg', registro: '23', matriculaEsocial: '',
@@ -557,7 +557,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '13988690411', celular: '13988690411',
     email: '', endereco: 'R Alfred Niederbichler, 321, Q24L05C85, Anhanguera, Praia Grande, SP, 11717-355',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '13991237729', banco: 'Santander', agencia: '373', conta: '01048371-4', observacoes: '',
   },
 
   // ── TOPAC GOIÂNIA ──
@@ -571,7 +571,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '62993396201', celular: '',
     email: '', endereco: 'RUA R 21, QD. 20 LT.28, VILA ITATIAIA, GOIÂNIA - GO',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '62993396201', banco: 'Banco Brasil', agencia: '3659-3', conta: '66597-7', observacoes: '',
   },
   {
     id: 'topac-gyn-49', companyId: 'topac-gyn', registro: '49', matriculaEsocial: '',
@@ -583,7 +583,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '62981423992', celular: '',
     email: '', endereco: 'RUA PURUS, CASA 04, VILA BRASILIA, APARECIDA DE GOIÂNIA - GO',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '', banco: 'Banco do Brasil', agencia: '3298', conta: '58858-X', observacoes: '',
   },
   {
     id: 'topac-gyn-75', companyId: 'topac-gyn', registro: '75', matriculaEsocial: '',
@@ -595,7 +595,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '62995459083', celular: '',
     email: '', endereco: 'RUA JOSE ADVINCULA DA CUNHA, AP. 404, BL 4B, QD 140 A, SETOR DOS AFONSOS, APARECIDA DE GOIÂNIA - GO',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '629956655152', banco: 'Banco do Brasil', agencia: '2488', conta: '130994-6', observacoes: '',
   },
   {
     id: 'topac-gyn-64', companyId: 'topac-gyn', registro: '64', matriculaEsocial: '',
@@ -607,7 +607,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '62986006160', celular: '',
     email: '', endereco: 'RUA TUPINAMBÁS, QD 15, LT 16, VILA BRASILIA, APARECIDA DE GOIÂNIA - GO',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '629299540823', banco: 'Banco do Brasil', agencia: '2488', conta: '130964-6', observacoes: '',
   },
   {
     id: 'topac-gyn-60', companyId: 'topac-gyn', registro: '60', matriculaEsocial: '',
@@ -619,7 +619,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '62999666009', celular: '',
     email: '', endereco: 'RUA R49, QUADRA 47, LOTE 23, S/N, VILA ITATIAIA, GOIÂNIA - GO',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '629319396201', banco: 'Nu pro', agencia: '0001', conta: '2194817-8', observacoes: '',
   },
   {
     id: 'topac-gyn-67', companyId: 'topac-gyn', registro: '67', matriculaEsocial: '',
@@ -631,7 +631,7 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '62985506950', celular: '',
     email: '', endereco: 'RUA 30, QD 17, LT 16, S/N, CASA 02, PARQUE DAS CAMELIAS, GOIÂNIA - GO',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '', banco: 'Banco do Brasil', agencia: '3659-3', conta: '63003-8', observacoes: '',
   },
   {
     id: 'topac-gyn-aldenei', companyId: 'topac-gyn', registro: '', matriculaEsocial: '',
@@ -655,6 +655,6 @@ export const employees: Employee[] = [
     status: 'ativo',
     telefone: '6296565162', celular: '',
     email: '', endereco: 'RUA R 47, QD. 46, LOTE 16, VILA ITATIAIA, GOIÂNIA - GO',
-    pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    pix: '', banco: 'Banco Brasil', agencia: '3659-3', conta: '248890-2', observacoes: '',
   },
 ];
