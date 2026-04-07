@@ -212,4 +212,21 @@ export const employees: Employee[] = [
     email: '', endereco: '', pix: '', banco: '', agencia: '', conta: '', observacoes: '',
     inss: 457.49, liquido: 3701.51, referenciaCompetencia: '2026-03',
   },
+
+  // ═══════════════════════════════════════════════════
+  // TOPAC MATRIZ — SÓCIOS / PRÓ-LABORE
+  // ═══════════════════════════════════════════════════
+  {
+    id: 'topac-matriz-socio-1', companyId: 'topac-matriz', registro: '', matriculaEsocial: '',
+    name: 'AITOR URCELAY ELORZA', cpf: '', rg: '',
+    cargo: 'Sócio / Pró-labore', categoria: 'socio',
+    salarioBase: 1621.00, dataAdmissao: '2005-02-24', dataExameMedico: '',
+    vrAtivo: false, vrDiario: 0, vaAtivo: false, vaMensal: 0,
+    vtAtivo: false, vtValor: 0,
+    insalubridadeAtiva: false, insalubridadeValor: 0,
+    status: 'ativo',
+    telefone: '', celular: '',
+    email: '', endereco: '', pix: '', banco: '', agencia: '', conta: '', observacoes: '',
+    inss: 178.31, liquido: 1442.69, referenciaCompetencia: '2026-03',
+  },
 ];
