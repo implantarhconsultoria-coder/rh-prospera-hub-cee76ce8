@@ -42,6 +42,7 @@ const AuthGate = () => {
   );
 };
 
+// App root
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
