@@ -18,6 +18,36 @@ const FuncionariosPage: React.FC = () => {
     return true;
   });
 
+  const operacionais = filtered.filter(e => e.categoria === 'operacional');
+  const socios = filtered.filter(e => e.categoria === 'socio');
+
+  const renderCard = (e: typeof employees[0]) => (
+    <div key={e.id} className="card-premium p-5 cursor-pointer hover:shadow-premium transition-shadow"
+      onClick={() => navigate(`/funcionarios/${e.id}`)}>
+      <div className="flex items-center gap-3 mb-3">
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-primary-foreground font-bold text-sm ${e.categoria === 'socio' ? 'bg-accent' : 'gradient-primary'}`}>
+          {e.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
+        </div>
+        <div>
+          <h3 className="font-semibold text-foreground text-sm">{e.name}</h3>
+          <p className="text-xs text-muted-foreground">{e.cargo}</p>
+        </div>
+      </div>
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">{companies.find(c => c.id === e.companyId)?.name}</span>
+        <span className="font-semibold text-foreground">{formatCurrency(e.salarioBase)}</span>
+      </div>
+      <div className="mt-2 flex gap-1">
+        <Badge className={`text-[10px] ${e.status === 'ativo' ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'}`}>
+          {e.status}
+        </Badge>
+        {e.categoria === 'socio' && (
+          <Badge variant="outline" className="text-[10px] border-accent text-accent">Sócio</Badge>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-5 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -39,31 +69,29 @@ const FuncionariosPage: React.FC = () => {
         </select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map(e => (
-          <div key={e.id} className="card-premium p-5 cursor-pointer hover:shadow-premium transition-shadow"
-            onClick={() => navigate(`/funcionarios/${e.id}`)}>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 gradient-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-sm">
-                {e.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground text-sm">{e.name}</h3>
-                <p className="text-xs text-muted-foreground">{e.cargo}</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">{companies.find(c => c.id === e.companyId)?.name}</span>
-              <span className="font-semibold text-foreground">{formatCurrency(e.salarioBase)}</span>
-            </div>
-            <div className="mt-2">
-              <Badge className={`text-[10px] ${e.status === 'ativo' ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'}`}>
-                {e.status}
-              </Badge>
-            </div>
+      {operacionais.length > 0 && (
+        <>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Operacionais ({operacionais.length})</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {operacionais.map(renderCard)}
           </div>
-        ))}
-      </div>
+        </>
+      )}
+
+      {socios.length > 0 && (
+        <>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mt-6">Sócios / Pró-labore ({socios.length})</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {socios.map(renderCard)}
+          </div>
+        </>
+      )}
+
+      {filtered.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground">
+          <p>Nenhum funcionário cadastrado ainda.</p>
+        </div>
+      )}
     </div>
   );
 };

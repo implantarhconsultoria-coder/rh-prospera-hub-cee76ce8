@@ -17,7 +17,7 @@ const LancamentosPage: React.FC = () => {
   }, [selectedCompany, competencia]);
 
   const compEntries = entries.filter(e => e.companyId === selectedCompany && e.competencia === competencia);
-  const compEmps = employees.filter(e => e.companyId === selectedCompany && e.status === 'ativo');
+  const compEmps = employees.filter(e => e.companyId === selectedCompany && e.status === 'ativo' && e.categoria === 'operacional');
 
   return (
     <div className="space-y-5 animate-fade-in">

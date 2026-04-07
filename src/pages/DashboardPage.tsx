@@ -11,7 +11,7 @@ const DashboardPage: React.FC = () => {
   const comp = new Date().toISOString().slice(0, 7);
 
   const companyStats = companies.map(c => {
-    const emps = employees.filter(e => e.companyId === c.id && e.status === 'ativo');
+    const emps = employees.filter(e => e.companyId === c.id && e.status === 'ativo' && e.categoria === 'operacional');
     const ents = entries.filter(e => e.companyId === c.id && e.competencia === comp);
 
     let totalProventos = 0, totalDescontos = 0, totalLiquido = 0;
@@ -46,7 +46,7 @@ const DashboardPage: React.FC = () => {
       {/* Summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Funcionários', value: employees.filter(e => e.status === 'ativo').length, icon: Users, color: 'text-primary' },
+          { label: 'Total Funcionários', value: employees.filter(e => e.status === 'ativo' && e.categoria === 'operacional').length, icon: Users, color: 'text-primary' },
           { label: 'Proventos Estimados', value: formatCurrency(companyStats.reduce((s, c) => s + c.totalProventos, 0)), icon: TrendingUp, color: 'text-success' },
           { label: 'Descontos Estimados', value: formatCurrency(companyStats.reduce((s, c) => s + c.totalDescontos, 0)), icon: TrendingDown, color: 'text-destructive' },
           { label: 'Líquido Estimado', value: formatCurrency(companyStats.reduce((s, c) => s + c.totalLiquido, 0)), icon: DollarSign, color: 'text-accent' },

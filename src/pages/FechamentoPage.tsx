@@ -18,7 +18,7 @@ const FechamentoPage: React.FC = () => {
     if (selectedCompany && competencia) getOrCreateEntries(selectedCompany, competencia);
   }, [selectedCompany, competencia]);
 
-  const compEmps = employees.filter(e => e.companyId === selectedCompany && e.status === 'ativo');
+  const compEmps = employees.filter(e => e.companyId === selectedCompany && e.status === 'ativo' && e.categoria === 'operacional');
   const compEntries = entries.filter(e => e.companyId === selectedCompany && e.competencia === competencia);
   const fechamento = getFechamento(selectedCompany, competencia);
 
@@ -87,7 +87,7 @@ const FechamentoPage: React.FC = () => {
                   <td className="px-2 py-2"><Input type="number" value={entry.he100} onChange={e => update({ he100: Number(e.target.value) })} className="w-14 text-xs h-7" /></td>
                   <td className="px-2 py-2"><Input type="number" value={entry.adicionais} onChange={e => update({ adicionais: Number(e.target.value) })} className="w-16 text-xs h-7" /></td>
                   <td className="px-2 py-2 text-xs">{emp.insalubridadeAtiva ? formatCurrency(emp.insalubridadeValor) : '—'}</td>
-                  <td className="px-2 py-2 text-xs">{entry.vrAplicado && emp.vrAtivo ? formatCurrency(emp.vrDiario * 22) : '—'}</td>
+                  <td className="px-2 py-2 text-xs">{entry.vrAplicado && emp.vrAtivo ? formatCurrency(emp.vrDiario * (entry.vrDias ?? 22)) : '—'}</td>
                   <td className="px-2 py-2 text-xs">{entry.vaAplicado && emp.vaAtivo ? formatCurrency(emp.vaMensal) : '—'}</td>
                   <td className="px-2 py-2 text-xs">{entry.vtAplicado && emp.vtAtivo ? formatCurrency(emp.vtValor) : '—'}</td>
                   <td className="px-2 py-2"><Input type="number" value={entry.descontosDiversos} onChange={e => update({ descontosDiversos: Number(e.target.value) })} className="w-16 text-xs h-7" /></td>
