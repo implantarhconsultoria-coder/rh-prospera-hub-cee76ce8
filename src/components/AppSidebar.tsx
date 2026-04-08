@@ -90,6 +90,21 @@ const AppSidebar: React.FC<Props> = ({ collapsed, onToggle }) => {
         {collapsed && <div className="pt-2 mt-2 border-t border-sidebar-border" />}
         {operationalItems.map(renderLink)}
 
+        {!collapsed && (
+          <div className="pt-3 mt-3 border-t border-sidebar-border">
+            <p className="px-3 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 mb-2">Próximos Módulos</p>
+          </div>
+        )}
+        {collapsed && <div className="pt-2 mt-2 border-t border-sidebar-border" />}
+        {upcomingItems.map(item => (
+          <div key={item.label}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground/40 cursor-not-allowed">
+            <item.icon className="w-5 h-5 flex-shrink-0" />
+            {!collapsed && <span>{item.label}</span>}
+            {!collapsed && <span className="ml-auto text-[9px] bg-sidebar-accent/50 rounded px-1.5 py-0.5">Em breve</span>}
+          </div>
+        ))}
+
         {!collapsed && <div className="pt-3 mt-3 border-t border-sidebar-border" />}
         {collapsed && <div className="pt-2 mt-2 border-t border-sidebar-border" />}
         {bottomItems.map(renderLink)}

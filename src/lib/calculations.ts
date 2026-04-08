@@ -39,9 +39,15 @@ export const calcDescontoVTFaltas = (vtValor: number, diasUteis: number, faltasD
 };
 
 export const calcTotalFuncionario = (emp: Employee, entry: MonthlyEntry, diasUteis: number = 22) => {
+  const he50Val = calcHE50(emp.salarioBase, entry.he50);
+  const he100Val = calcHE100(emp.salarioBase, entry.he100);
+  const totalHE = he50Val + he100Val;
+  const dsrHE = calcDSR(totalHE, diasUteis, entry.competencia);
+
   const proventos = emp.salarioBase
-    + calcHE50(emp.salarioBase, entry.he50)
-    + calcHE100(emp.salarioBase, entry.he100)
+    + he50Val
+    + he100Val
+    + dsrHE
     + entry.adicionais
     + (entry.insalubridadeAplicada && emp.insalubridadeAtiva ? emp.insalubridadeValor : 0);
 
@@ -77,6 +83,9 @@ export const calcTotalFuncionario = (emp: Employee, entry: MonthlyEntry, diasUte
     vtVal,
     vtDescontoFalta,
     vrDiasEfetivos,
+    he50Val,
+    he100Val,
+    dsrHE,
   };
 };
 
