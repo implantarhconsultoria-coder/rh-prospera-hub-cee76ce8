@@ -16,6 +16,7 @@ export interface MonthlyEntry {
   vaAplicado: boolean;
   vtAplicado: boolean;
   vtDesconto: number;
+  comissaoBase: number; // valor base para cálculo de comissão
   insalubridadeAplicada: boolean;
   statusConferencia: 'pendente' | 'conferido' | 'divergente';
   observacoes: string;
@@ -29,7 +30,7 @@ export const generateDefaultEntries = (companyId: string, competencia: string, e
     faltasDias: 0, atrasos: 0, he50: 0, he100: 0,
     adicionais: 0, descontosDiversos: 0, adiantamento: 0,
     vrAplicado: true, vrDias: diasUteis,
-    vaAplicado: true, vtAplicado: true, vtDesconto: 0,
+    vaAplicado: true, vtAplicado: true, vtDesconto: 0, comissaoBase: 0,
     insalubridadeAplicada: true,
     statusConferencia: 'pendente', observacoes: '',
   }));
