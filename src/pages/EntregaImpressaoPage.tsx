@@ -112,11 +112,18 @@ const EntregaImpressaoPage: React.FC = () => {
           <>
             <div className="border border-gray-400 rounded p-3 mb-4">
               <p className="text-[9px] uppercase text-gray-500 mb-2 font-bold">DADOS DO COLABORADOR</p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div><span className="text-gray-500">Colaborador:</span> <strong>{emp.name}</strong></div>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div><span className="text-gray-500">Nome:</span> <strong>{emp.name}</strong></div>
                 <div><span className="text-gray-500">Função:</span> {emp.cargo}</div>
+                <div><span className="text-gray-500">CPF:</span> {emp.cpf}</div>
+                <div><span className="text-gray-500">RG:</span> {emp.rg || '—'}</div>
+                <div><span className="text-gray-500">Matrícula:</span> {emp.registro || '—'}</div>
                 <div><span className="text-gray-500">Setor:</span> {setor}</div>
-                <div><span className="text-gray-500">Data:</span> {formatDate(delivery.date)}</div>
+                <div><span className="text-gray-500">Empresa:</span> {company.name}</div>
+                <div><span className="text-gray-500">CNPJ:</span> {company.cnpj}</div>
+                <div><span className="text-gray-500">Unidade:</span> {company.city}</div>
+                <div><span className="text-gray-500">Admissão:</span> {emp.dataAdmissao ? formatDate(emp.dataAdmissao) : '—'}</div>
+                <div><span className="text-gray-500">Data da Entrega:</span> {formatDate(delivery.date)}</div>
               </div>
             </div>
 
@@ -125,24 +132,28 @@ const EntregaImpressaoPage: React.FC = () => {
               <p className="text-xs"><strong>{delivery.responsavel}</strong></p>
             </div>
 
-            <div className="border border-gray-400 rounded p-3 mb-4">
-              <p className="text-[9px] uppercase text-gray-500 mb-2 font-bold">ITENS ENTREGUES</p>
-              <div className="space-y-2 text-xs leading-relaxed">
-                {delivery.items.map((item, i) => {
-                  const parts = [item.tipo];
-                  if (item.descricao) parts.push(item.descricao);
-                  if (item.ca) parts.push(`CA ${item.ca}`);
-                  parts.push(item.tamanho ? `Tamanho ${item.tamanho}` : 'Tamanho —');
-                  parts.push(`Qtd ${item.quantidade}`);
-
-                  return (
-                    <div key={i} className="border-b border-dashed border-gray-300 pb-2 last:border-b-0 last:pb-0">
-                      {parts.join(' — ')}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            <table className="w-full border-collapse mb-4" style={{ fontSize: '10px' }}>
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="border border-gray-400 px-2 py-1 text-left">Item / Descrição</th>
+                  <th className="border border-gray-400 px-2 py-1 text-center">CA</th>
+                  <th className="border border-gray-400 px-2 py-1 text-center">Tamanho</th>
+                  <th className="border border-gray-400 px-2 py-1 text-center">Qtd</th>
+                  <th className="border border-gray-400 px-2 py-1 text-left">Observação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {delivery.items.map((item, i) => (
+                  <tr key={i} className="even:bg-gray-50">
+                    <td className="border border-gray-300 px-2 py-1">{item.tipo}{item.descricao ? ` — ${item.descricao}` : ''}</td>
+                    <td className="border border-gray-300 px-2 py-1 text-center">{item.ca || '—'}</td>
+                    <td className="border border-gray-300 px-2 py-1 text-center">{item.tamanho || '—'}</td>
+                    <td className="border border-gray-300 px-2 py-1 text-center">{item.quantidade}</td>
+                    <td className="border border-gray-300 px-2 py-1">{item.observacao || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </>
         ) : (
           <>
