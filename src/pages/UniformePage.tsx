@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 
 const UniformePage: React.FC = () => {
   const { companies, employees, addDelivery } = useApp();
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [selectedEmpId, setSelectedEmpId] = useState('');
   const [items, setItems] = useState<DeliveryItem[]>([]);
