@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
-import { calcHE50, calcHE100, calcDSR, calcFalta, calcAtraso, calcINSS, calcIRRF, calcFGTS, calcDescontoVT, formatCurrency, calcTotalFuncionario } from '@/lib/calculations';
+import { calcFalta, calcAtraso, calcINSS, calcIRRF, calcFGTS, calcDescontoVT, formatCurrency, calcTotalFuncionario } from '@/lib/calculations';
 import { getWorkingDays } from '@/lib/workingDays';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
