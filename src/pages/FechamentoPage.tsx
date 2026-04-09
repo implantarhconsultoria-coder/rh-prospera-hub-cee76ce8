@@ -46,12 +46,13 @@ const FechamentoPage: React.FC = () => {
   // Calculate per-employee payroll
   const calcPayroll = (emp: typeof compEmps[0], entry: typeof compEntries[0]) => {
     const adiantamento = Math.round(emp.salarioBase * 0.4 * 100) / 100;
-    const valorHora = emp.salarioBase / 220;
+    const insVal = entry.insalubridadeAplicada && emp.insalubridadeAtiva ? emp.insalubridadeValor : 0;
+    const baseHE = emp.salarioBase + insVal;
+    const valorHora = baseHE / 220;
     const he50Val = valorHora * 1.5 * entry.he50;
     const he100Val = valorHora * 2 * entry.he100;
     const totalHE = he50Val + he100Val;
     const dsrHE = diasUteis > 0 ? (totalHE / diasUteis) * domingosFeriados : 0;
-    const insVal = entry.insalubridadeAplicada && emp.insalubridadeAtiva ? emp.insalubridadeValor : 0;
     const comissaoVal = (entry.comissaoBase || 0) * comissaoPct;
     const faltaVal = calcFalta(emp.salarioBase, entry.faltasDias);
     const atrasoVal = calcAtraso(emp.salarioBase, entry.atrasos);
