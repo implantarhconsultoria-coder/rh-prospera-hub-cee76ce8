@@ -1,4 +1,4 @@
-import { getWorkingDays } from '@/lib/workingDays';
+// Working days utility used by AppContext when enriching entries
 
 export interface MonthlyEntry {
   employeeId: string;
