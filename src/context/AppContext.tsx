@@ -95,8 +95,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (existing.length > 0) return existing;
     const compEmps = emps.filter(e => e.companyId === companyId && e.status === 'ativo' && e.categoria === 'operacional');
     const newEntries = generateDefaultEntries(companyId, competencia, compEmps.map(e => e.id));
-    setEntries(prev => [...prev, ...newEntries]);
-    return newEntries;
+    // Apply fixed employee data to entries
+    const enrichedEntries = newEntries.map(entry => {
+      const emp = emps.find(e => e.id === entry.employeeId);
+      if (!emp) return entry;
+      return {
+        ...entry,
+        vrAplicado: emp.vrAtivo,
+        vrDias: emp.vrAtivo ? getWorkingDays(competencia) : 0,
+        vaAplicado: emp.vaAtivo,
+        vtAplicado: emp.vtAtivo,
+        insalubridadeAplicada: emp.insalubridadeAtiva,
+      };
+    });
+    setEntries(prev => [...prev, ...enrichedEntries]);
+    return enrichedEntries;
   }, [entries, emps]);
 
   const updateEntry = useCallback((employeeId: string, competencia: string, data: Partial<MonthlyEntry>) => {
