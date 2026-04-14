@@ -1,4 +1,4 @@
-import { getWorkingDays } from '@/lib/workingDays';
+// Working days utility used by AppContext when enriching entries
 
 export interface MonthlyEntry {
   employeeId: string;
@@ -23,15 +23,13 @@ export interface MonthlyEntry {
 }
 
 export const generateDefaultEntries = (companyId: string, competencia: string, employeeIds: string[]): MonthlyEntry[] => {
-  const diasUteis = getWorkingDays(competencia);
-
   return employeeIds.map(eid => ({
     employeeId: eid, companyId, competencia,
     faltasDias: 0, atrasos: 0, he50: 0, he100: 0,
     adicionais: 0, descontosDiversos: 0, adiantamento: 0,
-    vrAplicado: true, vrDias: diasUteis,
-    vaAplicado: true, vtAplicado: true, vtDesconto: 0, comissaoBase: 0,
-    insalubridadeAplicada: true,
+    vrAplicado: false, vrDias: 0,
+    vaAplicado: false, vtAplicado: false, vtDesconto: 0, comissaoBase: 0,
+    insalubridadeAplicada: false,
     statusConferencia: 'pendente', observacoes: '',
   }));
 };
