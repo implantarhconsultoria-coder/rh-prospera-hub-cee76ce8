@@ -1,19 +1,38 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Building2, Lock, User } from 'lucide-react';
-import { useApp } from '@/context/AppContext';
+import { Building2, Lock, Mail, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { supabase } from '@/integrations/supabase/client';
+import { lovable } from '@/integrations/lovable/index';
+import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const LoginPage: React.FC = () => {
-  const { login } = useApp();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!login(username, password)) setError('Credenciais inválidas');
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+    if (error) toast.error(error.message === 'Invalid login credentials' ? 'Email ou senha inválidos' : error.message);
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    const result = await lovable.auth.signInWithOAuth('google', {
+      redirect_uri: window.location.origin,
+    });
+    if (result.error) {
+      toast.error('Erro ao entrar com Google');
+      setLoading(false);
+      return;
+    }
+    if (result.redirected) return;
+    setLoading(false);
   };
 
   return (
@@ -35,20 +54,26 @@ const LoginPage: React.FC = () => {
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative">
-            <User className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Usuário" value={username} onChange={e => setUsername(e.target.value)}
-              className="pl-10" />
+            <Mail className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+            <Input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}
+              className="pl-10" required />
           </div>
           <div className="relative">
             <Lock className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
             <Input type="password" placeholder="Senha" value={password} onChange={e => setPassword(e.target.value)}
-              className="pl-10" />
+              className="pl-10" required />
           </div>
-          {error && <p className="text-destructive text-sm">{error}</p>}
-          <Button type="submit" className="w-full gradient-primary text-primary-foreground">Entrar</Button>
-          <p className="text-xs text-center text-muted-foreground">
-            Acesso: admin / admin ou rh / rh123
-          </p>
+          <Button type="submit" className="w-full gradient-primary text-primary-foreground" disabled={loading}>
+            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+            Entrar
+          </Button>
+          <Button type="button" variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={loading}>
+            Entrar com Google
+          </Button>
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <Link to="/cadastro" className="hover:text-primary underline">Criar conta</Link>
+            <Link to="/recuperar-senha" className="hover:text-primary underline">Esqueci minha senha</Link>
+          </div>
         </form>
       </motion.div>
     </div>
