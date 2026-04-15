@@ -48,6 +48,8 @@ const DocumentosVeiculosPage: React.FC = () => {
   const { session } = useApp();
   const [ativos, setAtivos] = useState<Ativo[]>([]);
   const [search, setSearch] = useState('');
+  const [viewingPdf, setViewingPdf] = useState<{ url: string; descricao: string } | null>(null);
+  const [viewingBlobUrl, setViewingBlobUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [filterType, setFilterType] = useState<FilterType>('todos');
   const [editingId, setEditingId] = useState<string | null>(null);
