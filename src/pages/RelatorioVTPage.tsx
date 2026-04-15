@@ -36,7 +36,7 @@ const RelatorioVTPage: React.FC = () => {
       const diasDescontados = Math.min(faltasDias, diasPrevistos);
       const diasFinais = Math.max(0, diasPrevistos - diasDescontados);
       // VT diário = valor mensal / dias úteis
-      const valorDiario = diasUteis > 0 ? emp.vtValor / diasUteis : 0;
+      const valorDiario = diasUteis > 0 ? emp.vtDiario / diasUteis : 0;
       const valorTotal = valorDiario * diasFinais;
       const motivo = diasDescontados > 0 ? `${faltasDias} falta(s)` : '';
       return { emp, valorDiario, diasPrevistos, diasDescontados, diasFinais, valorTotal, motivo };
