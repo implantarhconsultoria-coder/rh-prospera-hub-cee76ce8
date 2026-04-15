@@ -15,6 +15,10 @@ export const useUserRole = (session: Session | null) => {
       return;
     }
 
+    // Reset to loading state when user changes to avoid flash of "Aguardando"
+    setRole(null);
+    setLoading(true);
+
     const fetchRole = async () => {
       const { data } = await supabase
         .from('user_roles')
