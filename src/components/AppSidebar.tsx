@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Building2, Users, CalendarDays,
   FileCheck, FileText, Settings, LogOut, ChevronLeft, Menu,
   Database, HardHat, Shirt, UtensilsCrossed, Bus, History,
-  Clock, Wallet, CalendarCheck, FileX, Fuel, Car, Cog,
+  Clock, Wallet, CalendarCheck, FileX, Fuel, Car,
   Stethoscope, UserCheck,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
