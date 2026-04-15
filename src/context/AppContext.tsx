@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import type { Company, Employee, MonthlyEntry, Fechamento } from '@/types/database';
+import { type Company, type Employee, type MonthlyEntry, type Fechamento, mapCompany, mapEmployee, mapEntry, entryToRow, employeeToRow } from '@/types/database';
 import type { Delivery, BenefitReport } from '@/data/deliveries';
 import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 import { useUserRole, type AppRole } from '@/hooks/useUserRole';
 
-// HMR v5
+// HMR v6
 
 interface AppState {
   isAuthenticated: boolean;
@@ -19,8 +19,8 @@ interface AppState {
   updateEmployee: (id: string, data: Partial<Employee>) => void;
   entries: MonthlyEntry[];
   setEntries: React.Dispatch<React.SetStateAction<MonthlyEntry[]>>;
-  getOrCreateEntries: (companyId: string, competencia: string) => Promise<MonthlyEntry[]>;
-  updateEntry: (funcionarioId: string, competencia: string, data: Partial<MonthlyEntry>) => void;
+  getOrCreateEntries: (companyId: string, competencia: string) => MonthlyEntry[];
+  updateEntry: (employeeId: string, competencia: string, data: Partial<MonthlyEntry>) => void;
   fechamentos: Fechamento[];
   setFechamentos: React.Dispatch<React.SetStateAction<Fechamento[]>>;
   getFechamento: (companyId: string, competencia: string) => Fechamento;
@@ -32,7 +32,6 @@ interface AppState {
   benefitReports: BenefitReport[];
   addBenefitReport: (data: Omit<BenefitReport, 'id' | 'createdAt'>) => BenefitReport;
   dataLoading: boolean;
-  refreshData: () => Promise<void>;
 }
 
 interface AppConfig {
@@ -106,23 +105,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ]);
 
       if (companiesRes.data) {
-        setCompanies(companiesRes.data.map(c => ({
-          id: c.id,
-          codigo: c.codigo,
-          nome: c.nome,
-          cnpj: c.cnpj,
-          cidade: c.cidade,
-          status: c.status,
-          observacoes: c.observacoes,
-        })));
+        setCompanies(companiesRes.data.map(mapCompany));
       }
 
       if (employeesRes.data) {
-        setEmployees(employeesRes.data as Employee[]);
+        setEmployees(employeesRes.data.map(mapEmployee));
       }
 
       if (entriesRes.data) {
-        setEntries(entriesRes.data as MonthlyEntry[]);
+        setEntries(entriesRes.data.map(mapEntry));
       }
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -146,59 +137,74 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Update locally first for responsiveness
     setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...data } : e));
     // Then persist to Supabase
-    await supabase.from('funcionarios').update(data).eq('id', id);
+    const row = employeeToRow(data);
+    if (Object.keys(row).length > 0) {
+      await supabase.from('funcionarios').update(row).eq('id', id);
+    }
   }, []);
 
-  const getOrCreateEntries = useCallback(async (companyId: string, competencia: string): Promise<MonthlyEntry[]> => {
-    const existing = entries.filter(e => e.company_id === companyId && e.competencia === competencia);
+  const getOrCreateEntries = useCallback((companyId: string, competencia: string): MonthlyEntry[] => {
+    const existing = entries.filter(e => e.companyId === companyId && e.competencia === competencia);
     if (existing.length > 0) return existing;
 
-    // Create default entries for all active operational employees of this company
-    const compEmps = employees.filter(e => e.company_id === companyId && e.status === 'ativo' && e.categoria === 'operacional');
-    
-    const newEntries = compEmps.map(emp => ({
-      funcionario_id: emp.id,
-      company_id: companyId,
+    // Create default entries for all active operational employees
+    const compEmps = employees.filter(e => e.companyId === companyId && e.status === 'ativo' && e.categoria === 'operacional');
+
+    const newEntries: MonthlyEntry[] = compEmps.map(emp => ({
+      employeeId: emp.id,
+      companyId: companyId,
       competencia,
-      faltas_dias: 0,
+      faltasDias: 0,
       atrasos: 0,
       he50: 0,
       he100: 0,
       adicionais: 0,
-      descontos_diversos: 0,
-      adiantamento: Math.round(emp.salario_base * 0.4 * 100) / 100,
-      vr_aplicado: emp.vr_ativo,
-      vr_dias: emp.vr_ativo ? 22 : 0,
-      va_aplicado: emp.va_ativo,
-      vt_aplicado: emp.vt_ativo,
-      vt_desconto: 0,
-      comissao_base: 0,
-      insalubridade_aplicada: emp.insalubridade_ativa,
-      status_conferencia: 'pendente' as const,
+      descontosDiversos: 0,
+      adiantamento: Math.round(emp.salarioBase * 0.4 * 100) / 100,
+      vrAplicado: emp.vrAtivo,
+      vrDias: emp.vrAtivo ? 22 : 0,
+      vaAplicado: emp.vaAtivo,
+      vtAplicado: emp.vtAtivo,
+      vtDesconto: 0,
+      comissaoBase: 0,
+      insalubridadeAplicada: emp.insalubridadeAtiva,
+      statusConferencia: 'pendente' as const,
       observacoes: '',
     }));
 
-    if (newEntries.length === 0) return [];
+    if (newEntries.length > 0) {
+      // Insert into Supabase asynchronously
+      const rows = newEntries.map(e => entryToRow(e));
+      supabase.from('lancamentos_mensais').insert(rows).select().then(({ data }) => {
+        if (data) {
+          setEntries(prev => {
+            // Remove optimistic entries and add real ones
+            const filtered = prev.filter(e => !(e.companyId === companyId && e.competencia === competencia && !e.id));
+            return [...filtered, ...data.map(mapEntry)];
+          });
+        }
+      });
 
-    const { data } = await supabase.from('lancamentos_mensais').insert(newEntries).select();
-    if (data) {
-      const typedData = data as MonthlyEntry[];
-      setEntries(prev => [...prev, ...typedData]);
-      return typedData;
+      // Add optimistically
+      setEntries(prev => [...prev, ...newEntries]);
     }
-    return [];
+
+    return newEntries;
   }, [entries, employees]);
 
-  const updateEntry = useCallback(async (funcionarioId: string, competencia: string, data: Partial<MonthlyEntry>) => {
+  const updateEntry = useCallback((employeeId: string, competencia: string, data: Partial<MonthlyEntry>) => {
     setEntries(prev => prev.map(e =>
-      e.funcionario_id === funcionarioId && e.competencia === competencia ? { ...e, ...data } : e
+      e.employeeId === employeeId && e.competencia === competencia ? { ...e, ...data } : e
     ));
     // Persist to Supabase
-    await supabase.from('lancamentos_mensais')
-      .update(data)
-      .eq('funcionario_id', funcionarioId)
-      .eq('competencia', competencia);
-  }, []);
+    const row = entryToRow(data);
+    if (Object.keys(row).length > 0) {
+      const entry = entries.find(e => e.employeeId === employeeId && e.competencia === competencia);
+      if (entry?.id) {
+        supabase.from('lancamentos_mensais').update(row).eq('id', entry.id);
+      }
+    }
+  }, [entries]);
 
   const getFechamento = useCallback((companyId: string, competencia: string): Fechamento => {
     const f = fechamentos.find(f => f.companyId === companyId && f.competencia === competencia);
@@ -240,7 +246,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       config, setConfig,
       deliveries, addDelivery,
       benefitReports, addBenefitReport,
-      dataLoading, refreshData: fetchData,
+      dataLoading,
     }}>
       {children}
     </AppContext.Provider>
