@@ -73,6 +73,16 @@ const AuthGate = () => {
 
   return (
     <Routes>
+      {/* Campo layout for tecnico_campo */}
+      <Route element={<CampoLayout />}>
+        <Route path="/campo" element={<CampoHomePage />} />
+        <Route path="/campo/ponto" element={<PontoPage />} />
+        <Route path="/campo/chamados" element={<ChamadosPage />} />
+        <Route path="/campo/estoque" element={<EstoqueVeiculoPage />} />
+        <Route path="/campo/km" element={<RegistroKmPage />} />
+      </Route>
+
+      {/* Main layout */}
       <Route element={<AppLayout />}>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/empresas" element={<EmpresasPage />} />
@@ -96,6 +106,7 @@ const AuthGate = () => {
         <Route path="/almoxarifado" element={<AlmoxarifadoPage />} />
         <Route path="/monitoramento" element={<MonitoramentoPage />} />
         <Route path="/gerenciar-usuarios" element={<GerenciarUsuariosPage />} />
+        <Route path="/operacional/chamados" element={<DespacharChamadoPage />} />
         <Route path="/configuracoes" element={<ConfiguracoesPage />} />
         <Route path="*" element={<NotFound />} />
       </Route>
