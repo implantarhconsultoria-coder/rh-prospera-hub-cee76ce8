@@ -121,10 +121,12 @@ const DashboardPage: React.FC = () => {
 
   const cardAnim = { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 } };
 
+  const adminName = session?.user?.user_metadata?.nome_completo || session?.user?.user_metadata?.full_name || null;
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold font-display text-foreground">Dashboard Executivo</h1>
+        <h1 className="text-2xl font-bold font-display text-foreground">{getGreeting(adminName)}</h1>
         <p className="text-muted-foreground text-sm">Visão consolidada da operação — Competência {comp}</p>
       </div>
 
