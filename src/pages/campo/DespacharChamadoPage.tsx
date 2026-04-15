@@ -116,7 +116,7 @@ const DespacharChamadoPage: React.FC = () => {
                 </div>
                 <div className="text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3 h-3" />{c.local_servico}</div>
                 <div className="text-xs text-muted-foreground flex items-center gap-1"><Wrench className="w-3 h-3" />{c.tipo_servico}</div>
-                <div className="text-xs text-muted-foreground flex items-center gap-1"><User className="w-3 h-3" />{c.profiles?.nome_completo || '—'}</div>
+                <div className="text-xs text-muted-foreground flex items-center gap-1"><User className="w-3 h-3" />{tecnicos.find(t => t.user_id === c.colaborador_id)?.nome_completo || '—'}</div>
               </div>
             ))
           )}
