@@ -16,6 +16,11 @@ import FuncionariosPage from "@/pages/FuncionariosPage";
 import EmployeeDetailPage from "@/pages/EmployeeDetailPage";
 import LancamentosPage from "@/pages/LancamentosPage";
 import FechamentoPage from "@/pages/FechamentoPage";
+import CombustivelPage from "@/pages/CombustivelPage";
+import ProtocoloPage from "@/pages/ProtocoloPage";
+import CompressoresPage from "@/pages/CompressoresPage";
+import DocumentosVeiculosPage from "@/pages/DocumentosVeiculosPage";
+import AvisoFeriasPage from "@/pages/AvisoFeriasPage";
 import RelatorioPage from "@/pages/RelatorioPage";
 import RelatorioImpressaoPage from "@/pages/RelatorioImpressaoPage";
 import ConfiguracoesPage from "@/pages/ConfiguracoesPage";
@@ -71,6 +76,11 @@ const AuthGate = () => {
         <Route path="/relatorio-vr" element={<RelatorioVRPage />} />
         <Route path="/relatorio-vt" element={<RelatorioVTPage />} />
         <Route path="/historico" element={<HistoricoPage />} />
+        <Route path="/combustivel" element={<CombustivelPage />} />
+        <Route path="/protocolo" element={<ProtocoloPage />} />
+        <Route path="/compressores" element={<CompressoresPage />} />
+        <Route path="/documentos-ativos" element={<DocumentosVeiculosPage />} />
+        <Route path="/aviso-ferias" element={<AvisoFeriasPage />} />
         <Route path="/configuracoes" element={<ConfiguracoesPage />} />
         <Route path="*" element={<NotFound />} />
       </Route>

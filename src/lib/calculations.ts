@@ -96,11 +96,11 @@ export const calcDSR = (totalHE: number, diasUteis: number, competencia?: string
 export const calcDescontoVRFaltas = (vrDiario: number, faltasDias: number) => vrDiario * faltasDias;
 
 /**
- * Calculate VT discount for absences: proportional per day (vtValor / diasUteis * faltasDias).
+ * Calculate VT discount for absences: proportional per day (vtDiario / diasUteis * faltasDias).
  */
-export const calcDescontoVTFaltas = (vtValor: number, diasUteis: number, faltasDias: number) => {
+export const calcDescontoVTFaltas = (vtDiario: number, diasUteis: number, faltasDias: number) => {
   if (diasUteis <= 0) return 0;
-  return (vtValor / diasUteis) * faltasDias;
+  return (vtDiario / diasUteis) * faltasDias;
 };
 
 export const calcTotalFuncionario = (emp: Employee, entry: MonthlyEntry, diasUteis: number = 22) => {
@@ -124,9 +124,9 @@ export const calcTotalFuncionario = (emp: Employee, entry: MonthlyEntry, diasUte
   const vaVal = entry.vaAplicado && emp.vaAtivo ? emp.vaMensal : 0;
 
   // VT: proportional discount for faltas
-  const vtBruto = entry.vtAplicado && emp.vtAtivo ? emp.vtValor : 0;
+  const vtBruto = entry.vtAplicado && emp.vtAtivo ? emp.vtDiario * diasUteis : 0;
   const vtDescontoFalta = entry.vtAplicado && emp.vtAtivo
-    ? calcDescontoVTFaltas(emp.vtValor, diasUteis, entry.faltasDias)
+    ? emp.vtDiario * entry.faltasDias
     : 0;
   const vtVal = Math.max(0, vtBruto - vtDescontoFalta);
 
