@@ -16,7 +16,7 @@ export interface Employee {
   vaAtivo: boolean;
   vaMensal: number;
   vtAtivo: boolean;
-  vtValor: number;
+  vtDiario: number;
   insalubridadeAtiva: boolean;
   insalubridadeValor: number;
   status: 'ativo' | 'afastado' | 'férias' | 'desligado';
