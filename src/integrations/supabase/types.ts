@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      ativos: {
+        Row: {
+          ano_fabricacao: string | null
+          ano_modelo: string | null
+          arquivo_url: string | null
+          chassi: string | null
+          created_at: string
+          descricao: string
+          empresa: string | null
+          id: string
+          observacao: string | null
+          patrimonio: string | null
+          placa: string | null
+          renavam: string | null
+          status: string
+          tipo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ano_fabricacao?: string | null
+          ano_modelo?: string | null
+          arquivo_url?: string | null
+          chassi?: string | null
+          created_at?: string
+          descricao?: string
+          empresa?: string | null
+          id?: string
+          observacao?: string | null
+          patrimonio?: string | null
+          placa?: string | null
+          renavam?: string | null
+          status?: string
+          tipo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ano_fabricacao?: string | null
+          ano_modelo?: string | null
+          arquivo_url?: string | null
+          chassi?: string | null
+          created_at?: string
+          descricao?: string
+          empresa?: string | null
+          id?: string
+          observacao?: string | null
+          patrimonio?: string | null
+          placa?: string | null
+          renavam?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           cargo: string | null
