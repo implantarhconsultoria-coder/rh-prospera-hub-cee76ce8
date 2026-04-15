@@ -3,7 +3,7 @@ import { useApp } from '@/context/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Car, Upload, FileText, Trash2, Plus, Search, Eye } from 'lucide-react';
+import { Car, Upload, Trash2, Search, Eye, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Ativo {
@@ -16,6 +16,10 @@ interface Ativo {
   arquivo_url: string;
   observacao: string;
   status: string;
+  renavam: string;
+  chassi: string;
+  ano_fabricacao: string;
+  ano_modelo: string;
 }
 
 const DocumentosVeiculosPage: React.FC = () => {
@@ -23,47 +27,58 @@ const DocumentosVeiculosPage: React.FC = () => {
   const [ativos, setAtivos] = useState<Ativo[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [showForm, setShowForm] = useState(false);
-
-  // Form state
-  const [tipo, setTipo] = useState<'veiculo' | 'compressor'>('veiculo');
-  const [descricao, setDescricao] = useState('');
-  const [placa, setPlaca] = useState('');
-  const [patrimonio, setPatrimonio] = useState('');
-  const [empresa, setEmpresa] = useState('TOPAC MATRIZ');
-  const [observacao, setObservacao] = useState('');
-  const [arquivo, setArquivo] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const fetchAtivos = async () => {
-    const { data, error } = await supabase.from('ativos').select('*').order('created_at', { ascending: false });
-    if (!error && data) setAtivos(data as Ativo[]);
+    const { data, error } = await supabase.from('ativos').select('*').eq('tipo', 'veiculo').order('created_at', { ascending: false });
+    if (!error && data) setAtivos(data as unknown as Ativo[]);
   };
 
   useEffect(() => { fetchAtivos(); }, []);
 
-  const handleUpload = async () => {
-    if (!descricao) { toast.error('Informe a descrição'); return; }
+  const handleMultiUpload = async (files: FileList) => {
     if (!session?.user?.id) { toast.error('Faça login primeiro'); return; }
-    setLoading(true);
-    let arquivo_url = '';
-    if (arquivo) {
-      const ext = arquivo.name.split('.').pop();
-      const path = `${session.user.id}/${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from('documentos-ativos').upload(path, arquivo);
-      if (uploadError) { toast.error('Erro no upload: ' + uploadError.message); setLoading(false); return; }
+    setUploading(true);
+    let success = 0;
+    for (const file of Array.from(files)) {
+      const ext = file.name.split('.').pop();
+      const path = `${session.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from('documentos-ativos').upload(path, file);
+      if (uploadError) { toast.error(`Erro no upload de ${file.name}`); continue; }
       const { data: urlData } = supabase.storage.from('documentos-ativos').getPublicUrl(path);
-      arquivo_url = urlData.publicUrl;
+      const arquivo_url = urlData.publicUrl;
+
+      // Try AI extraction
+      let extracted: any = {};
+      try {
+        const { data: aiData } = await supabase.functions.invoke('parse-text', {
+          body: { text: `Arquivo: ${file.name}. Documento de veículo.`, type: 'documento_veiculo' },
+        });
+        if (aiData?.data) extracted = aiData.data;
+      } catch {}
+
+      const { error } = await supabase.from('ativos').insert({
+        user_id: session.user.id,
+        tipo: 'veiculo',
+        descricao: extracted.descricao || file.name.replace(/\.[^/.]+$/, ''),
+        placa: extracted.placa || '',
+        patrimonio: extracted.patrimonio || '',
+        empresa: extracted.empresa || 'TOPAC MATRIZ',
+        observacao: '',
+        arquivo_url,
+        renavam: extracted.renavam || '',
+        chassi: extracted.chassi || '',
+        ano_fabricacao: extracted.ano_fabricacao || '',
+        ano_modelo: extracted.ano_modelo || '',
+        status: 'ativo',
+      } as any);
+      if (!error) success++;
     }
-    const { error } = await supabase.from('ativos').insert({
-      user_id: session.user.id, tipo, descricao, placa, patrimonio, empresa, observacao, arquivo_url, status: 'ativo',
-    } as any);
-    if (error) { toast.error('Erro ao salvar: ' + error.message); } else {
-      toast.success('Ativo cadastrado!');
-      setShowForm(false);
-      setDescricao(''); setPlaca(''); setPatrimonio(''); setObservacao(''); setArquivo(null);
+    if (success > 0) {
+      toast.success(`${success} documento(s) cadastrado(s)!`);
       fetchAtivos();
     }
-    setLoading(false);
+    setUploading(false);
   };
 
   const handleDelete = async (id: string) => {
@@ -72,9 +87,9 @@ const DocumentosVeiculosPage: React.FC = () => {
   };
 
   const filtered = ativos.filter(a =>
-    a.descricao.toLowerCase().includes(search.toLowerCase()) ||
-    a.placa.toLowerCase().includes(search.toLowerCase()) ||
-    a.patrimonio.toLowerCase().includes(search.toLowerCase())
+    (a.descricao || '').toLowerCase().includes(search.toLowerCase()) ||
+    (a.placa || '').toLowerCase().includes(search.toLowerCase()) ||
+    (a.patrimonio || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -85,59 +100,41 @@ const DocumentosVeiculosPage: React.FC = () => {
             <Car className="w-7 h-7" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold font-display">Documentos de Veículos e Compressores</h1>
-            <p className="text-primary-foreground/70 text-sm">Cadastro e armazenamento de PDFs dos ativos</p>
+            <h1 className="text-2xl font-bold font-display">Documentos de Veículos</h1>
+            <p className="text-primary-foreground/70 text-sm">Upload múltiplo de PDFs com leitura automática por IA</p>
           </div>
         </div>
       </div>
 
       <div className="card-premium p-5 space-y-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <Search className="w-4 h-4 text-muted-foreground" />
           <Input placeholder="Buscar por descrição, placa ou patrimônio..." value={search}
-            onChange={e => setSearch(e.target.value)} className="flex-1" />
-          <Button size="sm" onClick={() => setShowForm(!showForm)}>
-            <Plus className="w-4 h-4 mr-1" />{showForm ? 'Cancelar' : 'Novo Ativo'}
-          </Button>
-        </div>
-
-        {showForm && (
-          <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              <div><label className="text-xs text-muted-foreground block mb-1">Tipo</label>
-                <select value={tipo} onChange={e => setTipo(e.target.value as any)}
-                  className="w-full border rounded-lg px-3 py-2 text-sm bg-background text-foreground">
-                  <option value="veiculo">Veículo</option>
-                  <option value="compressor">Compressor</option>
-                </select></div>
-              <div><label className="text-xs text-muted-foreground block mb-1">Descrição *</label>
-                <Input value={descricao} onChange={e => setDescricao(e.target.value)} /></div>
-              <div><label className="text-xs text-muted-foreground block mb-1">Placa</label>
-                <Input value={placa} onChange={e => setPlaca(e.target.value)} /></div>
-              <div><label className="text-xs text-muted-foreground block mb-1">Patrimônio</label>
-                <Input value={patrimonio} onChange={e => setPatrimonio(e.target.value)} /></div>
-              <div><label className="text-xs text-muted-foreground block mb-1">Empresa</label>
-                <Input value={empresa} onChange={e => setEmpresa(e.target.value)} /></div>
-              <div><label className="text-xs text-muted-foreground block mb-1">Observação</label>
-                <Input value={observacao} onChange={e => setObservacao(e.target.value)} /></div>
-              <div><label className="text-xs text-muted-foreground block mb-1">Arquivo PDF</label>
-                <input type="file" accept=".pdf" onChange={e => setArquivo(e.target.files?.[0] || null)}
-                  className="text-xs" /></div>
-            </div>
-            <Button onClick={handleUpload} disabled={loading} className="gradient-accent text-accent-foreground">
-              <Upload className="w-4 h-4 mr-2" />{loading ? 'Salvando...' : 'Cadastrar Ativo'}
+            onChange={e => setSearch(e.target.value)} className="flex-1 min-w-[200px]" />
+          <label className="flex items-center gap-2 cursor-pointer">
+            <Button size="sm" disabled={uploading} asChild>
+              <span>
+                {uploading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Upload className="w-4 h-4 mr-1" />}
+                {uploading ? 'Enviando...' : 'Upload Múltiplo de PDFs'}
+              </span>
             </Button>
-          </div>
-        )}
+            <input type="file" accept=".pdf" multiple className="hidden"
+              onChange={e => e.target.files && e.target.files.length > 0 && handleMultiUpload(e.target.files)} />
+          </label>
+        </div>
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
+          <Sparkles className="w-3 h-3" /> Ao subir PDFs, a IA tenta extrair placa, renavam, chassi e outros dados automaticamente. Dados reaproveitados no Protocolo.
+        </p>
       </div>
 
       <div className="card-premium overflow-x-auto">
         <table className="w-full text-sm">
-          <thead><tr className="border-b bg-muted/50">
-            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Tipo</th>
+          <thead><tr className="border-b bg-muted/50 sticky top-0 z-10">
             <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Descrição</th>
             <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Placa</th>
             <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Patrimônio</th>
+            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Renavam</th>
+            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Chassi</th>
             <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Empresa</th>
             <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">PDF</th>
             <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Ações</th>
@@ -145,10 +142,11 @@ const DocumentosVeiculosPage: React.FC = () => {
           <tbody>
             {filtered.map(a => (
               <tr key={a.id} className="border-b hover:bg-muted/20">
-                <td className="px-3 py-2 text-xs capitalize">{a.tipo}</td>
                 <td className="px-3 py-2 text-xs font-medium">{a.descricao}</td>
                 <td className="px-3 py-2 text-xs">{a.placa || '—'}</td>
                 <td className="px-3 py-2 text-xs">{a.patrimonio || '—'}</td>
+                <td className="px-3 py-2 text-xs">{a.renavam || '—'}</td>
+                <td className="px-3 py-2 text-xs font-mono">{a.chassi || '—'}</td>
                 <td className="px-3 py-2 text-xs">{a.empresa}</td>
                 <td className="px-3 py-2 text-xs">
                   {a.arquivo_url ? <a href={a.arquivo_url} target="_blank" rel="noreferrer" className="text-primary hover:underline flex items-center gap-1"><Eye className="w-3 h-3" />Ver</a> : '—'}
@@ -160,7 +158,7 @@ const DocumentosVeiculosPage: React.FC = () => {
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && <tr><td colSpan={7} className="text-center py-8 text-muted-foreground text-sm">Nenhum ativo cadastrado</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={8} className="text-center py-8 text-muted-foreground text-sm">Nenhum documento cadastrado</td></tr>}
           </tbody>
         </table>
       </div>
