@@ -218,44 +218,42 @@ const ProtocoloPage: React.FC = () => {
     </div>`;
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (!placa && !patrimonio && !descricaoEquipamento) {
       toast.error('Informe ao menos placa, patrimônio ou descrição');
       return;
     }
 
+    const printWin = window.open('', '_blank');
+    if (!printWin) return;
+
+    // Build protocol HTML (2 vias)
+    let fullHtml = buildProtocoloHtml(1, 2) + buildProtocoloHtml(2, 2);
+
+    // If there's a PDF, fetch it as base64 and embed via iframe in print
     if (pdfUrl) {
-      // Print protocol pages first, then open PDF in separate tab
-      const printWin = window.open('', '_blank');
-      if (!printWin) return;
-      printWin.document.write(`<!DOCTYPE html><html><head><title>${titulo}</title>
-      <style>@page{size:A4;margin:0}body{margin:0;font-family:Arial,sans-serif}@media print{body{-webkit-print-color-adjust:exact}}</style></head><body>
-      ${buildProtocoloHtml(1, 2)}
-      ${buildProtocoloHtml(2, 2)}
-      </body></html>`);
-      printWin.document.close();
-      setTimeout(() => {
-        printWin.print();
-        // After protocol prints, open the PDF for separate printing
-        toast.info('Após imprimir o protocolo, o documento PDF será aberto para impressão.');
-        const pdfWin = window.open(pdfUrl, '_blank');
-        if (pdfWin) {
-          pdfWin.addEventListener('load', () => {
-            setTimeout(() => pdfWin.print(), 1000);
-          });
-        }
-      }, 500);
-    } else {
-      const printWin = window.open('', '_blank');
-      if (!printWin) return;
-      printWin.document.write(`<!DOCTYPE html><html><head><title>${titulo}</title>
-      <style>@page{size:A4;margin:0}body{margin:0;font-family:Arial,sans-serif}@media print{body{-webkit-print-color-adjust:exact}}</style></head><body>
-      ${buildProtocoloHtml(1, 2)}
-      ${buildProtocoloHtml(2, 2)}
-      </body></html>`);
-      printWin.document.close();
-      setTimeout(() => printWin.print(), 500);
+      try {
+        const response = await fetch(pdfUrl);
+        const blob = await response.blob();
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+        fullHtml += `<div style="page-break-before:always;width:100%;height:100vh;padding:0;margin:0">
+          <iframe src="${base64}" style="width:100%;height:100%;border:none" title="Documento"></iframe>
+        </div>`;
+      } catch {
+        toast.error('Não foi possível incorporar o PDF na impressão');
+      }
     }
+
+    printWin.document.write(`<!DOCTYPE html><html><head><title>${titulo}</title>
+    <style>@page{size:A4;margin:0}body{margin:0;font-family:Arial,sans-serif}@media print{body{-webkit-print-color-adjust:exact}iframe{width:100%!important;height:100vh!important}}</style></head><body>
+    ${fullHtml}
+    </body></html>`);
+    printWin.document.close();
+    setTimeout(() => printWin.print(), 800);
   };
 
   const handleClear = () => {
@@ -413,11 +411,11 @@ const ProtocoloPage: React.FC = () => {
             )}
             {pdfUrl && (
               <div className="space-y-2 mt-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-xs text-success">✓ PDF vinculado — será impresso como via adicional</p>
-                  <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">Abrir em nova aba</a>
-                </div>
-                <iframe src={pdfUrl} className="w-full h-64 border rounded-lg" title="PDF do documento" />
+                <p className="text-xs text-success">✓ PDF vinculado — será impresso como via adicional</p>
+                {loadingPdf && <p className="text-xs text-muted-foreground">Carregando PDF...</p>}
+                {pdfBlobUrl && (
+                  <iframe src={pdfBlobUrl} className="w-full h-80 border rounded-lg" title="PDF do documento" />
+                )}
               </div>
             )}
             {!pdfUrl && <p className="text-xs text-muted-foreground mt-1">Sem PDF: imprime apenas 2 vias do protocolo</p>}
