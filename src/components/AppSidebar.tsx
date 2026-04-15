@@ -5,7 +5,7 @@ import {
   FileCheck, FileText, Settings, LogOut, ChevronLeft, Menu,
   Database, HardHat, Shirt, UtensilsCrossed, Bus, History,
   Clock, Wallet, CalendarCheck, FileX, Fuel, Car,
-  Stethoscope, UserCheck, Package, Monitor, Shield,
+  Stethoscope, UserCheck, Package, Monitor, Shield, ClipboardList,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
