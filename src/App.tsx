@@ -82,7 +82,7 @@ const AuthGate = () => {
         <Route path="/prestadores" element={<PrestadoresPage />} />
         <Route path="/combustivel" element={<CombustivelPage />} />
         <Route path="/protocolo" element={<ProtocoloPage />} />
-        <Route path="/compressores" element={<CompressoresPage />} />
+        <Route path="/compressores" element={<ProtocoloPage />} />
         <Route path="/documentos-ativos" element={<DocumentosVeiculosPage />} />
         <Route path="/aviso-ferias" element={<AvisoFeriasPage />} />
         <Route path="/configuracoes" element={<ConfiguracoesPage />} />
