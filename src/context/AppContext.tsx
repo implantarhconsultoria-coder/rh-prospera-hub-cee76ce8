@@ -1,14 +1,11 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { employees as initialEmployees, type Employee } from '@/data/employees';
-import { type MonthlyEntry, type Fechamento, generateDefaultEntries, initialEntries } from '@/data/entries';
-import { companies, type Company } from '@/data/companies';
+import type { Company, Employee, MonthlyEntry, Fechamento } from '@/types/database';
 import type { Delivery, BenefitReport } from '@/data/deliveries';
-import { getWorkingDays } from '@/lib/workingDays';
 import { supabase } from '@/integrations/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 import { useUserRole, type AppRole } from '@/hooks/useUserRole';
 
-// HMR v4
+// HMR v5
 
 interface AppState {
   isAuthenticated: boolean;
@@ -22,8 +19,8 @@ interface AppState {
   updateEmployee: (id: string, data: Partial<Employee>) => void;
   entries: MonthlyEntry[];
   setEntries: React.Dispatch<React.SetStateAction<MonthlyEntry[]>>;
-  getOrCreateEntries: (companyId: string, competencia: string) => MonthlyEntry[];
-  updateEntry: (employeeId: string, competencia: string, data: Partial<MonthlyEntry>) => void;
+  getOrCreateEntries: (companyId: string, competencia: string) => Promise<MonthlyEntry[]>;
+  updateEntry: (funcionarioId: string, competencia: string, data: Partial<MonthlyEntry>) => void;
   fechamentos: Fechamento[];
   setFechamentos: React.Dispatch<React.SetStateAction<Fechamento[]>>;
   getFechamento: (companyId: string, competencia: string) => Fechamento;
@@ -34,6 +31,8 @@ interface AppState {
   addDelivery: (data: Omit<Delivery, 'id' | 'createdAt'>) => Delivery;
   benefitReports: BenefitReport[];
   addBenefitReport: (data: Omit<BenefitReport, 'id' | 'createdAt'>) => BenefitReport;
+  dataLoading: boolean;
+  refreshData: () => Promise<void>;
 }
 
 interface AppConfig {
@@ -65,12 +64,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const { role: userRole, roleLoading } = useUserRole(session);
-  const [emps, setEmps] = useState<Employee[]>(initialEmployees);
-  const [entries, setEntries] = useState<MonthlyEntry[]>(initialEntries);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [entries, setEntries] = useState<MonthlyEntry[]>([]);
   const [fechamentos, setFechamentos] = useState<Fechamento[]>([]);
   const [config, setConfig] = useState<AppConfig>(defaultConfig);
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [benefitReports, setBenefitReports] = useState<BenefitReport[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -86,41 +87,117 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => subscription.unsubscribe();
   }, []);
 
+  // Fetch data from Supabase when authenticated
+  const fetchData = useCallback(async () => {
+    if (!session) {
+      setCompanies([]);
+      setEmployees([]);
+      setEntries([]);
+      setDataLoading(false);
+      return;
+    }
+
+    setDataLoading(true);
+    try {
+      const [companiesRes, employeesRes, entriesRes] = await Promise.all([
+        supabase.from('empresas').select('*').order('nome'),
+        supabase.from('funcionarios').select('*').order('nome'),
+        supabase.from('lancamentos_mensais').select('*'),
+      ]);
+
+      if (companiesRes.data) {
+        setCompanies(companiesRes.data.map(c => ({
+          id: c.id,
+          codigo: c.codigo,
+          nome: c.nome,
+          cnpj: c.cnpj,
+          cidade: c.cidade,
+          status: c.status,
+          observacoes: c.observacoes,
+        })));
+      }
+
+      if (employeesRes.data) {
+        setEmployees(employeesRes.data as Employee[]);
+      }
+
+      if (entriesRes.data) {
+        setEntries(entriesRes.data as MonthlyEntry[]);
+      }
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    } finally {
+      setDataLoading(false);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (session) {
+      fetchData();
+    }
+  }, [session, fetchData]);
+
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
     setSession(null);
   }, []);
 
-  const updateEmployee = useCallback((id: string, data: Partial<Employee>) => {
-    setEmps(prev => prev.map(e => e.id === id ? { ...e, ...data } : e));
+  const updateEmployee = useCallback(async (id: string, data: Partial<Employee>) => {
+    // Update locally first for responsiveness
+    setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...data } : e));
+    // Then persist to Supabase
+    await supabase.from('funcionarios').update(data).eq('id', id);
   }, []);
 
-  const getOrCreateEntries = useCallback((companyId: string, competencia: string) => {
-    const existing = entries.filter(e => e.companyId === companyId && e.competencia === competencia);
+  const getOrCreateEntries = useCallback(async (companyId: string, competencia: string): Promise<MonthlyEntry[]> => {
+    const existing = entries.filter(e => e.company_id === companyId && e.competencia === competencia);
     if (existing.length > 0) return existing;
-    const compEmps = emps.filter(e => e.companyId === companyId && e.status === 'ativo' && e.categoria === 'operacional');
-    const newEntries = generateDefaultEntries(companyId, competencia, compEmps.map(e => e.id));
-    // Apply fixed employee data to entries
-    const enrichedEntries = newEntries.map(entry => {
-      const emp = emps.find(e => e.id === entry.employeeId);
-      if (!emp) return entry;
-      return {
-        ...entry,
-        vrAplicado: emp.vrAtivo,
-        vrDias: emp.vrAtivo ? getWorkingDays(competencia) : 0,
-        vaAplicado: emp.vaAtivo,
-        vtAplicado: emp.vtAtivo,
-        insalubridadeAplicada: emp.insalubridadeAtiva,
-      };
-    });
-    setEntries(prev => [...prev, ...enrichedEntries]);
-    return enrichedEntries;
-  }, [entries, emps]);
 
-  const updateEntry = useCallback((employeeId: string, competencia: string, data: Partial<MonthlyEntry>) => {
+    // Create default entries for all active operational employees of this company
+    const compEmps = employees.filter(e => e.company_id === companyId && e.status === 'ativo' && e.categoria === 'operacional');
+    
+    const newEntries = compEmps.map(emp => ({
+      funcionario_id: emp.id,
+      company_id: companyId,
+      competencia,
+      faltas_dias: 0,
+      atrasos: 0,
+      he50: 0,
+      he100: 0,
+      adicionais: 0,
+      descontos_diversos: 0,
+      adiantamento: Math.round(emp.salario_base * 0.4 * 100) / 100,
+      vr_aplicado: emp.vr_ativo,
+      vr_dias: emp.vr_ativo ? 22 : 0,
+      va_aplicado: emp.va_ativo,
+      vt_aplicado: emp.vt_ativo,
+      vt_desconto: 0,
+      comissao_base: 0,
+      insalubridade_aplicada: emp.insalubridade_ativa,
+      status_conferencia: 'pendente' as const,
+      observacoes: '',
+    }));
+
+    if (newEntries.length === 0) return [];
+
+    const { data } = await supabase.from('lancamentos_mensais').insert(newEntries).select();
+    if (data) {
+      const typedData = data as MonthlyEntry[];
+      setEntries(prev => [...prev, ...typedData]);
+      return typedData;
+    }
+    return [];
+  }, [entries, employees]);
+
+  const updateEntry = useCallback(async (funcionarioId: string, competencia: string, data: Partial<MonthlyEntry>) => {
     setEntries(prev => prev.map(e =>
-      e.employeeId === employeeId && e.competencia === competencia ? { ...e, ...data } : e
+      e.funcionario_id === funcionarioId && e.competencia === competencia ? { ...e, ...data } : e
     ));
+    // Persist to Supabase
+    await supabase.from('lancamentos_mensais')
+      .update(data)
+      .eq('funcionario_id', funcionarioId)
+      .eq('competencia', competencia);
   }, []);
 
   const getFechamento = useCallback((companyId: string, competencia: string): Fechamento => {
@@ -156,12 +233,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   return (
     <AppContext.Provider value={{
-      isAuthenticated: !!session, session, loading, userRole, roleLoading, logout, companies, employees: emps, updateEmployee,
+      isAuthenticated: !!session, session, loading, userRole, roleLoading, logout,
+      companies, employees, updateEmployee,
       entries, setEntries, getOrCreateEntries, updateEntry,
       fechamentos, setFechamentos, getFechamento, updateFechamento,
       config, setConfig,
       deliveries, addDelivery,
       benefitReports, addBenefitReport,
+      dataLoading, refreshData: fetchData,
     }}>
       {children}
     </AppContext.Provider>
