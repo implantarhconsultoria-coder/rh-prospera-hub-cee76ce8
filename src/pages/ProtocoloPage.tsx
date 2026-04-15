@@ -40,6 +40,8 @@ const ProtocoloPage: React.FC = () => {
   const [parsing, setParsing] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfUrl, setPdfUrl] = useState('');
+  const [pdfBlobUrl, setPdfBlobUrl] = useState('');
+  const [loadingPdf, setLoadingPdf] = useState(false);
 
   // Auto-lookup state
   const [ativosCache, setAtivosCache] = useState<AtivoDoc[]>([]);
@@ -56,6 +58,31 @@ const ProtocoloPage: React.FC = () => {
     load();
   }, []);
 
+  // Fetch PDF as blob for internal viewer (avoids X-Frame-Options blocking)
+  useEffect(() => {
+    if (!pdfUrl) { setPdfBlobUrl(''); return; }
+    let cancelled = false;
+    setLoadingPdf(true);
+    fetch(pdfUrl)
+      .then(r => r.blob())
+      .then(blob => {
+        if (!cancelled) {
+          const url = URL.createObjectURL(blob);
+          setPdfBlobUrl(url);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setPdfBlobUrl('');
+      })
+      .finally(() => { if (!cancelled) setLoadingPdf(false); });
+    return () => { cancelled = true; };
+  }, [pdfUrl]);
+
+  // Cleanup blob URLs on unmount
+  useEffect(() => {
+    return () => { if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl); };
+  }, [pdfBlobUrl]);
+
   // Auto-match when key fields change — auto-fill ALL vehicle fields
   useEffect(() => {
     if (!placa && !patrimonio && !renavam && !chassi) {
@@ -65,22 +92,22 @@ const ProtocoloPage: React.FC = () => {
     const sanitize = (s: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     const match = ativosCache.find(a => {
       if (placa && a.placa && sanitize(a.placa) === sanitize(placa)) return true;
-      if (patrimonio && a.patrimonio && a.patrimonio.toLowerCase() === patrimonio.toLowerCase()) return true;
-      if (renavam && a.renavam && a.renavam === renavam) return true;
-      if (chassi && a.chassi && a.chassi.toLowerCase() === chassi.toLowerCase()) return true;
+      if (patrimonio && a.patrimonio && a.patrimonio.trim() && a.patrimonio.toLowerCase() === patrimonio.toLowerCase()) return true;
+      if (renavam && a.renavam && a.renavam.trim() && a.renavam === renavam) return true;
+      if (chassi && a.chassi && a.chassi.trim() && a.chassi.toLowerCase() === chassi.toLowerCase()) return true;
       return false;
     });
     if (match) {
       setMatchedAtivo(match);
-      // Auto-fill all fields from the matched vehicle
-      if (match.patrimonio && !patrimonio) setPatrimonio(match.patrimonio);
-      if (match.renavam && !renavam) setRenavam(match.renavam);
-      if (match.chassi && !chassi) setChassi(match.chassi);
-      if (match.ano_fabricacao) setAnoFabricacao(match.ano_fabricacao);
-      if (match.ano_modelo) setAnoModelo(match.ano_modelo);
-      if (match.empresa) setEmpresaDestinataria(match.empresa);
-      if (match.descricao) setDescricaoEquipamento(match.descricao);
-      if (match.arquivo_url) setPdfUrl(match.arquivo_url);
+      // Auto-fill all fields from the matched vehicle (skip empty strings)
+      if (match.patrimonio?.trim()) setPatrimonio(match.patrimonio);
+      if (match.renavam?.trim()) setRenavam(match.renavam);
+      if (match.chassi?.trim()) setChassi(match.chassi);
+      if (match.ano_fabricacao?.trim()) setAnoFabricacao(match.ano_fabricacao);
+      if (match.ano_modelo?.trim()) setAnoModelo(match.ano_modelo);
+      if (match.empresa?.trim()) setEmpresaDestinataria(match.empresa);
+      if (match.descricao?.trim()) setDescricaoEquipamento(match.descricao);
+      if (match.arquivo_url?.trim()) setPdfUrl(match.arquivo_url);
       toast.success(`Veículo localizado: ${match.descricao || match.placa} — campos preenchidos automaticamente.`);
     } else {
       setMatchedAtivo(null);
@@ -191,44 +218,42 @@ const ProtocoloPage: React.FC = () => {
     </div>`;
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (!placa && !patrimonio && !descricaoEquipamento) {
       toast.error('Informe ao menos placa, patrimônio ou descrição');
       return;
     }
 
+    const printWin = window.open('', '_blank');
+    if (!printWin) return;
+
+    // Build protocol HTML (2 vias)
+    let fullHtml = buildProtocoloHtml(1, 2) + buildProtocoloHtml(2, 2);
+
+    // If there's a PDF, fetch it as base64 and embed via iframe in print
     if (pdfUrl) {
-      // Print protocol pages first, then open PDF in separate tab
-      const printWin = window.open('', '_blank');
-      if (!printWin) return;
-      printWin.document.write(`<!DOCTYPE html><html><head><title>${titulo}</title>
-      <style>@page{size:A4;margin:0}body{margin:0;font-family:Arial,sans-serif}@media print{body{-webkit-print-color-adjust:exact}}</style></head><body>
-      ${buildProtocoloHtml(1, 2)}
-      ${buildProtocoloHtml(2, 2)}
-      </body></html>`);
-      printWin.document.close();
-      setTimeout(() => {
-        printWin.print();
-        // After protocol prints, open the PDF for separate printing
-        toast.info('Após imprimir o protocolo, o documento PDF será aberto para impressão.');
-        const pdfWin = window.open(pdfUrl, '_blank');
-        if (pdfWin) {
-          pdfWin.addEventListener('load', () => {
-            setTimeout(() => pdfWin.print(), 1000);
-          });
-        }
-      }, 500);
-    } else {
-      const printWin = window.open('', '_blank');
-      if (!printWin) return;
-      printWin.document.write(`<!DOCTYPE html><html><head><title>${titulo}</title>
-      <style>@page{size:A4;margin:0}body{margin:0;font-family:Arial,sans-serif}@media print{body{-webkit-print-color-adjust:exact}}</style></head><body>
-      ${buildProtocoloHtml(1, 2)}
-      ${buildProtocoloHtml(2, 2)}
-      </body></html>`);
-      printWin.document.close();
-      setTimeout(() => printWin.print(), 500);
+      try {
+        const response = await fetch(pdfUrl);
+        const blob = await response.blob();
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+        fullHtml += `<div style="page-break-before:always;width:100%;height:100vh;padding:0;margin:0">
+          <iframe src="${base64}" style="width:100%;height:100%;border:none" title="Documento"></iframe>
+        </div>`;
+      } catch {
+        toast.error('Não foi possível incorporar o PDF na impressão');
+      }
     }
+
+    printWin.document.write(`<!DOCTYPE html><html><head><title>${titulo}</title>
+    <style>@page{size:A4;margin:0}body{margin:0;font-family:Arial,sans-serif}@media print{body{-webkit-print-color-adjust:exact}iframe{width:100%!important;height:100vh!important}}</style></head><body>
+    ${fullHtml}
+    </body></html>`);
+    printWin.document.close();
+    setTimeout(() => printWin.print(), 800);
   };
 
   const handleClear = () => {
@@ -386,11 +411,11 @@ const ProtocoloPage: React.FC = () => {
             )}
             {pdfUrl && (
               <div className="space-y-2 mt-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-xs text-success">✓ PDF vinculado — será impresso como via adicional</p>
-                  <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">Abrir em nova aba</a>
-                </div>
-                <iframe src={pdfUrl} className="w-full h-64 border rounded-lg" title="PDF do documento" />
+                <p className="text-xs text-success">✓ PDF vinculado — será impresso como via adicional</p>
+                {loadingPdf && <p className="text-xs text-muted-foreground">Carregando PDF...</p>}
+                {pdfBlobUrl && (
+                  <iframe src={pdfBlobUrl} className="w-full h-80 border rounded-lg" title="PDF do documento" />
+                )}
               </div>
             )}
             {!pdfUrl && <p className="text-xs text-muted-foreground mt-1">Sem PDF: imprime apenas 2 vias do protocolo</p>}

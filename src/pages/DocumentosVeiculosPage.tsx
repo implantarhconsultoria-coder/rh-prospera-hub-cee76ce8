@@ -48,6 +48,8 @@ const DocumentosVeiculosPage: React.FC = () => {
   const { session } = useApp();
   const [ativos, setAtivos] = useState<Ativo[]>([]);
   const [search, setSearch] = useState('');
+  const [viewingPdf, setViewingPdf] = useState<{ url: string; descricao: string } | null>(null);
+  const [viewingBlobUrl, setViewingBlobUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [filterType, setFilterType] = useState<FilterType>('todos');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -323,7 +325,14 @@ const DocumentosVeiculosPage: React.FC = () => {
                 <td className="px-3 py-2">{statusBadge(getAlertStatus(a.vencimento_licenciamento))}</td>
                 <td className="px-3 py-2 text-xs">{a.empresa}</td>
                 <td className="px-3 py-2 text-xs">
-                  {a.arquivo_url ? <a href={a.arquivo_url} target="_blank" rel="noreferrer" className="text-primary hover:underline flex items-center gap-1"><Eye className="w-3 h-3" />Ver</a> : '—'}
+                  {a.arquivo_url ? <button onClick={async () => {
+                    setViewingPdf({ url: a.arquivo_url, descricao: a.descricao });
+                    try {
+                      const r = await fetch(a.arquivo_url);
+                      const blob = await r.blob();
+                      setViewingBlobUrl(URL.createObjectURL(blob));
+                    } catch { toast.error('Erro ao carregar PDF'); }
+                  }} className="text-primary hover:underline flex items-center gap-1 text-xs"><Eye className="w-3 h-3" />Ver</button> : '—'}
                 </td>
                 <td className="px-3 py-2 flex gap-1">
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(a)}>
@@ -340,6 +349,27 @@ const DocumentosVeiculosPage: React.FC = () => {
         </table>
         <div className="p-3 text-xs text-muted-foreground border-t">{filtered.length} documento(s)</div>
       </div>
+
+      {/* Internal PDF Viewer Modal */}
+      {viewingPdf && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-background rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-sm font-bold">{viewingPdf.descricao}</h3>
+              <Button variant="ghost" size="sm" onClick={() => { setViewingPdf(null); if (viewingBlobUrl) { URL.revokeObjectURL(viewingBlobUrl); setViewingBlobUrl(''); } }}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="flex-1 min-h-0 p-2">
+              {viewingBlobUrl ? (
+                <iframe src={viewingBlobUrl} className="w-full h-full min-h-[70vh] border rounded-lg" title="PDF Viewer" />
+              ) : (
+                <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">Carregando PDF...</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
