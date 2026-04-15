@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          action: string
+          created_at: string
+          email: string
+          filial: string
+          id: string
+          last_activity_at: string
+          logged_in_at: string
+          module: string
+          nome: string
+          route: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          action?: string
+          created_at?: string
+          email?: string
+          filial?: string
+          id?: string
+          last_activity_at?: string
+          logged_in_at?: string
+          module?: string
+          nome?: string
+          route?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          email?: string
+          filial?: string
+          id?: string
+          last_activity_at?: string
+          logged_in_at?: string
+          module?: string
+          nome?: string
+          route?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       almoxarifado_entradas: {
         Row: {
           created_at: string
