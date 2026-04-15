@@ -171,11 +171,11 @@ const ASOPage: React.FC = () => {
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={trabalhoAltura} onChange={e => setTrabalhoAltura(e.target.checked)}
-                  className="rounded border-gray-300" /> Trabalho em Altura
+                  className="rounded border-border" /> Trabalho em Altura
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={espacoConfinado} onChange={e => setEspacoConfinado(e.target.checked)}
-                  className="rounded border-gray-300" /> Espaço Confinado
+                  className="rounded border-border" /> Espaço Confinado
               </label>
             </div>
           </div>
