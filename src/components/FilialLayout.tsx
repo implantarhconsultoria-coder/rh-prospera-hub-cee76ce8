@@ -1,17 +1,14 @@
 import React, { useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
-import AppSidebar from '@/components/AppSidebar';
+import FilialSidebar from '@/components/FilialSidebar';
 import { useApp } from '@/context/AppContext';
-import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 import AguardandoAcesso from '@/components/AguardandoAcesso';
 
-const AppLayout: React.FC = () => {
+const FilialLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const { session, userRole, roleLoading } = useApp();
-
-  useActivityTracker(session);
 
   if (roleLoading) {
     return (
@@ -23,19 +20,18 @@ const AppLayout: React.FC = () => {
 
   if (!userRole) return <AguardandoAcesso />;
 
-  // Only admin can access central panel
-  if (userRole !== 'admin') {
-    const redirect = userRole === 'tecnico_campo' ? '/campo'
+  // Only filial roles allowed
+  if (userRole !== 'filial_praia' && userRole !== 'filial_goiania') {
+    const redirect = userRole === 'admin' ? '/'
+      : userRole === 'tecnico_campo' ? '/campo'
       : userRole === 'operacional' ? '/operacional'
-      : userRole?.startsWith('filial_') ? '/filial'
-      : userRole === 'almoxarifado' ? '/filial'
       : '/';
     return <Navigate to={redirect} replace />;
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <AppSidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
+      <FilialSidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
       <main className={cn(
         "transition-all duration-300 min-h-screen",
         collapsed ? "ml-16" : "ml-64"
@@ -48,4 +44,4 @@ const AppLayout: React.FC = () => {
   );
 };
 
-export default AppLayout;
+export default FilialLayout;
