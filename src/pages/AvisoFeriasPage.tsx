@@ -128,7 +128,7 @@ const AvisoFeriasPage: React.FC = () => {
               </Badge>
             </div>
             <div><span className="text-xs text-muted-foreground block">Admissão</span><strong>{formatDate(emp.dataAdmissao)}</strong></div>
-            <div><span className="text-xs text-muted-foreground block">Vencimento</span><strong>{fer.dias ? `${fer.dias} dias` : '—'}</strong></div>
+            <div><span className="text-xs text-muted-foreground block">Meses no Período</span><strong>{fer.mesesNoPeriodo} meses</strong></div>
             <div><span className="text-xs text-muted-foreground block">CPF</span>{emp.cpf}</div>
           </div>
         </div>
