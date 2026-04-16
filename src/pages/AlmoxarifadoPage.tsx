@@ -283,6 +283,56 @@ const AlmoxarifadoPage: React.FC = () => {
     fetchAll();
   };
 
+  const abrirAjuste = (item: Item, tipo: 'entrada_rapida' | 'saida_rapida' | 'ajuste') => {
+    setAjusteItem(item);
+    setAjusteTipo(tipo);
+    setAjusteQtd(tipo === 'ajuste' ? String(item.quantidade) : '');
+    setAjusteMotivo('');
+    setAjusteObs('');
+    setAjusteOpen(true);
+  };
+
+  const confirmarAjuste = async () => {
+    if (!ajusteItem || !uid) return;
+    const qtdNum = Number(ajusteQtd);
+    if (isNaN(qtdNum) || qtdNum < 0) { toast.error('Quantidade inválida'); return; }
+    if (ajusteTipo === 'ajuste' && !ajusteMotivo.trim()) {
+      toast.error('Informe o motivo do ajuste manual'); return;
+    }
+    const anterior = ajusteItem.quantidade;
+    let nova = anterior;
+    if (ajusteTipo === 'entrada_rapida') nova = anterior + qtdNum;
+    else if (ajusteTipo === 'saida_rapida') nova = Math.max(0, anterior - qtdNum);
+    else nova = qtdNum;
+
+    setLoading(true);
+    const usuarioNome = session?.user?.email || 'Usuário';
+    const { error: errAj } = await supabase.from('almoxarifado_ajustes').insert({
+      item_id: ajusteItem.id, user_id: uid, usuario_nome: usuarioNome,
+      tipo_movimentacao: ajusteTipo, quantidade_anterior: anterior,
+      quantidade_nova: nova, diferenca: nova - anterior,
+      motivo: ajusteMotivo, observacao: ajusteObs,
+    } as any);
+    if (errAj) { toast.error(errAj.message); setLoading(false); return; }
+
+    const { error: errUp } = await supabase.from('almoxarifado_itens')
+      .update({ quantidade: nova } as any).eq('id', ajusteItem.id);
+    if (errUp) { toast.error(errUp.message); setLoading(false); return; }
+
+    toast.success(`Estoque atualizado: ${anterior} → ${nova}`);
+    setAjusteOpen(false);
+    setLoading(false);
+    fetchAll();
+  };
+
+  const abrirHistorico = async (item: Item) => {
+    setHistoricoItem(item);
+    setHistoricoOpen(true);
+    const { data } = await supabase.from('almoxarifado_ajustes')
+      .select('*').eq('item_id', item.id).order('created_at', { ascending: false }).limit(50);
+    setHistoricoAjustes(data || []);
+  };
+
   const handleFecharDia = () => {
     if (saidasHoje.length === 0) {
       toast.error('Nenhuma saída registrada hoje para fechar.');
