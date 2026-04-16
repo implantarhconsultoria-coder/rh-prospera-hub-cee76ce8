@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Stethoscope, Printer, Search, ArrowLeft, Save, AlertTriangle, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { openEmailClient, DESTINATARIOS, CC_OBRIGATORIO } from '@/lib/emailUtils';
+import { openEmailClient, DESTINATARIOS_ASO, CC_OBRIGATORIO } from '@/lib/emailUtils';
 import { registrarDocumento, marcarComoEnviado, uploadDocumentoPdf } from '@/lib/documentoHistorico';
+import { gerarFichaASOPdf, downloadPdf } from '@/lib/pdfGenerator';
 
 const CLINICAS: Record<string, string> = {
   'TOPAC MATRIZ': 'Avenida São João, 313, 1º andar, Centro, São Paulo/SP',
@@ -57,71 +58,37 @@ const ASOPage: React.FC = () => {
   const company = emp ? companies.find(c => c.id === emp.companyId) : null;
   const clinica = company ? CLINICAS[company.name] || '' : '';
 
-  const buildFichaHtml = () => {
-    const co = company;
-    return `<!DOCTYPE html><html><head><title>Ficha de Agendamento ASO</title>
-    <style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;font-size:12px;color:#000;margin:0;padding:0}
-    .header{display:flex;justify-content:space-between;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:16px}
-    .title{font-size:16px;font-weight:bold;text-align:right}
-    .block{border:1px solid #ccc;border-radius:4px;padding:12px;margin-bottom:12px}
-    .block-title{font-weight:bold;font-size:11px;text-transform:uppercase;color:#555;margin-bottom:8px}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px}
-    .field{font-size:11px}.field span{color:#666}
-    .signatures{display:flex;justify-content:space-between;margin-top:50px}
-    .sig-line{text-align:center;width:45%}.sig-line hr{border:0;border-top:1px solid #000;margin-bottom:4px}
-    </style></head><body>
-    <div class="header"><div><strong>${co?.name || ''}</strong><br/><span style="font-size:10px">CNPJ: ${co?.cnpj || ''}</span></div>
-    <div class="title">FICHA DE AGENDAMENTO<br/>ASO</div></div>
-    <div class="block"><div class="block-title">Dados do Colaborador</div>
-    <div class="grid">
-    <div class="field"><span>Nome:</span> ${emp?.name}</div>
-    <div class="field"><span>Função:</span> ${emp?.cargo}</div>
-    <div class="field"><span>CPF:</span> ${emp?.cpf}</div>
-    <div class="field"><span>RG:</span> ${emp?.rg || '—'}</div>
-    <div class="field"><span>Admissão:</span> ${emp?.dataAdmissao ? new Date(emp.dataAdmissao).toLocaleDateString('pt-BR') : '—'}</div>
-    <div class="field"><span>Empresa:</span> ${co?.name || ''}</div>
-    </div></div>
-    <div class="block"><div class="block-title">Dados do Exame</div>
-    <div class="grid">
-    <div class="field"><span>Data do Exame:</span> ${dataExame ? new Date(dataExame).toLocaleDateString('pt-BR') : '—'}</div>
-    <div class="field"><span>Tipo:</span> ${tipoExame}</div>
-    <div class="field"><span>Obra/Local:</span> ${obraLocal || '—'}</div>
-    <div class="field"><span>Trabalho em Altura:</span> ${trabalhoAltura ? 'Sim' : 'Não'}</div>
-    <div class="field"><span>Espaço Confinado:</span> ${espacoConfinado ? 'Sim' : 'Não'}</div>
-    <div class="field"><span>Responsável/Contato:</span> ${responsavelContato || '—'}</div>
-    </div></div>
-    <div class="block"><div class="block-title">Clínica</div>
-    <p style="font-size:11px">${clinica || 'Não definida para esta unidade'}</p></div>
-    <div class="signatures">
-    <div class="sig-line"><hr/><small>Assinatura do Colaborador</small></div>
-    <div class="sig-line"><hr/><small>Assinatura do Responsável</small></div>
-    </div>
-    </body></html>`;
+  const gerarPdfAtual = () => {
+    if (!emp || !company) return null;
+    return gerarFichaASOPdf({
+      empresa: company.name,
+      cnpj: company.cnpj,
+      nome: emp.name,
+      cpf: emp.cpf,
+      rg: emp.rg,
+      funcao: emp.cargo,
+      dataAdmissao: emp.dataAdmissao,
+      dataExame,
+      tipoExame,
+      obraLocal,
+      trabalhoAltura,
+      espacoConfinado,
+      responsavelContato,
+      clinica,
+    });
   };
 
   const handlePrint = async () => {
     if (!emp) { toast.error('Selecione um funcionário'); return; }
-    const htmlContent = buildFichaHtml();
+    const pdf = gerarPdfAtual();
+    if (!pdf) return;
 
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.top = '-10000px';
-    iframe.style.left = '-10000px';
-    document.body.appendChild(iframe);
-    const doc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!doc) return;
-    doc.open();
-    doc.write(htmlContent);
-    doc.close();
-    iframe.contentWindow?.focus();
-    setTimeout(() => {
-      iframe.contentWindow?.print();
-      setTimeout(() => document.body.removeChild(iframe), 2000);
-    }, 300);
+    // Baixa o PDF localmente — operador anexa no Outlook
+    downloadPdf(pdf.blob, pdf.fileName);
 
     if (session?.user) {
       try {
-        const arquivoUrl = await uploadDocumentoPdf(emp.id, 'ficha-aso', htmlContent);
+        const arquivoUrl = await uploadDocumentoPdf(emp.id, 'ficha-aso', pdf.blob, 'pdf');
         const profile = await supabase.from('profiles').select('nome_completo').eq('user_id', session.user.id).single();
         const nomeUsuario = profile.data?.nome_completo || session.user.email || '';
 
@@ -138,12 +105,12 @@ const ASOPage: React.FC = () => {
           unidade: company?.name || '',
         });
         setLastDocId(registro?.id || '');
-        toast.success('Ficha ASO gerada e salva no histórico!');
+        toast.success('PDF gerado, baixado e salvo no histórico!');
       } catch {
-        toast.success('Ficha ASO gerada! (erro ao salvar no histórico)');
+        toast.success('PDF gerado e baixado! (erro ao salvar no histórico)');
       }
     } else {
-      toast.success('Ficha ASO gerada!');
+      toast.success('PDF gerado e baixado!');
     }
   };
 
