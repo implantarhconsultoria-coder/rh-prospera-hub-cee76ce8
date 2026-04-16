@@ -4,9 +4,10 @@ import { useFilialFilter } from '@/hooks/useFilialFilter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { CalendarCheck, Printer, Save, ArrowLeft, AlertTriangle } from 'lucide-react';
+import { CalendarCheck, Printer, Save, ArrowLeft, AlertTriangle, Mail } from 'lucide-react';
 import { formatDate, feriasStatus } from '@/lib/calculations';
 import { toast } from 'sonner';
+import { openEmailClient, DESTINATARIOS, CC_OBRIGATORIO } from '@/lib/emailUtils';
 
 const AvisoFeriasPage: React.FC = () => {
   const { companies, employees, updateEmployee } = useApp();
@@ -175,6 +176,18 @@ const AvisoFeriasPage: React.FC = () => {
             </Button>
             <Button onClick={handlePrint} className="gradient-accent text-accent-foreground font-semibold">
               <Printer className="w-4 h-4 mr-2" /> Gerar e Imprimir Aviso
+            </Button>
+            <Button onClick={() => {
+              if (!emp || !inicioFerias) { toast.error('Preencha os dados'); return; }
+              openEmailClient({
+                to: DESTINATARIOS.ferias,
+                cc: CC_OBRIGATORIO,
+                subject: `Aviso de Férias — ${emp.name} — ${company?.name || ''}`,
+                body: `Prezados,\n\nSegue aviso de férias do(a) colaborador(a) ${emp.name}.\n\nEmpresa: ${company?.name || ''}\nCargo: ${emp.cargo}\nInício: ${new Date(inicioFerias).toLocaleDateString('pt-BR')}\nRetorno: ${retorno ? new Date(retorno).toLocaleDateString('pt-BR') : '—'}\nDias: ${diasFerias}\n\nFavor conferir o documento em anexo.\n\nAtt.`,
+              });
+              toast.success('Outlook aberto com destinatários preenchidos');
+            }} variant="outline" className="border-primary text-primary hover:bg-primary/10">
+              <Mail className="w-4 h-4 mr-2" /> Enviar por E-mail
             </Button>
           </div>
         </div>
