@@ -7,8 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { CalendarCheck, Printer, Save, ArrowLeft, AlertTriangle, Mail } from 'lucide-react';
 import { formatDate, feriasStatus } from '@/lib/calculations';
 import { toast } from 'sonner';
-import { openEmailClient, DESTINATARIOS, CC_OBRIGATORIO } from '@/lib/emailUtils';
+import { openEmailClient, getDestinatariosFerias, CC_OBRIGATORIO } from '@/lib/emailUtils';
 import { registrarDocumento, marcarComoEnviado, uploadDocumentoPdf } from '@/lib/documentoHistorico';
+import { gerarAvisoFeriasPdf, downloadPdf } from '@/lib/pdfGenerator';
 
 const AvisoFeriasPage: React.FC = () => {
   const { companies, employees, updateEmployee, session } = useApp();
@@ -63,74 +64,35 @@ const AvisoFeriasPage: React.FC = () => {
     toast.success('Data de férias salva no cadastro!');
   };
 
-  const buildPrintHtml = () => {
-    if (!emp || !inicioFerias) return '';
-    const co = company;
-    return `<!DOCTYPE html><html><head><title>Aviso de Férias</title>
-    <style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;font-size:12px;color:#000;margin:0;padding:0}
-    .header{display:flex;justify-content:space-between;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:16px}
-    .title{font-size:18px;font-weight:bold;text-align:right}
-    .block{border:1px solid #ccc;border-radius:4px;padding:12px;margin-bottom:14px}
-    .block-title{font-weight:bold;font-size:11px;text-transform:uppercase;color:#555;margin-bottom:8px}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px}
-    .field{font-size:11px}.field span{color:#666}
-    .comunicacao{border:1px solid #ccc;border-radius:4px;padding:14px;margin-bottom:14px;font-size:11px;line-height:1.6}
-    .signatures{display:flex;justify-content:space-between;margin-top:50px}
-    .sig-line{text-align:center;width:45%}.sig-line hr{border:0;border-top:1px solid #000;margin-bottom:4px}
-    </style></head><body>
-    <div class="header"><div><strong>${co?.name || ''}</strong><br/><span style="font-size:10px">CNPJ: ${co?.cnpj || ''}</span></div>
-    <div class="title">AVISO DE<br/>FÉRIAS</div></div>
-    <div class="block"><div class="block-title">Dados do Colaborador</div>
-    <div class="grid">
-    <div class="field"><span>Nome:</span> ${emp.name}</div>
-    <div class="field"><span>Função:</span> ${emp.cargo}</div>
-    <div class="field"><span>CPF:</span> ${emp.cpf}</div>
-    <div class="field"><span>RG:</span> ${emp.rg || '—'}</div>
-    <div class="field"><span>Matrícula:</span> ${emp.registro || '—'}</div>
-    <div class="field"><span>Empresa:</span> ${co?.name || ''}</div>
-    <div class="field"><span>Admissão:</span> ${emp.dataAdmissao ? new Date(emp.dataAdmissao).toLocaleDateString('pt-BR') : '—'}</div>
-    </div></div>
-    <div class="comunicacao">
-    <strong>COMUNICAÇÃO DE FÉRIAS</strong><br/><br/>
-    Comunicamos que o(a) colaborador(a) acima identificado(a) gozará férias de <strong>${diasFerias} dias</strong>,
-    com início em <strong>${new Date(inicioFerias).toLocaleDateString('pt-BR')}</strong>
-    e retorno em <strong>${retorno ? new Date(retorno).toLocaleDateString('pt-BR') : '—'}</strong>.<br/><br/>
-    Data de emissão: ${new Date().toLocaleDateString('pt-BR')}
-    </div>
-    <div class="signatures">
-    <div class="sig-line"><hr/><small>Assinatura do Colaborador</small></div>
-    <div class="sig-line"><hr/><small>Assinatura do Responsável</small></div>
-    </div>
-    </body></html>`;
+  const gerarPdfAtual = () => {
+    if (!emp || !inicioFerias || !company) return null;
+    return gerarAvisoFeriasPdf({
+      empresa: company.name,
+      cnpj: company.cnpj,
+      nome: emp.name,
+      cpf: emp.cpf,
+      rg: emp.rg,
+      matricula: emp.registro,
+      funcao: emp.cargo,
+      dataAdmissao: emp.dataAdmissao,
+      inicioFerias,
+      retornoFerias: retorno,
+      diasFerias,
+    });
   };
 
   const [lastDocId, setLastDocId] = useState('');
 
   const handlePrint = async () => {
     if (!emp || !inicioFerias) { toast.error('Preencha os dados'); return; }
-    const htmlContent = buildPrintHtml();
+    const pdf = gerarPdfAtual();
+    if (!pdf) return;
 
-    // Print
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.top = '-10000px';
-    iframe.style.left = '-10000px';
-    document.body.appendChild(iframe);
-    const doc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!doc) return;
-    doc.open();
-    doc.write(htmlContent);
-    doc.close();
-    iframe.contentWindow?.focus();
-    setTimeout(() => {
-      iframe.contentWindow?.print();
-      setTimeout(() => document.body.removeChild(iframe), 2000);
-    }, 300);
+    downloadPdf(pdf.blob, pdf.fileName);
 
-    // Archive automatically
     if (session?.user) {
       try {
-        const arquivoUrl = await uploadDocumentoPdf(emp.id, 'aviso-ferias', htmlContent);
+        const arquivoUrl = await uploadDocumentoPdf(emp.id, 'aviso-ferias', pdf.blob, 'pdf');
         const profile = await import('@/integrations/supabase/client').then(m =>
           m.supabase.from('profiles').select('nome_completo').eq('user_id', session.user.id).single()
         );
@@ -149,12 +111,12 @@ const AvisoFeriasPage: React.FC = () => {
           unidade: company?.name || '',
         });
         setLastDocId(registro?.id || '');
-        toast.success('Aviso gerado e salvo no histórico do funcionário!');
+        toast.success('PDF gerado, baixado e salvo no histórico!');
       } catch {
-        toast.success('Aviso gerado! (erro ao salvar no histórico)');
+        toast.success('PDF gerado e baixado! (erro ao salvar no histórico)');
       }
     } else {
-      toast.success('Aviso de férias gerado!');
+      toast.success('PDF gerado e baixado!');
     }
   };
 
