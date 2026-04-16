@@ -1,14 +1,10 @@
 import React from 'react';
 import { useApp } from '@/context/AppContext';
+import { useFilialFilter } from '@/hooks/useFilialFilter';
 import { asoStatus, feriasStatus } from '@/lib/calculations';
 import { AlertTriangle, Stethoscope, CalendarCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-
-const ROLE_COMPANY_MAP: Record<string, string> = {
-  filial_praia: 'topac-pg',
-  filial_goiania: 'topac-gyn',
-};
 
 const STATUS_LABELS: Record<string, string> = {
   'vencido': 'Vencido',
@@ -17,10 +13,10 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const FilialAlertasPage: React.FC = () => {
-  const { userRole, employees } = useApp();
+  const { employees } = useApp();
+  const { filialCompanyId } = useFilialFilter();
   const navigate = useNavigate();
-  const companyId = ROLE_COMPANY_MAP[userRole || ''];
-  const emps = employees.filter(e => e.companyId === companyId && e.status === 'ativo');
+  const emps = employees.filter(e => e.companyId === filialCompanyId && e.status === 'ativo');
 
   const asoAlerts = emps
     .map(e => ({ ...e, aso: asoStatus(e.dataExameMedico) }))
