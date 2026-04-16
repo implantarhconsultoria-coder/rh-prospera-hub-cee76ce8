@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, CalendarCheck, Stethoscope,
-  FileText, FileCheck, Bell, Building2, ChevronLeft, Menu, LogOut,
+  FileCheck, Bell, Building2, ChevronLeft, Menu, LogOut,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
