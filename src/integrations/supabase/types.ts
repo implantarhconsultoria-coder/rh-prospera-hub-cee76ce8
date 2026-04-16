@@ -462,6 +462,72 @@ export type Database = {
           },
         ]
       }
+      documentos_funcionario: {
+        Row: {
+          arquivo_url: string | null
+          company_id: string
+          competencia: string | null
+          created_at: string
+          descricao: string | null
+          destinatarios: string | null
+          empresa_nome: string
+          enviado_em: string | null
+          enviado_por_nome: string | null
+          enviado_por_user_id: string | null
+          funcionario_id: string
+          funcionario_nome: string
+          gerado_por_nome: string
+          gerado_por_user_id: string
+          id: string
+          status_envio: string
+          tipo_documento: string
+          unidade: string | null
+          updated_at: string
+        }
+        Insert: {
+          arquivo_url?: string | null
+          company_id: string
+          competencia?: string | null
+          created_at?: string
+          descricao?: string | null
+          destinatarios?: string | null
+          empresa_nome?: string
+          enviado_em?: string | null
+          enviado_por_nome?: string | null
+          enviado_por_user_id?: string | null
+          funcionario_id: string
+          funcionario_nome?: string
+          gerado_por_nome?: string
+          gerado_por_user_id: string
+          id?: string
+          status_envio?: string
+          tipo_documento?: string
+          unidade?: string | null
+          updated_at?: string
+        }
+        Update: {
+          arquivo_url?: string | null
+          company_id?: string
+          competencia?: string | null
+          created_at?: string
+          descricao?: string | null
+          destinatarios?: string | null
+          empresa_nome?: string
+          enviado_em?: string | null
+          enviado_por_nome?: string | null
+          enviado_por_user_id?: string | null
+          funcionario_id?: string
+          funcionario_nome?: string
+          gerado_por_nome?: string
+          gerado_por_user_id?: string
+          id?: string
+          status_envio?: string
+          tipo_documento?: string
+          unidade?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       empresas: {
         Row: {
           cidade: string
