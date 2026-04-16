@@ -932,6 +932,111 @@ const AlmoxarifadoPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modal Ajuste */}
+      <Dialog open={ajusteOpen} onOpenChange={setAjusteOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {ajusteTipo === 'entrada_rapida' && 'Lançar Entrada'}
+              {ajusteTipo === 'saida_rapida' && 'Lançar Saída'}
+              {ajusteTipo === 'ajuste' && 'Ajuste Manual de Estoque'}
+            </DialogTitle>
+          </DialogHeader>
+          {ajusteItem && (
+            <div className="space-y-3">
+              <div className="bg-muted/40 p-3 rounded-lg">
+                <p className="text-sm font-bold">{ajusteItem.nome}</p>
+                <p className="text-xs text-muted-foreground">
+                  Estoque atual: <span className="font-bold text-foreground">{ajusteItem.quantidade} {ajusteItem.unidade}</span>
+                </p>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">
+                  {ajusteTipo === 'ajuste' ? 'Nova quantidade *' : 'Quantidade *'}
+                </label>
+                <Input type="number" min={0} value={ajusteQtd} onChange={e => setAjusteQtd(e.target.value)} autoFocus />
+                {ajusteTipo !== 'ajuste' && ajusteQtd && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Saldo após: <span className="font-bold text-foreground">
+                      {ajusteTipo === 'entrada_rapida'
+                        ? ajusteItem.quantidade + Number(ajusteQtd)
+                        : Math.max(0, ajusteItem.quantidade - Number(ajusteQtd))} {ajusteItem.unidade}
+                    </span>
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">
+                  Motivo {ajusteTipo === 'ajuste' && '*'}
+                </label>
+                <Input value={ajusteMotivo} onChange={e => setAjusteMotivo(e.target.value)}
+                  placeholder={ajusteTipo === 'ajuste' ? 'Ex: Inventário, correção de divergência' : 'Opcional'} />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Observação</label>
+                <Textarea value={ajusteObs} onChange={e => setAjusteObs(e.target.value)} rows={2} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAjusteOpen(false)}>Cancelar</Button>
+            <Button onClick={confirmarAjuste} disabled={loading}>
+              {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Histórico */}
+      <Dialog open={historicoOpen} onOpenChange={setHistoricoOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Histórico de movimentações — {historicoItem?.nome}</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto">
+            {historicoAjustes.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Nenhuma movimentação registrada</p>
+            ) : (
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-background border-b">
+                  <tr>
+                    <th className="px-2 py-2 text-left">Data/Hora</th>
+                    <th className="px-2 py-2 text-left">Tipo</th>
+                    <th className="px-2 py-2 text-left">Anterior</th>
+                    <th className="px-2 py-2 text-left">Nova</th>
+                    <th className="px-2 py-2 text-left">Δ</th>
+                    <th className="px-2 py-2 text-left">Usuário</th>
+                    <th className="px-2 py-2 text-left">Motivo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historicoAjustes.map(a => (
+                    <tr key={a.id} className="border-b">
+                      <td className="px-2 py-1.5">{new Date(a.created_at).toLocaleString('pt-BR')}</td>
+                      <td className="px-2 py-1.5">
+                        <Badge variant="outline" className="text-[10px]">
+                          {a.tipo_movimentacao === 'entrada_rapida' ? 'Entrada' :
+                           a.tipo_movimentacao === 'saida_rapida' ? 'Saída' :
+                           a.tipo_movimentacao === 'ajuste' ? 'Ajuste' : a.tipo_movimentacao}
+                        </Badge>
+                      </td>
+                      <td className="px-2 py-1.5">{a.quantidade_anterior}</td>
+                      <td className="px-2 py-1.5 font-bold">{a.quantidade_nova}</td>
+                      <td className={`px-2 py-1.5 font-bold ${a.diferenca > 0 ? 'text-green-600' : a.diferenca < 0 ? 'text-red-600' : ''}`}>
+                        {a.diferenca > 0 ? '+' : ''}{a.diferenca}
+                      </td>
+                      <td className="px-2 py-1.5">{a.usuario_nome}</td>
+                      <td className="px-2 py-1.5">{a.motivo || a.observacao || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
