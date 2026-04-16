@@ -71,19 +71,22 @@ export const buscarHistoricoFuncionario = async (funcionarioId: string) => {
   return data || [];
 };
 
-/** Upload de PDF para storage e retorna URL pública */
+/** Upload de arquivo (PDF preferencialmente) para storage e retorna URL pública */
 export const uploadDocumentoPdf = async (
   funcionarioId: string,
   tipoDocumento: string,
-  htmlContent: string,
+  conteudo: string | Blob,
+  extensao: 'pdf' | 'html' = 'html',
 ): Promise<string> => {
-  // Store the HTML as a file for reference (actual PDF is generated via print)
-  const blob = new Blob([htmlContent], { type: 'text/html' });
-  const fileName = `${funcionarioId}/${tipoDocumento}_${Date.now()}.html`;
-  
+  const blob = typeof conteudo === 'string'
+    ? new Blob([conteudo], { type: 'text/html' })
+    : conteudo;
+  const contentType = extensao === 'pdf' ? 'application/pdf' : 'text/html';
+  const fileName = `${funcionarioId}/${tipoDocumento}_${Date.now()}.${extensao}`;
+
   const { error } = await supabase.storage
     .from('documentos-funcionarios')
-    .upload(fileName, blob, { contentType: 'text/html', upsert: false });
+    .upload(fileName, blob, { contentType, upsert: false });
 
   if (error) {
     console.error('Erro no upload:', error);
