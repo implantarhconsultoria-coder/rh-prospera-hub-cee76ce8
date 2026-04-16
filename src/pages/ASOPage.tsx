@@ -5,7 +5,7 @@ import { asoStatus, formatDate } from '@/lib/calculations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Stethoscope, Printer, Search, Mail, ArrowLeft, Save } from 'lucide-react';
+import { Stethoscope, Printer, Search, ArrowLeft, Save, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -33,6 +33,7 @@ const ASOPage: React.FC = () => {
   const [trabalhoAltura, setTrabalhoAltura] = useState(false);
   const [espacoConfinado, setEspacoConfinado] = useState(false);
   const [responsavelContato, setResponsavelContato] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const filteredEmps = employees.filter(e => {
     if (e.status !== 'ativo' || e.categoria !== 'operacional') return false;
@@ -42,7 +43,13 @@ const ASOPage: React.FC = () => {
   }).map(e => {
     const aso = asoStatus(e.dataExameMedico);
     return { ...e, asoInfo: aso };
+  }).sort((a, b) => {
+    const order = { vencido: 0, próximo: 1, ok: 2 };
+    return (order[a.asoInfo.status as keyof typeof order] ?? 2) - (order[b.asoInfo.status as keyof typeof order] ?? 2);
   });
+
+  const alertas = filteredEmps.filter(e => e.asoInfo.status !== 'ok');
+
   const emp = employees.find(e => e.id === selectedEmpId);
   const company = emp ? companies.find(c => c.id === emp.companyId) : null;
   const clinica = company ? CLINICAS[company.name] || '' : '';
@@ -50,7 +57,7 @@ const ASOPage: React.FC = () => {
   const buildFichaHtml = () => {
     const co = company;
     return `<!DOCTYPE html><html><head><title>Ficha de Agendamento ASO</title>
-    <style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;font-size:12px;color:#000}
+    <style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;font-size:12px;color:#000;margin:0;padding:0}
     .header{display:flex;justify-content:space-between;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:16px}
     .title{font-size:16px;font-weight:bold;text-align:right}
     .block{border:1px solid #ccc;border-radius:4px;padding:12px;margin-bottom:12px}
@@ -59,7 +66,6 @@ const ASOPage: React.FC = () => {
     .field{font-size:11px}.field span{color:#666}
     .signatures{display:flex;justify-content:space-between;margin-top:50px}
     .sig-line{text-align:center;width:45%}.sig-line hr{border:0;border-top:1px solid #000;margin-bottom:4px}
-    .footer{margin-top:30px;text-align:center;font-size:9px;color:#999;border-top:1px solid #eee;padding-top:6px}
     </style></head><body>
     <div class="header"><div><strong>${co?.name || ''}</strong><br/><span style="font-size:10px">CNPJ: ${co?.cnpj || ''}</span></div>
     <div class="title">FICHA DE AGENDAMENTO<br/>ASO</div></div>
@@ -87,38 +93,57 @@ const ASOPage: React.FC = () => {
     <div class="sig-line"><hr/><small>Assinatura do Colaborador</small></div>
     <div class="sig-line"><hr/><small>Assinatura do Responsável</small></div>
     </div>
-    <div class="footer">Topac RH Multiempresa PRO — Documento gerado em ${new Date().toLocaleDateString('pt-BR')}</div>
     </body></html>`;
   };
 
   const handlePrint = () => {
     if (!emp) { toast.error('Selecione um funcionário'); return; }
-    const printWin = window.open('', '_blank');
-    if (!printWin) return;
-    printWin.document.write(buildFichaHtml());
-    printWin.document.close();
-    printWin.print();
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.top = '-10000px';
+    iframe.style.left = '-10000px';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) return;
+    doc.open();
+    doc.write(buildFichaHtml());
+    doc.close();
+    iframe.contentWindow?.focus();
+    setTimeout(() => {
+      iframe.contentWindow?.print();
+      setTimeout(() => document.body.removeChild(iframe), 2000);
+    }, 300);
     toast.success('Ficha ASO gerada!');
   };
 
-  const handleOutlook = () => {
-    if (!emp) { toast.error('Selecione um funcionário'); return; }
-    const subject = encodeURIComponent(`Agendamento ASO — ${emp.name} — ${tipoExame}`);
-    const body = encodeURIComponent(
-      `Prezados,\n\nSolicitamos agendamento de exame ${tipoExame} para o colaborador abaixo:\n\n` +
-      `Nome: ${emp.name}\nFunção: ${emp.cargo}\nCPF: ${emp.cpf}\nEmpresa: ${company?.name || ''}\n` +
-      `Data pretendida: ${dataExame ? new Date(dataExame).toLocaleDateString('pt-BR') : 'A definir'}\n` +
-      `Obra/Local: ${obraLocal || '—'}\nTrabalho em Altura: ${trabalhoAltura ? 'Sim' : 'Não'}\n` +
-      `Espaço Confinado: ${espacoConfinado ? 'Sim' : 'Não'}\n` +
-      `Clínica: ${clinica || 'A definir'}\n\n` +
-      `Contato: ${responsavelContato || '—'}\n\nAtenciosamente,\nTopac RH`
-    );
-    window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
-    toast.success('Outlook aberto com assunto e corpo preenchidos!');
+  const handleSave = async () => {
+    if (!emp || !session?.user?.id) return;
+    setSaving(true);
+    const { error } = await supabase.from('aso_agendamentos').insert({
+      funcionario_nome: emp.name,
+      empresa: company?.name || '',
+      funcao: emp.cargo,
+      data_exame: dataExame || null,
+      tipo_exame: tipoExame.toLowerCase(),
+      obra_local: obraLocal,
+      trabalho_altura: trabalhoAltura,
+      espaco_confinado: espacoConfinado,
+      responsavel_contato: responsavelContato,
+      clinica_endereco: clinica,
+      cpf: emp.cpf,
+      rg: emp.rg,
+      data_admissao: emp.dataAdmissao || null,
+      user_id: session.user.id,
+      status: 'pendente',
+    });
+    setSaving(false);
+    if (error) { toast.error('Erro ao salvar: ' + error.message); return; }
+    toast.success('Agendamento salvo no banco!');
   };
 
   // Detail view
   if (selectedEmpId && emp && company) {
+    const aso = asoStatus(emp.dataExameMedico);
     return (
       <div className="space-y-5 animate-fade-in">
         <div className="card-premium p-6 gradient-primary text-primary-foreground">
@@ -130,6 +155,21 @@ const ASOPage: React.FC = () => {
               <h1 className="text-2xl font-bold font-display">ASO — {emp.name}</h1>
               <p className="text-primary-foreground/70 text-sm">{company.name} — {emp.cargo}</p>
             </div>
+          </div>
+        </div>
+
+        {/* ASO Status - same pattern as Férias */}
+        <div className="card-premium p-5 space-y-3">
+          <h2 className="text-sm font-bold text-foreground">Situação do ASO</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+            <div><span className="text-xs text-muted-foreground block">Status</span>
+              <Badge className={aso.status === 'ok' ? 'bg-success text-success-foreground' : aso.status === 'próximo' ? 'bg-warning text-warning-foreground' : 'bg-destructive text-destructive-foreground'}>
+                {aso.status === 'ok' ? 'Em dia' : aso.status === 'próximo' ? 'Atenção' : 'Vencido'}
+              </Badge>
+            </div>
+            <div><span className="text-xs text-muted-foreground block">Último Exame</span><strong>{formatDate(emp.dataExameMedico)}</strong></div>
+            <div><span className="text-xs text-muted-foreground block">Próximo ASO</span><strong>{formatDate(aso.proximoASO.toISOString())}</strong></div>
+            <div><span className="text-xs text-muted-foreground block">Dias Restantes</span><strong>{aso.diasRestantes} dias</strong></div>
           </div>
         </div>
 
@@ -173,35 +213,11 @@ const ASOPage: React.FC = () => {
             </div>
           )}
           <div className="flex gap-3 flex-wrap">
-            <Button onClick={async () => {
-              if (!emp || !session?.user?.id) return;
-              const { error } = await supabase.from('aso_agendamentos').insert({
-                funcionario_nome: emp.name,
-                empresa: company?.name || '',
-                funcao: emp.cargo,
-                data_exame: dataExame || null,
-                tipo_exame: tipoExame.toLowerCase(),
-                obra_local: obraLocal,
-                trabalho_altura: trabalhoAltura,
-                espaco_confinado: espacoConfinado,
-                responsavel_contato: responsavelContato,
-                clinica_endereco: clinica,
-                cpf: emp.cpf,
-                rg: emp.rg,
-                data_admissao: emp.dataAdmissao || null,
-                user_id: session.user.id,
-                status: 'pendente',
-              });
-              if (error) { toast.error('Erro ao salvar: ' + error.message); return; }
-              toast.success('Agendamento salvo no banco!');
-            }} className="gradient-primary text-primary-foreground font-semibold">
-              <Save className="w-4 h-4 mr-2" /> Salvar Agendamento
+            <Button onClick={handleSave} disabled={saving} className="gradient-primary text-primary-foreground font-semibold">
+              <Save className="w-4 h-4 mr-2" /> {saving ? 'Salvando...' : 'Salvar Agendamento'}
             </Button>
             <Button onClick={handlePrint} className="gradient-accent text-accent-foreground font-semibold">
               <Printer className="w-4 h-4 mr-2" /> Gerar e Imprimir Ficha
-            </Button>
-            <Button onClick={handleOutlook} variant="outline">
-              <Mail className="w-4 h-4 mr-2" /> Enviar via Outlook
             </Button>
           </div>
         </div>
@@ -209,7 +225,7 @@ const ASOPage: React.FC = () => {
     );
   }
 
-  // List view
+  // List view - same pattern as AvisoFeriasPage
   return (
     <div className="space-y-5 animate-fade-in">
       <div className="card-premium p-6 gradient-primary text-primary-foreground">
@@ -223,6 +239,24 @@ const ASOPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {alertas.length > 0 && (
+        <div className="card-premium p-4 border-l-4 border-warning bg-warning/5">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="w-4 h-4 text-warning" />
+            <span className="text-sm font-bold text-foreground">{alertas.length} funcionário(s) com ASO pendente</span>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {alertas.slice(0, 5).map(e => (
+              <Badge key={e.id} variant="outline" className="text-xs cursor-pointer hover:bg-muted/50"
+                onClick={() => setSelectedEmpId(e.id)}>
+                {e.name} — {e.asoInfo.status === 'vencido' ? 'Vencido' : 'Atenção'}
+              </Badge>
+            ))}
+            {alertas.length > 5 && <Badge variant="outline" className="text-xs">+{alertas.length - 5} mais</Badge>}
+          </div>
+        </div>
+      )}
 
       <div className="card-premium p-4">
         <div className="flex items-center gap-2">

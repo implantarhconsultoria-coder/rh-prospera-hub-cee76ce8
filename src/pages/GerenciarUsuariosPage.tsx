@@ -19,15 +19,17 @@ interface UserWithRole {
   role_id: string | null;
 }
 
-const ROLE_LABELS: Record<AppRole, { label: string; color: string }> = {
-  admin: { label: 'Administrador', color: 'bg-red-500' },
-  filial_praia: { label: 'Filial Praia Grande', color: 'bg-blue-500' },
-  filial_goiania: { label: 'Filial Goiânia', color: 'bg-emerald-500' },
-  almoxarifado: { label: 'Almoxarifado', color: 'bg-amber-500' },
-  tecnico_campo: { label: 'Técnico de Campo', color: 'bg-purple-500' },
-  operacional: { label: 'Operacional', color: 'bg-teal-500' },
-  usuario: { label: 'Usuário Básico', color: 'bg-gray-500' },
+const ROLE_LABELS: Record<AppRole, { label: string; color: string; portal: string }> = {
+  admin: { label: 'Administrador', color: 'bg-red-500', portal: 'Central Administrativa' },
+  filial_praia: { label: 'Filial Praia Grande', color: 'bg-blue-500', portal: 'Portal RH Praia Grande' },
+  filial_goiania: { label: 'Filial Goiânia', color: 'bg-emerald-500', portal: 'Portal RH Goiânia' },
+  almoxarifado: { label: 'Almoxarifado', color: 'bg-amber-500', portal: 'Portal Filial' },
+  tecnico_campo: { label: 'Técnico de Campo', color: 'bg-purple-500', portal: 'Portal Campo' },
+  operacional: { label: 'Operacional', color: 'bg-teal-500', portal: 'Portal Operacional' },
+  usuario: { label: 'Usuário Básico', color: 'bg-gray-500', portal: 'Sem portal' },
 };
+
+const ALL_ROLES: AppRole[] = ['admin', 'filial_praia', 'filial_goiania', 'almoxarifado', 'tecnico_campo', 'operacional', 'usuario'];
 
 const GerenciarUsuariosPage: React.FC = () => {
   const [users, setUsers] = useState<UserWithRole[]>([]);
@@ -37,7 +39,6 @@ const GerenciarUsuariosPage: React.FC = () => {
 
   const fetchUsers = async () => {
     setLoading(true);
-    // Get all profiles
     const { data: profiles, error: pErr } = await supabase
       .from('profiles')
       .select('user_id, email, nome_completo, created_at')
@@ -49,7 +50,6 @@ const GerenciarUsuariosPage: React.FC = () => {
       return;
     }
 
-    // Get all roles
     const { data: roles } = await supabase
       .from('user_roles')
       .select('id, user_id, role');
@@ -78,14 +78,12 @@ const GerenciarUsuariosPage: React.FC = () => {
 
     try {
       if (user?.role_id) {
-        // Update existing
         const { error } = await supabase
           .from('user_roles')
           .update({ role: newRole })
           .eq('id', user.role_id);
         if (error) throw error;
       } else {
-        // Insert new
         const { error } = await supabase
           .from('user_roles')
           .insert({ user_id: userId, role: newRole });
@@ -112,8 +110,23 @@ const GerenciarUsuariosPage: React.FC = () => {
         <Shield className="w-6 h-6 text-primary" />
         <div>
           <h1 className="text-2xl font-bold">Gerenciar Usuários</h1>
-          <p className="text-sm text-muted-foreground">Atribua roles para controlar o acesso de cada usuário</p>
+          <p className="text-sm text-muted-foreground">Controle centralizado de acesso de toda a plataforma — portais, roles e permissões</p>
         </div>
+      </div>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: 'Total Usuários', value: users.length, color: 'text-primary' },
+          { label: 'Com Role', value: users.filter(u => u.role).length, color: 'text-success' },
+          { label: 'Sem Role', value: users.filter(u => !u.role).length, color: 'text-warning' },
+          { label: 'Admins', value: users.filter(u => u.role === 'admin').length, color: 'text-destructive' },
+        ].map((s, i) => (
+          <div key={i} className="card-premium p-4">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{s.label}</p>
+            <p className={`text-xl font-bold font-display mt-1 ${s.color}`}>{s.value}</p>
+          </div>
+        ))}
       </div>
 
       <Card>
@@ -149,7 +162,8 @@ const GerenciarUsuariosPage: React.FC = () => {
                     <TableHead>Nome</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Cadastro</TableHead>
-                    <TableHead>Role Atual</TableHead>
+                    <TableHead>Role / Perfil</TableHead>
+                    <TableHead>Portal de Entrada</TableHead>
                     <TableHead>Alterar Role</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -172,6 +186,9 @@ const GerenciarUsuariosPage: React.FC = () => {
                           </Badge>
                         )}
                       </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {user.role ? ROLE_LABELS[user.role].portal : '—'}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Select
@@ -179,15 +196,13 @@ const GerenciarUsuariosPage: React.FC = () => {
                             onValueChange={(val) => handleRoleChange(user.user_id, val as AppRole)}
                             disabled={saving === user.user_id}
                           >
-                            <SelectTrigger className="w-48">
+                            <SelectTrigger className="w-52">
                               <SelectValue placeholder="Selecione..." />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="admin">Administrador</SelectItem>
-                              <SelectItem value="filial_praia">Filial Praia Grande</SelectItem>
-                              <SelectItem value="filial_goiania">Filial Goiânia</SelectItem>
-                              <SelectItem value="almoxarifado">Almoxarifado</SelectItem>
-                              <SelectItem value="usuario">Usuário Básico</SelectItem>
+                              {ALL_ROLES.map(r => (
+                                <SelectItem key={r} value={r}>{ROLE_LABELS[r].label}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           {saving === user.user_id && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -199,6 +214,32 @@ const GerenciarUsuariosPage: React.FC = () => {
               </Table>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Access Control Reference */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm">Referência de Portais e Permissões</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {ALL_ROLES.map(r => (
+              <div key={r} className="bg-muted/30 rounded-lg p-3 text-sm space-y-1">
+                <Badge className={`${ROLE_LABELS[r].color} text-white text-xs`}>{ROLE_LABELS[r].label}</Badge>
+                <p className="text-xs text-muted-foreground">Portal: {ROLE_LABELS[r].portal}</p>
+                <p className="text-[10px] text-muted-foreground/70">
+                  {r === 'admin' && 'Acesso total — todos os módulos, empresas e configurações'}
+                  {r === 'filial_praia' && 'Funcionários, Férias, ASO, Protocolos, Alertas — apenas Praia Grande'}
+                  {r === 'filial_goiania' && 'Funcionários, Férias, ASO, Protocolos, Alertas — apenas Goiânia'}
+                  {r === 'almoxarifado' && 'Estoque, entradas e saídas de materiais'}
+                  {r === 'tecnico_campo' && 'Ponto, chamados, estoque do veículo, KM'}
+                  {r === 'operacional' && 'Despacho e gestão de chamados técnicos'}
+                  {r === 'usuario' && 'Acesso básico — aguardando atribuição de role'}
+                </p>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
     </div>

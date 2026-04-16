@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
+import { useFilialFilter } from '@/hooks/useFilialFilter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -9,15 +10,21 @@ import { toast } from 'sonner';
 
 const AvisoFeriasPage: React.FC = () => {
   const { companies, employees, updateEmployee } = useApp();
+  const { isFilial, filialCompanyId } = useFilialFilter();
   const [search, setSearch] = useState('');
   const [selectedEmpId, setSelectedEmpId] = useState('');
   const [inicioFerias, setInicioFerias] = useState('');
   const [diasFerias, setDiasFerias] = useState(30);
   const [filterCompany, setFilterCompany] = useState('');
+  const printRef = useRef<HTMLDivElement>(null);
 
   const empsList = useMemo(() => {
     return employees
-      .filter(e => e.status === 'ativo' && e.categoria === 'operacional')
+      .filter(e => {
+        if (e.status !== 'ativo' || e.categoria !== 'operacional') return false;
+        if (isFilial && e.companyId !== filialCompanyId) return false;
+        return true;
+      })
       .map(e => {
         const fer = feriasStatus(e.dataAdmissao);
         return { ...e, ferStatus: fer.status, ferMeses: fer.mesesNoPeriodo };
@@ -31,7 +38,7 @@ const AvisoFeriasPage: React.FC = () => {
         const order = { vencida: 0, atenção: 1, 'em dia': 2 };
         return (order[a.ferStatus as keyof typeof order] ?? 2) - (order[b.ferStatus as keyof typeof order] ?? 2);
       });
-  }, [employees, search, filterCompany]);
+  }, [employees, search, filterCompany, isFilial, filialCompanyId]);
 
   const alertas = useMemo(() => empsList.filter(e => e.ferStatus === 'vencido' || e.ferStatus === 'atenção'), [empsList]);
 
@@ -54,13 +61,11 @@ const AvisoFeriasPage: React.FC = () => {
     toast.success('Data de férias salva no cadastro!');
   };
 
-  const handlePrint = () => {
-    if (!emp || !inicioFerias) { toast.error('Preencha os dados'); return; }
+  const buildPrintHtml = () => {
+    if (!emp || !inicioFerias) return '';
     const co = company;
-    const printWin = window.open('', '_blank');
-    if (!printWin) return;
-    printWin.document.write(`<!DOCTYPE html><html><head><title>Aviso de Férias</title>
-    <style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;font-size:12px;color:#000}
+    return `<!DOCTYPE html><html><head><title>Aviso de Férias</title>
+    <style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;font-size:12px;color:#000;margin:0;padding:0}
     .header{display:flex;justify-content:space-between;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:16px}
     .title{font-size:18px;font-weight:bold;text-align:right}
     .block{border:1px solid #ccc;border-radius:4px;padding:12px;margin-bottom:14px}
@@ -70,7 +75,6 @@ const AvisoFeriasPage: React.FC = () => {
     .comunicacao{border:1px solid #ccc;border-radius:4px;padding:14px;margin-bottom:14px;font-size:11px;line-height:1.6}
     .signatures{display:flex;justify-content:space-between;margin-top:50px}
     .sig-line{text-align:center;width:45%}.sig-line hr{border:0;border-top:1px solid #000;margin-bottom:4px}
-    .footer{margin-top:30px;text-align:center;font-size:9px;color:#999;border-top:1px solid #eee;padding-top:6px}
     </style></head><body>
     <div class="header"><div><strong>${co?.name || ''}</strong><br/><span style="font-size:10px">CNPJ: ${co?.cnpj || ''}</span></div>
     <div class="title">AVISO DE<br/>FÉRIAS</div></div>
@@ -95,10 +99,26 @@ const AvisoFeriasPage: React.FC = () => {
     <div class="sig-line"><hr/><small>Assinatura do Colaborador</small></div>
     <div class="sig-line"><hr/><small>Assinatura do Responsável</small></div>
     </div>
-    <div class="footer">Topac RH Multiempresa PRO — Documento gerado em ${new Date().toLocaleDateString('pt-BR')}</div>
-    </body></html>`);
-    printWin.document.close();
-    printWin.print();
+    </body></html>`;
+  };
+
+  const handlePrint = () => {
+    if (!emp || !inicioFerias) { toast.error('Preencha os dados'); return; }
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.top = '-10000px';
+    iframe.style.left = '-10000px';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) return;
+    doc.open();
+    doc.write(buildPrintHtml());
+    doc.close();
+    iframe.contentWindow?.focus();
+    setTimeout(() => {
+      iframe.contentWindow?.print();
+      setTimeout(() => document.body.removeChild(iframe), 2000);
+    }, 300);
     toast.success('Aviso de férias gerado!');
   };
 
@@ -198,11 +218,13 @@ const AvisoFeriasPage: React.FC = () => {
       <div className="card-premium p-4 flex flex-wrap gap-3 items-center">
         <Input placeholder="Buscar por nome ou CPF..." value={search}
           onChange={e => setSearch(e.target.value)} className="flex-1 min-w-[200px]" />
-        <select value={filterCompany} onChange={e => setFilterCompany(e.target.value)}
-          className="border rounded-lg px-3 py-2 text-sm bg-background text-foreground">
-          <option value="">Todas Empresas</option>
-          {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
+        {!isFilial && (
+          <select value={filterCompany} onChange={e => setFilterCompany(e.target.value)}
+            className="border rounded-lg px-3 py-2 text-sm bg-background text-foreground">
+            <option value="">Todas Empresas</option>
+            {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        )}
       </div>
 
       <div className="card-premium overflow-hidden">
@@ -210,7 +232,7 @@ const AvisoFeriasPage: React.FC = () => {
           <thead>
             <tr className="border-b bg-muted/50">
               <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Nome</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Empresa</th>
+              {!isFilial && <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Empresa</th>}
               <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Cargo</th>
               <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Admissão</th>
               <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status Férias</th>
@@ -223,7 +245,7 @@ const AvisoFeriasPage: React.FC = () => {
                 <tr key={e.id} className="border-b hover:bg-muted/30 cursor-pointer transition-colors"
                   onClick={() => setSelectedEmpId(e.id)}>
                   <td className="px-3 py-2.5 font-medium">{e.name}</td>
-                  <td className="px-3 py-2.5 text-muted-foreground">{co?.name}</td>
+                  {!isFilial && <td className="px-3 py-2.5 text-muted-foreground">{co?.name}</td>}
                   <td className="px-3 py-2.5">{e.cargo}</td>
                   <td className="px-3 py-2.5 text-xs">{formatDate(e.dataAdmissao)}</td>
                   <td className="px-3 py-2.5">
