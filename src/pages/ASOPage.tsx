@@ -9,6 +9,7 @@ import { Stethoscope, Printer, Search, ArrowLeft, Save, AlertTriangle, Mail } fr
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { openEmailClient, DESTINATARIOS, CC_OBRIGATORIO } from '@/lib/emailUtils';
+import { registrarDocumento, marcarComoEnviado, uploadDocumentoPdf } from '@/lib/documentoHistorico';
 
 const CLINICAS: Record<string, string> = {
   'TOPAC MATRIZ': 'Avenida São João, 313, 1º andar, Centro, São Paulo/SP',
