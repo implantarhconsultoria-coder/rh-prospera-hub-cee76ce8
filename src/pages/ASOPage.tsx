@@ -5,9 +5,10 @@ import { asoStatus, formatDate } from '@/lib/calculations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Stethoscope, Printer, Search, ArrowLeft, Save, AlertTriangle } from 'lucide-react';
+import { Stethoscope, Printer, Search, ArrowLeft, Save, AlertTriangle, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { openEmailClient, DESTINATARIOS, CC_OBRIGATORIO } from '@/lib/emailUtils';
 
 const CLINICAS: Record<string, string> = {
   'TOPAC MATRIZ': 'Avenida São João, 313, 1º andar, Centro, São Paulo/SP',
@@ -218,6 +219,18 @@ const ASOPage: React.FC = () => {
             </Button>
             <Button onClick={handlePrint} className="gradient-accent text-accent-foreground font-semibold">
               <Printer className="w-4 h-4 mr-2" /> Gerar e Imprimir Ficha
+            </Button>
+            <Button onClick={() => {
+              if (!emp) { toast.error('Selecione um funcionário'); return; }
+              openEmailClient({
+                to: DESTINATARIOS.aso,
+                cc: CC_OBRIGATORIO,
+                subject: `Agendamento ASO — ${emp.name} — ${tipoExame} — ${company?.name || ''}`,
+                body: `Prezados,\n\nSolicito agendamento de exame ${tipoExame} para o(a) colaborador(a) abaixo.\n\nNome: ${emp.name}\nCPF: ${emp.cpf}\nFunção: ${emp.cargo}\nEmpresa: ${company?.name || ''}\nData sugerida: ${dataExame ? new Date(dataExame).toLocaleDateString('pt-BR') : 'A definir'}\nTrabalho em Altura: ${trabalhoAltura ? 'Sim' : 'Não'}\nEspaço Confinado: ${espacoConfinado ? 'Sim' : 'Não'}\n${clinica ? `Clínica: ${clinica}` : ''}\n\nFavor confirmar data e horário.\nSegue ficha em anexo.\n\nAtt.`,
+              });
+              toast.success('Outlook aberto — anexe a ficha gerada antes de enviar');
+            }} variant="outline" className="border-primary text-primary hover:bg-primary/10">
+              <Mail className="w-4 h-4 mr-2" /> Enviar por E-mail
             </Button>
           </div>
         </div>
