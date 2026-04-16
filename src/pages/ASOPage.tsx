@@ -146,7 +146,6 @@ const ASOPage: React.FC = () => {
       toast.success('Ficha ASO gerada!');
     }
   };
-  };
 
   const handleSave = async () => {
     if (!emp || !session?.user?.id) return;
