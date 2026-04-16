@@ -1,24 +1,24 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
+import { useFilialFilter } from '@/hooks/useFilialFilter';
 import { asoStatus, feriasStatus } from '@/lib/calculations';
-import { Users, Stethoscope, CalendarCheck, FileText, FileCheck, Bell, User } from 'lucide-react';
+import { Users, Stethoscope, CalendarCheck, FileCheck, Bell, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
-const ROLE_COMPANY_MAP: Record<string, string> = {
-  filial_praia: 'topac-pg',
-  filial_goiania: 'topac-gyn',
-};
+import { supabase } from '@/integrations/supabase/client';
 
 const FilialDashboardPage: React.FC = () => {
-  const { userRole, employees, session } = useApp();
+  const { userRole, employees, companies, session } = useApp();
+  const { filialCompanyId } = useFilialFilter();
   const navigate = useNavigate();
-  const companyId = ROLE_COMPANY_MAP[userRole || ''];
-  const emps = employees.filter(e => e.companyId === companyId && e.status === 'ativo');
+
+  // Filter employees by real company UUID
+  const emps = employees.filter(e => e.companyId === filialCompanyId && e.status === 'ativo');
   const asoAlerta = emps.filter(e => asoStatus(e.dataExameMedico).status !== 'ok').length;
   const feriasAlerta = emps.filter(e => feriasStatus(e.dataAdmissao).status !== 'em dia').length;
 
-  const branchName = userRole === 'filial_praia' ? 'Praia Grande' : 'Goiânia';
+  const company = companies.find(c => c.id === filialCompanyId);
+  const branchName = company?.name || (userRole === 'filial_praia' ? 'Praia Grande' : 'Goiânia');
   const userName = session?.user?.user_metadata?.nome_completo || session?.user?.user_metadata?.full_name || null;
   const userEmail = session?.user?.email || '';
 
@@ -26,11 +26,22 @@ const FilialDashboardPage: React.FC = () => {
   const greeting = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
   const greetingText = userName ? `${greeting}, ${userName.split(' ')[0]}` : greeting;
 
+  // Realtime subscription for employees table
+  useEffect(() => {
+    if (!filialCompanyId) return;
+    const channel = supabase
+      .channel('filial-dashboard')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'funcionarios' }, () => {
+        // AppContext will re-fetch, but we can trigger a toast
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [filialCompanyId]);
+
   const shortcuts = [
     { label: 'Funcionários', icon: Users, path: '/filial/funcionarios' },
     { label: 'Aviso de Férias', icon: CalendarCheck, path: '/filial/aviso-ferias' },
     { label: 'ASO / Agendamento', icon: Stethoscope, path: '/filial/aso' },
-    { label: 'Documentos de RH', icon: FileText, path: '/filial/documentos-ativos' },
     { label: 'Protocolos', icon: FileCheck, path: '/filial/protocolo' },
     { label: 'Alertas', icon: Bell, path: '/filial/alertas' },
   ];
@@ -44,7 +55,7 @@ const FilialDashboardPage: React.FC = () => {
         </div>
         <div className="flex-1">
           <h1 className="text-xl font-bold font-display text-foreground">{greetingText}</h1>
-          <p className="text-muted-foreground text-sm">Portal RH — Filial {branchName}</p>
+          <p className="text-muted-foreground text-sm">Portal RH — {branchName}</p>
           <p className="text-xs text-muted-foreground/70">{userEmail}</p>
         </div>
       </div>
