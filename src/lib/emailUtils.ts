@@ -2,8 +2,8 @@
  * Abre o cliente de e-mail padrão (Outlook, etc.) com campos pré-preenchidos.
  */
 export interface EmailParams {
-  to: string[];
-  cc?: string[];
+  to: readonly string[];
+  cc?: readonly string[];
   subject: string;
   body: string;
 }
