@@ -9,6 +9,7 @@ import { Stethoscope, Printer, Search, ArrowLeft, Save, AlertTriangle, Mail } fr
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { openEmailClient, DESTINATARIOS, CC_OBRIGATORIO } from '@/lib/emailUtils';
+import { registrarDocumento, marcarComoEnviado, uploadDocumentoPdf } from '@/lib/documentoHistorico';
 
 const CLINICAS: Record<string, string> = {
   'TOPAC MATRIZ': 'Avenida São João, 313, 1º andar, Centro, São Paulo/SP',
@@ -35,6 +36,7 @@ const ASOPage: React.FC = () => {
   const [espacoConfinado, setEspacoConfinado] = useState(false);
   const [responsavelContato, setResponsavelContato] = useState('');
   const [saving, setSaving] = useState(false);
+  const [lastDocId, setLastDocId] = useState('');
 
   const filteredEmps = employees.filter(e => {
     if (e.status !== 'ativo' || e.categoria !== 'operacional') return false;
@@ -97,8 +99,10 @@ const ASOPage: React.FC = () => {
     </body></html>`;
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (!emp) { toast.error('Selecione um funcionário'); return; }
+    const htmlContent = buildFichaHtml();
+
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
     iframe.style.top = '-10000px';
@@ -107,14 +111,40 @@ const ASOPage: React.FC = () => {
     const doc = iframe.contentDocument || iframe.contentWindow?.document;
     if (!doc) return;
     doc.open();
-    doc.write(buildFichaHtml());
+    doc.write(htmlContent);
     doc.close();
     iframe.contentWindow?.focus();
     setTimeout(() => {
       iframe.contentWindow?.print();
       setTimeout(() => document.body.removeChild(iframe), 2000);
     }, 300);
-    toast.success('Ficha ASO gerada!');
+
+    if (session?.user) {
+      try {
+        const arquivoUrl = await uploadDocumentoPdf(emp.id, 'ficha-aso', htmlContent);
+        const profile = await supabase.from('profiles').select('nome_completo').eq('user_id', session.user.id).single();
+        const nomeUsuario = profile.data?.nome_completo || session.user.email || '';
+
+        const registro = await registrarDocumento({
+          funcionarioId: emp.id,
+          funcionarioNome: emp.name,
+          companyId: emp.companyId,
+          empresaNome: company?.name || '',
+          tipoDocumento: `Ficha ASO — ${tipoExame}`,
+          descricao: `Exame ${tipoExame} — Data: ${dataExame ? new Date(dataExame).toLocaleDateString('pt-BR') : 'A definir'} — ${obraLocal || 'Sem local'}`,
+          arquivoUrl,
+          geradoPorUserId: session.user.id,
+          geradoPorNome: nomeUsuario,
+          unidade: company?.name || '',
+        });
+        setLastDocId(registro?.id || '');
+        toast.success('Ficha ASO gerada e salva no histórico!');
+      } catch {
+        toast.success('Ficha ASO gerada! (erro ao salvar no histórico)');
+      }
+    } else {
+      toast.success('Ficha ASO gerada!');
+    }
   };
 
   const handleSave = async () => {
@@ -220,7 +250,7 @@ const ASOPage: React.FC = () => {
             <Button onClick={handlePrint} className="gradient-accent text-accent-foreground font-semibold">
               <Printer className="w-4 h-4 mr-2" /> Gerar e Imprimir Ficha
             </Button>
-            <Button onClick={() => {
+            <Button onClick={async () => {
               if (!emp) { toast.error('Selecione um funcionário'); return; }
               openEmailClient({
                 to: DESTINATARIOS.aso,
@@ -228,7 +258,12 @@ const ASOPage: React.FC = () => {
                 subject: `Agendamento ASO — ${emp.name} — ${tipoExame} — ${company?.name || ''}`,
                 body: `Prezados,\n\nSolicito agendamento de exame ${tipoExame} para o(a) colaborador(a) abaixo.\n\nNome: ${emp.name}\nCPF: ${emp.cpf}\nFunção: ${emp.cargo}\nEmpresa: ${company?.name || ''}\nData sugerida: ${dataExame ? new Date(dataExame).toLocaleDateString('pt-BR') : 'A definir'}\nTrabalho em Altura: ${trabalhoAltura ? 'Sim' : 'Não'}\nEspaço Confinado: ${espacoConfinado ? 'Sim' : 'Não'}\n${clinica ? `Clínica: ${clinica}` : ''}\n\nFavor confirmar data e horário.\nSegue ficha em anexo.\n\nAtt.`,
               });
-              toast.success('Outlook aberto — anexe a ficha gerada antes de enviar');
+              if (lastDocId && session?.user) {
+                const profile = await supabase.from('profiles').select('nome_completo').eq('user_id', session.user.id).single();
+                const nomeUsuario = profile.data?.nome_completo || session.user.email || '';
+                await marcarComoEnviado(lastDocId, session.user.id, nomeUsuario, DESTINATARIOS.aso.join(', '));
+              }
+              toast.success('Outlook aberto — anexe a ficha ASO antes de enviar');
             }} variant="outline" className="border-primary text-primary hover:bg-primary/10">
               <Mail className="w-4 h-4 mr-2" /> Enviar por E-mail
             </Button>

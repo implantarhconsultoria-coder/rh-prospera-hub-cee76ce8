@@ -8,9 +8,10 @@ import { CalendarCheck, Printer, Save, ArrowLeft, AlertTriangle, Mail } from 'lu
 import { formatDate, feriasStatus } from '@/lib/calculations';
 import { toast } from 'sonner';
 import { openEmailClient, DESTINATARIOS, CC_OBRIGATORIO } from '@/lib/emailUtils';
+import { registrarDocumento, marcarComoEnviado, uploadDocumentoPdf } from '@/lib/documentoHistorico';
 
 const AvisoFeriasPage: React.FC = () => {
-  const { companies, employees, updateEmployee } = useApp();
+  const { companies, employees, updateEmployee, session } = useApp();
   const { isFilial, filialCompanyId } = useFilialFilter();
   const [search, setSearch] = useState('');
   const [selectedEmpId, setSelectedEmpId] = useState('');
@@ -103,8 +104,13 @@ const AvisoFeriasPage: React.FC = () => {
     </body></html>`;
   };
 
-  const handlePrint = () => {
+  const [lastDocId, setLastDocId] = useState('');
+
+  const handlePrint = async () => {
     if (!emp || !inicioFerias) { toast.error('Preencha os dados'); return; }
+    const htmlContent = buildPrintHtml();
+
+    // Print
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
     iframe.style.top = '-10000px';
@@ -113,14 +119,43 @@ const AvisoFeriasPage: React.FC = () => {
     const doc = iframe.contentDocument || iframe.contentWindow?.document;
     if (!doc) return;
     doc.open();
-    doc.write(buildPrintHtml());
+    doc.write(htmlContent);
     doc.close();
     iframe.contentWindow?.focus();
     setTimeout(() => {
       iframe.contentWindow?.print();
       setTimeout(() => document.body.removeChild(iframe), 2000);
     }, 300);
-    toast.success('Aviso de férias gerado!');
+
+    // Archive automatically
+    if (session?.user) {
+      try {
+        const arquivoUrl = await uploadDocumentoPdf(emp.id, 'aviso-ferias', htmlContent);
+        const profile = await import('@/integrations/supabase/client').then(m =>
+          m.supabase.from('profiles').select('nome_completo').eq('user_id', session.user.id).single()
+        );
+        const nomeUsuario = profile.data?.nome_completo || session.user.email || '';
+
+        const registro = await registrarDocumento({
+          funcionarioId: emp.id,
+          funcionarioNome: emp.name,
+          companyId: emp.companyId,
+          empresaNome: company?.name || '',
+          tipoDocumento: 'Aviso de Férias',
+          descricao: `Férias de ${diasFerias} dias — Início: ${new Date(inicioFerias).toLocaleDateString('pt-BR')} — Retorno: ${retorno ? new Date(retorno).toLocaleDateString('pt-BR') : '—'}`,
+          arquivoUrl,
+          geradoPorUserId: session.user.id,
+          geradoPorNome: nomeUsuario,
+          unidade: company?.name || '',
+        });
+        setLastDocId(registro?.id || '');
+        toast.success('Aviso gerado e salvo no histórico do funcionário!');
+      } catch {
+        toast.success('Aviso gerado! (erro ao salvar no histórico)');
+      }
+    } else {
+      toast.success('Aviso de férias gerado!');
+    }
   };
 
   // Detail view
@@ -177,7 +212,7 @@ const AvisoFeriasPage: React.FC = () => {
             <Button onClick={handlePrint} className="gradient-accent text-accent-foreground font-semibold">
               <Printer className="w-4 h-4 mr-2" /> Gerar e Imprimir Aviso
             </Button>
-            <Button onClick={() => {
+            <Button onClick={async () => {
               if (!emp || !inicioFerias) { toast.error('Preencha os dados'); return; }
               openEmailClient({
                 to: DESTINATARIOS.ferias,
@@ -185,7 +220,15 @@ const AvisoFeriasPage: React.FC = () => {
                 subject: `Aviso de Férias — ${emp.name} — ${company?.name || ''}`,
                 body: `Prezados,\n\nSegue aviso de férias do(a) colaborador(a) ${emp.name}.\n\nEmpresa: ${company?.name || ''}\nCargo: ${emp.cargo}\nInício: ${new Date(inicioFerias).toLocaleDateString('pt-BR')}\nRetorno: ${retorno ? new Date(retorno).toLocaleDateString('pt-BR') : '—'}\nDias: ${diasFerias}\n\nFavor conferir o documento em anexo.\n\nAtt.`,
               });
-              toast.success('Outlook aberto com destinatários preenchidos');
+              // Mark as sent in history
+              if (lastDocId && session?.user) {
+                const profile = await import('@/integrations/supabase/client').then(m =>
+                  m.supabase.from('profiles').select('nome_completo').eq('user_id', session.user.id).single()
+                );
+                const nomeUsuario = profile.data?.nome_completo || session.user.email || '';
+                await marcarComoEnviado(lastDocId, session.user.id, nomeUsuario, DESTINATARIOS.ferias.join(', '));
+              }
+              toast.success('Outlook aberto — anexe o aviso de férias antes de enviar');
             }} variant="outline" className="border-primary text-primary hover:bg-primary/10">
               <Mail className="w-4 h-4 mr-2" /> Enviar por E-mail
             </Button>
