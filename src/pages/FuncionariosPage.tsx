@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
+import { useLocation } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, UserPlus } from 'lucide-react';
@@ -9,8 +10,13 @@ import { formatCurrency } from '@/lib/calculations';
 const FuncionariosPage: React.FC = () => {
   const { employees, companies } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
   const [search, setSearch] = useState('');
   const [filterCompany, setFilterCompany] = useState('');
+
+  // Detect which portal we're in to build correct detail URLs
+  const portalPrefix = location.pathname.startsWith('/filial') ? '/filial'
+    : location.pathname.startsWith('/admin') ? '/admin' : '';
 
   const filtered = employees.filter(e => {
     if (search && !e.name.toLowerCase().includes(search.toLowerCase())) return false;
@@ -23,7 +29,7 @@ const FuncionariosPage: React.FC = () => {
 
   const renderCard = (e: typeof employees[0]) => (
     <div key={e.id} className="card-premium p-5 cursor-pointer hover:shadow-premium transition-shadow"
-      onClick={() => navigate(`/funcionarios/${e.id}`)}>
+      onClick={() => navigate(`${portalPrefix}/funcionarios/${e.id}`)}>
       <div className="flex items-center gap-3 mb-3">
         <div className={`w-10 h-10 rounded-full flex items-center justify-center text-primary-foreground font-bold text-sm ${e.categoria === 'socio' ? 'bg-accent' : 'gradient-primary'}`}>
           {e.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
