@@ -212,7 +212,7 @@ const AvisoFeriasPage: React.FC = () => {
             <Button onClick={handlePrint} className="gradient-accent text-accent-foreground font-semibold">
               <Printer className="w-4 h-4 mr-2" /> Gerar e Imprimir Aviso
             </Button>
-            <Button onClick={() => {
+            <Button onClick={async () => {
               if (!emp || !inicioFerias) { toast.error('Preencha os dados'); return; }
               openEmailClient({
                 to: DESTINATARIOS.ferias,
@@ -220,7 +220,15 @@ const AvisoFeriasPage: React.FC = () => {
                 subject: `Aviso de Férias — ${emp.name} — ${company?.name || ''}`,
                 body: `Prezados,\n\nSegue aviso de férias do(a) colaborador(a) ${emp.name}.\n\nEmpresa: ${company?.name || ''}\nCargo: ${emp.cargo}\nInício: ${new Date(inicioFerias).toLocaleDateString('pt-BR')}\nRetorno: ${retorno ? new Date(retorno).toLocaleDateString('pt-BR') : '—'}\nDias: ${diasFerias}\n\nFavor conferir o documento em anexo.\n\nAtt.`,
               });
-              toast.success('Outlook aberto com destinatários preenchidos');
+              // Mark as sent in history
+              if (lastDocId && session?.user) {
+                const profile = await import('@/integrations/supabase/client').then(m =>
+                  m.supabase.from('profiles').select('nome_completo').eq('user_id', session.user.id).single()
+                );
+                const nomeUsuario = profile.data?.nome_completo || session.user.email || '';
+                await marcarComoEnviado(lastDocId, session.user.id, nomeUsuario, DESTINATARIOS.ferias.join(', '));
+              }
+              toast.success('Outlook aberto — anexe o aviso de férias antes de enviar');
             }} variant="outline" className="border-primary text-primary hover:bg-primary/10">
               <Mail className="w-4 h-4 mr-2" /> Enviar por E-mail
             </Button>
