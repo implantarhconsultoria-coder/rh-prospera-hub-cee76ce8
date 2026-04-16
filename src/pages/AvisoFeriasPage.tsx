@@ -8,9 +8,10 @@ import { CalendarCheck, Printer, Save, ArrowLeft, AlertTriangle, Mail } from 'lu
 import { formatDate, feriasStatus } from '@/lib/calculations';
 import { toast } from 'sonner';
 import { openEmailClient, DESTINATARIOS, CC_OBRIGATORIO } from '@/lib/emailUtils';
+import { registrarDocumento, marcarComoEnviado, uploadDocumentoPdf } from '@/lib/documentoHistorico';
 
 const AvisoFeriasPage: React.FC = () => {
-  const { companies, employees, updateEmployee } = useApp();
+  const { companies, employees, updateEmployee, session } = useApp();
   const { isFilial, filialCompanyId } = useFilialFilter();
   const [search, setSearch] = useState('');
   const [selectedEmpId, setSelectedEmpId] = useState('');
