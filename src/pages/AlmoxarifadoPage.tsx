@@ -550,10 +550,32 @@ const AlmoxarifadoPage: React.FC = () => {
                       <td className="px-3 py-2 text-xs">R$ {(item.valor_unitario || 0).toFixed(2)}</td>
                       <td className="px-3 py-2 text-xs">{item.localizacao || '—'}</td>
                       <td className="px-3 py-2">
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"
-                          onClick={async () => { await supabase.from('almoxarifado_itens').delete().eq('id', item.id); fetchAll(); }}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button variant="outline" size="icon" className="h-7 w-7 text-green-600" title="Entrada rápida"
+                            onClick={() => abrirAjuste(item, 'entrada_rapida')}>
+                            <ArrowDown className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button variant="outline" size="icon" className="h-7 w-7 text-orange-600" title="Saída rápida"
+                            onClick={() => abrirAjuste(item, 'saida_rapida')}>
+                            <ArrowUp className="w-3.5 h-3.5" />
+                          </Button>
+                          {isAdmin && (
+                            <Button variant="outline" size="icon" className="h-7 w-7" title="Ajuste manual (admin)"
+                              onClick={() => abrirAjuste(item, 'ajuste')}>
+                              <Settings2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Histórico"
+                            onClick={() => abrirHistorico(item)}>
+                            <History className="w-3.5 h-3.5" />
+                          </Button>
+                          {isAdmin && (
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Excluir"
+                              onClick={async () => { await supabase.from('almoxarifado_itens').delete().eq('id', item.id); fetchAll(); }}>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
