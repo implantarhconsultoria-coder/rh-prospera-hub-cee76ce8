@@ -113,13 +113,57 @@ const ChamadosPage: React.FC = () => {
     }
   };
 
+  const abrirDialogItens = async () => {
+    if (!veiculo.veiculo_id) { toast.error('Sem veículo vinculado'); return; }
+    const { data } = await supabase.from('estoque_veiculo').select('*').eq('veiculo_id', veiculo.veiculo_id).order('nome_item');
+    setEstoque((data as ItemEstoque[]) || []);
+    setItensConsumo([]);
+    setShowItensDialog(true);
+  };
+
+  const toggleItem = (item: ItemEstoque) => {
+    setItensConsumo(prev => {
+      const existe = prev.find(p => p.item_id === item.id);
+      if (existe) return prev.filter(p => p.item_id !== item.id);
+      return [...prev, { item_id: item.id, nome_item: item.nome_item, quantidade: 1, max: item.quantidade }];
+    });
+  };
+
+  const ajustarQtd = (item_id: string, delta: number) => {
+    setItensConsumo(prev => prev.map(p =>
+      p.item_id === item_id ? { ...p, quantidade: Math.max(1, Math.min(p.max, p.quantidade + delta)) } : p
+    ));
+  };
+
+  const concluirComItens = async () => {
+    if (!selectedId) return;
+    setShowItensDialog(false);
+    setActionLoading(selectedId);
+    try {
+      if (itensConsumo.length > 0) {
+        const rows = itensConsumo.map(i => ({
+          chamado_id: selectedId,
+          item_id: i.item_id,
+          nome_item: i.nome_item,
+          quantidade: i.quantidade,
+        }));
+        const { error: itErr } = await supabase.from('chamado_itens_utilizados').insert(rows);
+        if (itErr) throw itErr;
+      }
+      await updateStatus(selectedId, 'concluido', 'Chamado concluído com sucesso!');
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao concluir chamado');
+      setActionLoading(null);
+    }
+  };
+
   const getNextAction = (status: string) => {
     switch (status) {
-      case 'pendente': return { label: 'Aceitar Chamado', next: 'aceito', confirm: 'Chamado aceito com sucesso!' };
-      case 'aceito': return { label: 'Em deslocamento', next: 'em_deslocamento', confirm: 'Deslocamento registrado!' };
-      case 'em_deslocamento': return { label: 'Cheguei no local', next: 'no_local', confirm: 'Chegada registrada!' };
-      case 'no_local': return { label: 'Iniciar execução', next: 'em_execucao', confirm: 'Execução iniciada!' };
-      case 'em_execucao': return { label: 'Concluir chamado', next: 'concluido', confirm: 'Chamado concluído com sucesso!' };
+      case 'pendente': return { label: 'Aceitar Chamado', next: 'aceito', confirm: 'Chamado aceito com sucesso!', isConcluir: false };
+      case 'aceito': return { label: 'Em deslocamento', next: 'em_deslocamento', confirm: 'Deslocamento registrado!', isConcluir: false };
+      case 'em_deslocamento': return { label: 'Cheguei no local', next: 'no_local', confirm: 'Chegada registrada!', isConcluir: false };
+      case 'no_local': return { label: 'Iniciar execução', next: 'em_execucao', confirm: 'Execução iniciada!', isConcluir: false };
+      case 'em_execucao': return { label: 'Concluir chamado', next: 'concluido', confirm: 'Chamado concluído com sucesso!', isConcluir: true };
       default: return null;
     }
   };
