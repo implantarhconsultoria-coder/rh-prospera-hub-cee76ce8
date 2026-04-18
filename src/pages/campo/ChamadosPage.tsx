@@ -195,13 +195,57 @@ const ChamadosPage: React.FC = () => {
             <Button
               className="w-full h-14 text-base font-semibold rounded-xl"
               disabled={!!actionLoading}
-              onClick={() => updateStatus(selected.id, action.next, action.confirm)}
+              onClick={() => action.isConcluir ? abrirDialogItens() : updateStatus(selected.id, action.next, action.confirm)}
             >
               {actionLoading === selected.id ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <ArrowRight className="w-5 h-5 mr-2" />}
               {action.label}
             </Button>
           )}
         </div>
+
+        {/* Dialog: itens utilizados ao concluir */}
+        <Dialog open={showItensDialog} onOpenChange={setShowItensDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2"><Package className="w-5 h-5" />Itens utilizados</DialogTitle>
+            </DialogHeader>
+            <p className="text-xs text-muted-foreground">Selecione os itens do estoque do carro consumidos neste atendimento. A baixa será automática.</p>
+            <div className="max-h-72 overflow-y-auto space-y-2">
+              {estoque.length === 0 ? (
+                <p className="text-center text-sm text-muted-foreground py-6">Nenhum item no estoque</p>
+              ) : estoque.map(item => {
+                const sel = itensConsumo.find(i => i.item_id === item.id);
+                const disabled = item.quantidade <= 0 && !sel;
+                return (
+                  <div key={item.id} className={`border rounded-lg p-2.5 ${sel ? 'border-primary bg-primary/5' : 'border-border'} ${disabled ? 'opacity-50' : ''}`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <button onClick={() => !disabled && toggleItem(item)} disabled={disabled} className="flex-1 text-left">
+                        <p className="text-sm font-medium text-foreground">{item.nome_item}</p>
+                        <p className="text-[10px] text-muted-foreground">Disponível: {item.quantidade} {item.unidade}</p>
+                      </button>
+                      {sel && (
+                        <div className="flex items-center gap-1">
+                          <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => ajustarQtd(item.id, -1)}><Minus className="w-3 h-3" /></Button>
+                          <span className="text-sm font-bold w-7 text-center">{sel.quantidade}</span>
+                          <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => ajustarQtd(item.id, 1)}><Plus className="w-3 h-3" /></Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button variant="outline" className="w-full sm:w-auto" onClick={concluirComItens}>
+                Concluir sem itens
+              </Button>
+              <Button className="w-full sm:w-auto" onClick={concluirComItens} disabled={!!actionLoading}>
+                Concluir e dar baixa
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <ConfirmacaoVisual open={!!confirmacao} onClose={() => { setConfirmacao(null); setSelectedId(null); }} titulo={confirmacao?.titulo || ''} detalhes={confirmacao?.detalhes || []} />
       </div>
     );
