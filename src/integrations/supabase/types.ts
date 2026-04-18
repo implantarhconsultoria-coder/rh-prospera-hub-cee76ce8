@@ -2356,6 +2356,57 @@ export type Database = {
           },
         ]
       }
+      tecnicos_campo: {
+        Row: {
+          apelido: string
+          created_at: string
+          funcionario_id: string
+          id: string
+          observacoes: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+          veiculo_id: string | null
+        }
+        Insert: {
+          apelido?: string
+          created_at?: string
+          funcionario_id: string
+          id?: string
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          veiculo_id?: string | null
+        }
+        Update: {
+          apelido?: string
+          created_at?: string
+          funcionario_id?: string
+          id?: string
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          veiculo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tecnicos_campo_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: true
+            referencedRelation: "funcionarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tecnicos_campo_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       titulos_pagar: {
         Row: {
           anexo_url: string | null
