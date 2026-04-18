@@ -1,1 +1,4 @@
 project_id = "onwdhwuqehuakvtkakuk"
+
+[functions.provision-tecnicos]
+verify_jwt = false
