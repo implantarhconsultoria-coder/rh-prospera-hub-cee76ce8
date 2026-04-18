@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ClipboardList, MapPin, User, Wrench, CheckCircle2, Clock, Loader2, ArrowRight } from 'lucide-react';
+import { ClipboardList, MapPin, Wrench, Loader2, ArrowRight, Package, Plus, Minus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useApp } from '@/context/AppContext';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useVeiculoColaborador } from '@/hooks/useVeiculoColaborador';
 import ConfirmacaoVisual from '@/components/ConfirmacaoVisual';
 import { toast } from 'sonner';
+
+interface ItemEstoque { id: string; nome_item: string; quantidade: number; unidade: string; }
+interface ItemSelecionado { item_id: string; nome_item: string; quantidade: number; max: number; }
 
 const STATUS_LABELS: Record<string, string> = {
   pendente: 'Pendente',
@@ -48,6 +53,9 @@ const ChamadosPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [confirmacao, setConfirmacao] = useState<{ titulo: string; detalhes: { label: string; valor: string }[] } | null>(null);
+  const [showItensDialog, setShowItensDialog] = useState(false);
+  const [estoque, setEstoque] = useState<ItemEstoque[]>([]);
+  const [itensConsumo, setItensConsumo] = useState<ItemSelecionado[]>([]);
 
   const fetchChamados = async () => {
     const { data } = await supabase
@@ -105,13 +113,57 @@ const ChamadosPage: React.FC = () => {
     }
   };
 
+  const abrirDialogItens = async () => {
+    if (!veiculo.veiculo_id) { toast.error('Sem veículo vinculado'); return; }
+    const { data } = await supabase.from('estoque_veiculo').select('*').eq('veiculo_id', veiculo.veiculo_id).order('nome_item');
+    setEstoque((data as ItemEstoque[]) || []);
+    setItensConsumo([]);
+    setShowItensDialog(true);
+  };
+
+  const toggleItem = (item: ItemEstoque) => {
+    setItensConsumo(prev => {
+      const existe = prev.find(p => p.item_id === item.id);
+      if (existe) return prev.filter(p => p.item_id !== item.id);
+      return [...prev, { item_id: item.id, nome_item: item.nome_item, quantidade: 1, max: item.quantidade }];
+    });
+  };
+
+  const ajustarQtd = (item_id: string, delta: number) => {
+    setItensConsumo(prev => prev.map(p =>
+      p.item_id === item_id ? { ...p, quantidade: Math.max(1, Math.min(p.max, p.quantidade + delta)) } : p
+    ));
+  };
+
+  const concluirComItens = async () => {
+    if (!selectedId) return;
+    setShowItensDialog(false);
+    setActionLoading(selectedId);
+    try {
+      if (itensConsumo.length > 0) {
+        const rows = itensConsumo.map(i => ({
+          chamado_id: selectedId,
+          item_id: i.item_id,
+          nome_item: i.nome_item,
+          quantidade: i.quantidade,
+        }));
+        const { error: itErr } = await supabase.from('chamado_itens_utilizados').insert(rows);
+        if (itErr) throw itErr;
+      }
+      await updateStatus(selectedId, 'concluido', 'Chamado concluído com sucesso!');
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao concluir chamado');
+      setActionLoading(null);
+    }
+  };
+
   const getNextAction = (status: string) => {
     switch (status) {
-      case 'pendente': return { label: 'Aceitar Chamado', next: 'aceito', confirm: 'Chamado aceito com sucesso!' };
-      case 'aceito': return { label: 'Em deslocamento', next: 'em_deslocamento', confirm: 'Deslocamento registrado!' };
-      case 'em_deslocamento': return { label: 'Cheguei no local', next: 'no_local', confirm: 'Chegada registrada!' };
-      case 'no_local': return { label: 'Iniciar execução', next: 'em_execucao', confirm: 'Execução iniciada!' };
-      case 'em_execucao': return { label: 'Concluir chamado', next: 'concluido', confirm: 'Chamado concluído com sucesso!' };
+      case 'pendente': return { label: 'Aceitar Chamado', next: 'aceito', confirm: 'Chamado aceito com sucesso!', isConcluir: false };
+      case 'aceito': return { label: 'Em deslocamento', next: 'em_deslocamento', confirm: 'Deslocamento registrado!', isConcluir: false };
+      case 'em_deslocamento': return { label: 'Cheguei no local', next: 'no_local', confirm: 'Chegada registrada!', isConcluir: false };
+      case 'no_local': return { label: 'Iniciar execução', next: 'em_execucao', confirm: 'Execução iniciada!', isConcluir: false };
+      case 'em_execucao': return { label: 'Concluir chamado', next: 'concluido', confirm: 'Chamado concluído com sucesso!', isConcluir: true };
       default: return null;
     }
   };
@@ -143,13 +195,57 @@ const ChamadosPage: React.FC = () => {
             <Button
               className="w-full h-14 text-base font-semibold rounded-xl"
               disabled={!!actionLoading}
-              onClick={() => updateStatus(selected.id, action.next, action.confirm)}
+              onClick={() => action.isConcluir ? abrirDialogItens() : updateStatus(selected.id, action.next, action.confirm)}
             >
               {actionLoading === selected.id ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <ArrowRight className="w-5 h-5 mr-2" />}
               {action.label}
             </Button>
           )}
         </div>
+
+        {/* Dialog: itens utilizados ao concluir */}
+        <Dialog open={showItensDialog} onOpenChange={setShowItensDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2"><Package className="w-5 h-5" />Itens utilizados</DialogTitle>
+            </DialogHeader>
+            <p className="text-xs text-muted-foreground">Selecione os itens do estoque do carro consumidos neste atendimento. A baixa será automática.</p>
+            <div className="max-h-72 overflow-y-auto space-y-2">
+              {estoque.length === 0 ? (
+                <p className="text-center text-sm text-muted-foreground py-6">Nenhum item no estoque</p>
+              ) : estoque.map(item => {
+                const sel = itensConsumo.find(i => i.item_id === item.id);
+                const disabled = item.quantidade <= 0 && !sel;
+                return (
+                  <div key={item.id} className={`border rounded-lg p-2.5 ${sel ? 'border-primary bg-primary/5' : 'border-border'} ${disabled ? 'opacity-50' : ''}`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <button onClick={() => !disabled && toggleItem(item)} disabled={disabled} className="flex-1 text-left">
+                        <p className="text-sm font-medium text-foreground">{item.nome_item}</p>
+                        <p className="text-[10px] text-muted-foreground">Disponível: {item.quantidade} {item.unidade}</p>
+                      </button>
+                      {sel && (
+                        <div className="flex items-center gap-1">
+                          <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => ajustarQtd(item.id, -1)}><Minus className="w-3 h-3" /></Button>
+                          <span className="text-sm font-bold w-7 text-center">{sel.quantidade}</span>
+                          <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => ajustarQtd(item.id, 1)}><Plus className="w-3 h-3" /></Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button variant="outline" className="w-full sm:w-auto" onClick={concluirComItens}>
+                Concluir sem itens
+              </Button>
+              <Button className="w-full sm:w-auto" onClick={concluirComItens} disabled={!!actionLoading}>
+                Concluir e dar baixa
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <ConfirmacaoVisual open={!!confirmacao} onClose={() => { setConfirmacao(null); setSelectedId(null); }} titulo={confirmacao?.titulo || ''} detalhes={confirmacao?.detalhes || []} />
       </div>
     );
