@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, Users, CalendarDays,
@@ -6,6 +6,7 @@ import {
   Database, HardHat, Shirt, UtensilsCrossed, Bus, History,
   Clock, Wallet, CalendarCheck, FileX, Fuel, Car,
   Stethoscope, UserCheck, Package, Monitor, Shield, ClipboardList,
+  ChevronDown, ChevronRight, Receipt, RefreshCw, AlertTriangle, ClipboardCheck,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
