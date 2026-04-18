@@ -48,6 +48,12 @@ import ChamadosPage from "@/pages/campo/ChamadosPage";
 import EstoqueVeiculoPage from "@/pages/campo/EstoqueVeiculoPage";
 import RegistroKmPage from "@/pages/campo/RegistroKmPage";
 import DespacharChamadoPage from "@/pages/campo/DespacharChamadoPage";
+import FaturamentoDashboardPage from "@/pages/faturamento/FaturamentoDashboardPage";
+import ClientesFatPage from "@/pages/faturamento/ClientesFatPage";
+import ClienteDetailPage from "@/pages/faturamento/ClienteDetailPage";
+import ContratosPage from "@/pages/faturamento/ContratosPage";
+import ContratoDetailPage from "@/pages/faturamento/ContratoDetailPage";
+import { FaturasPage, MedicoesPage, ReajustesPage, PendenciasPage } from "@/pages/faturamento/FaturamentoPlaceholders";
 import NotFound from "@/pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -126,6 +132,16 @@ const AuthGate = () => {
         <Route path="/admin/gerenciar-usuarios" element={<GerenciarUsuariosPage />} />
         <Route path="/admin/chamados" element={<DespacharChamadoPage />} />
         <Route path="/admin/configuracoes" element={<ConfiguracoesPage />} />
+        {/* Faturamento */}
+        <Route path="/admin/faturamento" element={<FaturamentoDashboardPage />} />
+        <Route path="/admin/faturamento/clientes" element={<ClientesFatPage />} />
+        <Route path="/admin/faturamento/clientes/:id" element={<ClienteDetailPage />} />
+        <Route path="/admin/faturamento/contratos" element={<ContratosPage />} />
+        <Route path="/admin/faturamento/contratos/:id" element={<ContratoDetailPage />} />
+        <Route path="/admin/faturamento/faturas" element={<FaturasPage />} />
+        <Route path="/admin/faturamento/medicoes" element={<MedicoesPage />} />
+        <Route path="/admin/faturamento/reajustes" element={<ReajustesPage />} />
+        <Route path="/admin/faturamento/pendencias" element={<PendenciasPage />} />
       </Route>
 
       {/* ========== FILIAL PORTAL ========== */}

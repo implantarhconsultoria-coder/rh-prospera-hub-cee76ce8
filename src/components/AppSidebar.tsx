@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, Users, CalendarDays,
@@ -6,6 +6,7 @@ import {
   Database, HardHat, Shirt, UtensilsCrossed, Bus, History,
   Clock, Wallet, CalendarCheck, FileX, Fuel, Car,
   Stethoscope, UserCheck, Package, Monitor, Shield, ClipboardList,
+  ChevronDown, ChevronRight, Receipt, RefreshCw, AlertTriangle, ClipboardCheck,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
@@ -49,6 +50,16 @@ const adminItems: MenuItem[] = [
   { label: 'Configurações', icon: Settings, path: '/admin/configuracoes' },
 ];
 
+const faturamentoItems: MenuItem[] = [
+  { label: 'Dashboard', icon: LayoutDashboard, path: '/admin/faturamento' },
+  { label: 'Clientes', icon: Users, path: '/admin/faturamento/clientes' },
+  { label: 'Contratos', icon: FileText, path: '/admin/faturamento/contratos' },
+  { label: 'Faturas', icon: Receipt, path: '/admin/faturamento/faturas' },
+  { label: 'Medições', icon: ClipboardCheck, path: '/admin/faturamento/medicoes' },
+  { label: 'Reajustes', icon: RefreshCw, path: '/admin/faturamento/reajustes' },
+  { label: 'Pendências', icon: AlertTriangle, path: '/admin/faturamento/pendencias' },
+];
+
 const upcomingItems: MenuItem[] = [
   { label: 'Ponto Digital', icon: Clock, path: '#', disabled: true },
   { label: 'Folha de Pagamento', icon: Wallet, path: '#', disabled: true },
@@ -60,6 +71,7 @@ interface Props { collapsed: boolean; onToggle: () => void; }
 const AppSidebar: React.FC<Props> = ({ collapsed, onToggle }) => {
   const { logout } = useApp();
   const location = useLocation();
+  const [fatOpen, setFatOpen] = useState(location.pathname.startsWith('/admin/faturamento'));
 
   const renderLink = (item: MenuItem) => (
     <NavLink key={item.path} to={item.path}
@@ -106,6 +118,37 @@ const AppSidebar: React.FC<Props> = ({ collapsed, onToggle }) => {
         )}
         {collapsed && <div className="pt-2 mt-2 border-t border-sidebar-border" />}
         {operationalItems.map(renderLink)}
+
+        {!collapsed && (
+          <div className="pt-3 mt-3 border-t border-sidebar-border">
+            <p className="px-3 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 mb-2">Faturamento</p>
+          </div>
+        )}
+        {collapsed && <div className="pt-2 mt-2 border-t border-sidebar-border" />}
+        {!collapsed ? (
+          <>
+            <button
+              onClick={() => setFatOpen(!fatOpen)}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm w-full transition-all",
+                location.pathname.startsWith('/admin/faturamento')
+                  ? "bg-sidebar-primary/40 text-sidebar-primary-foreground"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent"
+              )}
+            >
+              <Wallet className="w-5 h-5 flex-shrink-0" />
+              <span className="flex-1 text-left">Faturamento</span>
+              {fatOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </button>
+            {fatOpen && (
+              <div className="ml-3 pl-2 border-l border-sidebar-border space-y-1 mt-1">
+                {faturamentoItems.map(renderLink)}
+              </div>
+            )}
+          </>
+        ) : (
+          faturamentoItems.map(renderLink)
+        )}
 
         {!collapsed && (
           <div className="pt-3 mt-3 border-t border-sidebar-border">
