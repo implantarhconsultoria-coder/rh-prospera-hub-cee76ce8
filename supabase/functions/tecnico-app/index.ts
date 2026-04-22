@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
 
     const userId = tec.user_id as string | null;
     const veiculoId = tec.veiculo_id as string | null;
-
+    const veiculosDisponiveis = (tec as any).veiculos_disponiveis || [];
     switch (action) {
       // ---------- BOOTSTRAP ----------
       case "perfil": {
