@@ -30,7 +30,34 @@ async function resolveTecnico(token: string) {
     )
     .eq("access_token", token)
     .maybeSingle();
-  return data;
+  if (!data) return null;
+  // Carrega TODOS os veiculos vinculados a esse colaborador (suporte a multi-veiculo, ex: Rafael)
+  let veiculos_disponiveis: any[] = [];
+  if (data.user_id) {
+    const { data: cv } = await sb()
+      .from("colaborador_veiculo")
+      .select("veiculo_id, veiculos:veiculo_id(id, placa, modelo, identificacao_interna)")
+      .eq("user_id", data.user_id);
+    veiculos_disponiveis = (cv || [])
+      .map((r: any) => r.veiculos)
+      .filter(Boolean);
+  }
+  // fallback: se nao tem na colaborador_veiculo mas tem veiculo_id padrao
+  if (!veiculos_disponiveis.length && (data as any).veiculos) {
+    veiculos_disponiveis = [(data as any).veiculos];
+  }
+  return { ...data, veiculos_disponiveis };
+}
+
+// Resolve veiculo a usar nesta operacao: payload.veiculo_id se valido, senao o padrao.
+function resolveVeiculo(tec: any, payload: any): { id: string | null; placa: string; modelo: string } {
+  const list = (tec.veiculos_disponiveis || []) as any[];
+  const requested = payload?.veiculo_id ? String(payload.veiculo_id) : null;
+  let chosen = null;
+  if (requested) chosen = list.find((v) => v.id === requested) || null;
+  if (!chosen) chosen = list.find((v) => v.id === tec.veiculo_id) || list[0] || null;
+  if (!chosen) return { id: tec.veiculo_id || null, placa: "", modelo: "" };
+  return { id: chosen.id, placa: chosen.placa || "", modelo: chosen.modelo || "" };
 }
 
 // Touch ultima_atividade_em + status online
