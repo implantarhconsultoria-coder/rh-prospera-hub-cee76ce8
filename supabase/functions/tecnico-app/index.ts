@@ -357,10 +357,10 @@ Deno.serve(async (req) => {
         if (vale.validade && new Date(vale.validade) < new Date(new Date().toISOString().split("T")[0])) {
           return json({ error: "vale_vencido" }, 400);
         }
-        if (vale.veiculo_id && veiculoId && vale.veiculo_id !== veiculoId) {
+        const veicSel = resolveVeiculo(tec, payload);
+        if (vale.veiculo_id && veicSel.id && vale.veiculo_id !== veicSel.id) {
           return json({ error: "vale_outro_veiculo" }, 400);
         }
-        const veic = (tec as any).veiculos || null;
         const func = (tec as any).funcionarios || null;
         return json({
           ok: true,
@@ -371,7 +371,7 @@ Deno.serve(async (req) => {
             nome: func?.nome || tec.apelido,
             cargo: func?.cargo || "",
           },
-          veiculo: veic ? { id: veic.id, placa: veic.placa, modelo: veic.modelo } : null,
+          veiculo: veicSel.id ? { id: veicSel.id, placa: veicSel.placa, modelo: veicSel.modelo } : null,
           posto: {
             nome: vale.posto_nome || "",
             cnpj: vale.posto_cnpj || "",
