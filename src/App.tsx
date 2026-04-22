@@ -14,6 +14,8 @@ import MecanicoPontoPage from "@/pages/mecanico/MecanicoPontoPage";
 import MecanicoChamadosPage from "@/pages/mecanico/MecanicoChamadosPage";
 import MecanicoEstoquePage from "@/pages/mecanico/MecanicoEstoquePage";
 import MecanicoKmPage from "@/pages/mecanico/MecanicoKmPage";
+import MecanicoAbastecimentoPage from "@/pages/mecanico/MecanicoAbastecimentoPage";
+import MecanicoHistoricoPage from "@/pages/mecanico/MecanicoHistoricoPage";
 import LoginPage from "@/pages/LoginPage";
 import CadastroPage from "@/pages/CadastroPage";
 import RecuperarSenhaPage from "@/pages/RecuperarSenhaPage";
@@ -33,6 +35,7 @@ import EmployeeDetailPage from "@/pages/EmployeeDetailPage";
 import LancamentosPage from "@/pages/LancamentosPage";
 import FechamentoPage from "@/pages/FechamentoPage";
 import CombustivelPage from "@/pages/CombustivelPage";
+import CombustivelAdminPage from "@/pages/admin/CombustivelAdminPage";
 import ProtocoloPage from "@/pages/ProtocoloPage";
 import DocumentosVeiculosPage from "@/pages/DocumentosVeiculosPage";
 import AvisoFeriasPage from "@/pages/AvisoFeriasPage";
@@ -144,7 +147,7 @@ const AuthGate = () => {
         <Route path="/admin/historico" element={<HistoricoPage />} />
         <Route path="/admin/aso" element={<ASOPage />} />
         <Route path="/admin/prestadores" element={<PrestadoresPage />} />
-        <Route path="/admin/combustivel" element={<CombustivelPage />} />
+        <Route path="/admin/combustivel" element={<CombustivelAdminPage />} />
         <Route path="/admin/protocolo" element={<ProtocoloPage />} />
         <Route path="/admin/documentos-ativos" element={<DocumentosVeiculosPage />} />
         <Route path="/admin/aviso-ferias" element={<AvisoFeriasPage />} />
@@ -225,6 +228,8 @@ const App = () => (
               <Route path="chamados" element={<MecanicoChamadosPage />} />
               <Route path="estoque" element={<MecanicoEstoquePage />} />
               <Route path="km" element={<MecanicoKmPage />} />
+              <Route path="abastecimento" element={<MecanicoAbastecimentoPage />} />
+              <Route path="historico" element={<MecanicoHistoricoPage />} />
             </Route>
             <Route path="/relatorio-impressao" element={<RelatorioImpressaoPage />} />
             <Route path="/entrega-impressao" element={<EntregaImpressaoPage />} />
