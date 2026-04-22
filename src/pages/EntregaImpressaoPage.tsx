@@ -66,6 +66,30 @@ const EntregaImpressaoPage: React.FC = () => {
     return { delivery: null, emp: null, company: null, returnPath: '/epi' };
   }, [previewData, deliveryId, deliveries, employees, companies]);
 
+  // Registra automaticamente o documento (EPI/Uniforme) no histórico do funcionário (igual ao galão)
+  const registradoRef = useRef(false);
+  useEffect(() => {
+    if (registradoRef.current) return;
+    if (!delivery || !emp || !company) return;
+    registradoRef.current = true;
+    const tipoDoc = delivery.type === 'epi' ? 'EPI' : 'Uniforme';
+    const itensResumo = (delivery.items || [])
+      .map((it) => `${it.tipo}${it.tamanho ? ` ${it.tamanho}` : ''} x${it.quantidade}`)
+      .join(', ');
+    registrarDocumento({
+      funcionarioId: emp.id,
+      funcionarioNome: emp.name,
+      companyId: company.id,
+      empresaNome: company.name,
+      tipoDocumento: `Ficha de Entrega - ${tipoDoc}`,
+      competencia: (delivery.date || '').slice(0, 7),
+      descricao: `Entrega de ${tipoDoc} (${(delivery.items || []).length} itens): ${itensResumo}`,
+      geradoPorUserId: session?.user?.id || '00000000-0000-0000-0000-000000000000',
+      geradoPorNome: session?.user?.user_metadata?.nome_completo || session?.user?.email || 'Sistema',
+      unidade: company.city,
+    }).catch((e) => console.error('Falha ao registrar documento de entrega:', e));
+  }, [delivery, emp, company, session]);
+
   if (!delivery) return <div className="p-10 text-center text-lg">Documento indisponível. Gere novamente pela tela anterior.</div>;
   if (!emp || !company) return <div className="p-10 text-center">Dados incompletos.</div>;
 
