@@ -330,8 +330,18 @@ Deno.serve(async (req) => {
         return json({
           ok: true,
           vale,
-          mecanico: { id: tec.id, nome: func?.nome || tec.apelido },
+          tipo: vale.tipo || "autorizacao_abastecimento",
+          mecanico: {
+            id: tec.id,
+            nome: func?.nome || tec.apelido,
+            cargo: func?.cargo || "",
+          },
           veiculo: veic ? { id: veic.id, placa: veic.placa, modelo: veic.modelo } : null,
+          posto: {
+            nome: vale.posto_nome || "",
+            cnpj: vale.posto_cnpj || "",
+            endereco: vale.posto_endereco || "",
+          },
           agora: new Date().toISOString(),
         });
       }
