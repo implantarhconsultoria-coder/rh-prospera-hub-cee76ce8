@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink, useLocation, useParams } from 'react-router-dom';
-import { Home, Clock, ClipboardList, Package, Gauge, Car } from 'lucide-react';
+import { Home, Clock, ClipboardList, Package, Gauge, Car, Fuel, History } from 'lucide-react';
 import { TecnicoAppProvider, useTecnicoApp } from '@/context/TecnicoAppContext';
 import { cn } from '@/lib/utils';
 
@@ -10,6 +10,8 @@ const tabs = [
   { label: 'Chamados', icon: ClipboardList, sub: 'chamados' },
   { label: 'Estoque', icon: Package, sub: 'estoque' },
   { label: 'KM', icon: Gauge, sub: 'km' },
+  { label: 'Abast.', icon: Fuel, sub: 'abastecimento' },
+  { label: 'Hist.', icon: History, sub: 'historico' },
 ];
 
 const HeaderInner: React.FC = () => {
@@ -48,7 +50,7 @@ const TabBar: React.FC = () => {
   const base = `/m/${token}`;
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 bg-slate-900/95 backdrop-blur-xl border-t border-white/5 shadow-2xl">
-      <div className="flex justify-around items-center max-w-lg mx-auto px-2 py-1.5">
+      <div className="flex justify-around items-center max-w-lg mx-auto px-1 py-1.5 overflow-x-auto">
         {tabs.map((tab) => {
           const path = tab.sub ? `${base}/${tab.sub}` : base;
           const active = location.pathname === path || (tab.sub === '' && location.pathname === base);
@@ -58,17 +60,17 @@ const TabBar: React.FC = () => {
               to={path}
               end={tab.sub === ''}
               className={cn(
-                'flex flex-col items-center py-2 px-3 text-[10px] font-medium transition-all min-w-0 rounded-xl',
+                'flex flex-col items-center py-1.5 px-2 text-[9px] font-medium transition-all min-w-0 rounded-xl flex-shrink-0',
                 active ? 'text-primary' : 'text-white/50',
               )}
             >
               <div
                 className={cn(
-                  'w-9 h-9 rounded-xl flex items-center justify-center mb-0.5 transition-all',
+                  'w-8 h-8 rounded-xl flex items-center justify-center mb-0.5 transition-all',
                   active && 'bg-primary/15',
                 )}
               >
-                <tab.icon className={cn('w-5 h-5', active ? 'text-primary' : 'text-white/60')} />
+                <tab.icon className={cn('w-4 h-4', active ? 'text-primary' : 'text-white/60')} />
               </div>
               {tab.label}
             </NavLink>

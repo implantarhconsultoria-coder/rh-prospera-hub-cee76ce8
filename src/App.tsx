@@ -14,6 +14,8 @@ import MecanicoPontoPage from "@/pages/mecanico/MecanicoPontoPage";
 import MecanicoChamadosPage from "@/pages/mecanico/MecanicoChamadosPage";
 import MecanicoEstoquePage from "@/pages/mecanico/MecanicoEstoquePage";
 import MecanicoKmPage from "@/pages/mecanico/MecanicoKmPage";
+import MecanicoAbastecimentoPage from "@/pages/mecanico/MecanicoAbastecimentoPage";
+import MecanicoHistoricoPage from "@/pages/mecanico/MecanicoHistoricoPage";
 import LoginPage from "@/pages/LoginPage";
 import CadastroPage from "@/pages/CadastroPage";
 import RecuperarSenhaPage from "@/pages/RecuperarSenhaPage";
@@ -225,6 +227,8 @@ const App = () => (
               <Route path="chamados" element={<MecanicoChamadosPage />} />
               <Route path="estoque" element={<MecanicoEstoquePage />} />
               <Route path="km" element={<MecanicoKmPage />} />
+              <Route path="abastecimento" element={<MecanicoAbastecimentoPage />} />
+              <Route path="historico" element={<MecanicoHistoricoPage />} />
             </Route>
             <Route path="/relatorio-impressao" element={<RelatorioImpressaoPage />} />
             <Route path="/entrega-impressao" element={<EntregaImpressaoPage />} />
