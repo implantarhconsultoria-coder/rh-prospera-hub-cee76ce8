@@ -324,9 +324,18 @@ Deno.serve(async (req) => {
         const raw = String((payload || {}).codigo || "").trim();
         if (!raw) return json({ error: "codigo_vazio" }, 400);
 
-        // Normaliza: aceita "TOPAC-ABAST-001" mesmo se vier com espaços/case diferente
-        const codigo = raw.toUpperCase().replace(/\s+/g, "");
-        const isTopacAbast = /^TOPAC-ABAST-\d{1,6}$/.test(codigo);
+        // Normaliza e EXTRAI o código TOPAC-ABAST-NNN mesmo se vier dentro de URL/JSON/texto
+        const upper = raw.toUpperCase().replace(/\s+/g, "");
+        const match = upper.match(/TOPAC-?ABAST-?(\d{1,6})/);
+        const codigo = match ? `TOPAC-ABAST-${match[1].padStart(3, "0")}` : upper;
+        const isTopacAbast = !!match;
+
+        // Dados oficiais do Posto São Donato (cartões impressos da série TOPAC)
+        const POSTO_SAO_DONATO = {
+          nome: "POSTO DE SERVICOS SAO DONATO LTDA - ME",
+          cnpj: "61.362.083/0001-53",
+          endereco: "Rua Anhaia, 1092, Bom Retiro, Sao Paulo - SP, CEP 01130-000",
+        };
 
         let { data: vale } = await sb()
           .from("vales_combustivel")
@@ -344,12 +353,30 @@ Deno.serve(async (req) => {
               status: "ativo",
               valor_limite: 0,
               litros_limite: 0,
+              posto_nome: POSTO_SAO_DONATO.nome,
+              posto_cnpj: POSTO_SAO_DONATO.cnpj,
+              posto_endereco: POSTO_SAO_DONATO.endereco,
               emitido_por_nome: "Auto (QR TOPAC-ABAST)",
               observacao: "Autorização da série TOPAC reconhecida automaticamente no app.",
             })
             .select("*")
             .maybeSingle();
           vale = ins.data;
+        }
+
+        // Se vale existe mas sem posto preenchido e é da série TOPAC, completa com São Donato
+        if (vale && isTopacAbast && (!vale.posto_nome || !vale.posto_cnpj)) {
+          await sb()
+            .from("vales_combustivel")
+            .update({
+              posto_nome: POSTO_SAO_DONATO.nome,
+              posto_cnpj: POSTO_SAO_DONATO.cnpj,
+              posto_endereco: POSTO_SAO_DONATO.endereco,
+            })
+            .eq("id", vale.id);
+          vale.posto_nome = POSTO_SAO_DONATO.nome;
+          vale.posto_cnpj = POSTO_SAO_DONATO.cnpj;
+          vale.posto_endereco = POSTO_SAO_DONATO.endereco;
         }
 
         if (!vale) return json({ error: "vale_invalido" }, 404);
