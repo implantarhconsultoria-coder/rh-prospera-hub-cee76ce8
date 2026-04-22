@@ -284,6 +284,167 @@ Deno.serve(async (req) => {
         return json({ ok: true, quantidade: novo });
       }
 
+      // ---------- ABASTECIMENTO ----------
+      case "validar_vale": {
+        const codigo = String((payload || {}).codigo || "").trim();
+        if (!codigo) return json({ error: "codigo_vazio" }, 400);
+        const { data: vale } = await sb()
+          .from("vales_combustivel")
+          .select("*")
+          .eq("codigo", codigo)
+          .maybeSingle();
+        if (!vale) return json({ error: "vale_invalido" }, 404);
+        if (vale.status !== "ativo") return json({ error: "vale_indisponivel", status: vale.status }, 400);
+        if (vale.validade && new Date(vale.validade) < new Date(new Date().toISOString().split("T")[0])) {
+          return json({ error: "vale_vencido" }, 400);
+        }
+        if (vale.veiculo_id && veiculoId && vale.veiculo_id !== veiculoId) {
+          return json({ error: "vale_outro_veiculo" }, 400);
+        }
+        const veic = (tec as any).veiculos || null;
+        const func = (tec as any).funcionarios || null;
+        return json({
+          ok: true,
+          vale,
+          mecanico: { id: tec.id, nome: func?.nome || tec.apelido },
+          veiculo: veic ? { id: veic.id, placa: veic.placa, modelo: veic.modelo } : null,
+          agora: new Date().toISOString(),
+        });
+      }
+
+      case "registrar_abastecimento": {
+        const p = payload || {};
+        const valor = Number(p.valor) || 0;
+        const litros = Number(p.litros) || 0;
+        if (valor <= 0 || litros <= 0) return json({ error: "valor_litros_invalido" }, 400);
+        if (!p.foto_bomba_base64) return json({ error: "foto_obrigatoria" }, 400);
+        if (!p.vale_codigo) return json({ error: "vale_obrigatorio" }, 400);
+
+        const { data: vale } = await sb()
+          .from("vales_combustivel")
+          .select("*")
+          .eq("codigo", String(p.vale_codigo))
+          .maybeSingle();
+        if (!vale) return json({ error: "vale_nao_encontrado" }, 404);
+
+        // Upload foto
+        const base64 = String(p.foto_bomba_base64).replace(/^data:image\/\w+;base64,/, "");
+        const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+        const path = `${tec.id}/${Date.now()}-bomba.jpg`;
+        const up = await sb()
+          .storage.from("abastecimento-fotos")
+          .upload(path, bytes, { contentType: "image/jpeg", upsert: false });
+        if (up.error) return json({ error: "upload_foto", detalhe: up.error.message }, 500);
+        const { data: pub } = sb().storage.from("abastecimento-fotos").getPublicUrl(path);
+
+        const veic = (tec as any).veiculos || null;
+        const func = (tec as any).funcionarios || null;
+        const now = new Date();
+        const competencia = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+        const { data: row, error } = await sb()
+          .from("abastecimentos")
+          .insert({
+            vale_id: vale.id,
+            vale_codigo: vale.codigo,
+            tecnico_id: tec.id,
+            user_id: userId,
+            mecanico_nome: func?.nome || tec.apelido,
+            veiculo_id: veiculoId,
+            placa: veic?.placa || "",
+            modelo: veic?.modelo || "",
+            data: now.toISOString().split("T")[0],
+            hora: now.toTimeString().slice(0, 8),
+            latitude: p.latitude ?? null,
+            longitude: p.longitude ?? null,
+            foto_bomba_url: pub.publicUrl,
+            valor,
+            litros,
+            combustivel: String(p.combustivel || ""),
+            km_atual: p.km_atual ? Number(p.km_atual) : null,
+            preenchimento: String(p.preenchimento || "manual"),
+            posto_cnpj: String(p.posto_cnpj || ""),
+            posto_nome: String(p.posto_nome || ""),
+            forma_pagamento: String(p.forma_pagamento || ""),
+            status: "pendente",
+            competencia,
+          })
+          .select("*")
+          .single();
+        if (error) return json({ error: "insert_abast", detalhe: error.message }, 500);
+
+        // Marcar vale como utilizado
+        await sb()
+          .from("vales_combustivel")
+          .update({
+            status: "utilizado",
+            utilizado_em: now.toISOString(),
+            utilizado_por: userId,
+          })
+          .eq("id", vale.id);
+
+        await touch(tec.id);
+        return json({ ok: true, abastecimento: row });
+      }
+
+      case "listar_abastecimentos": {
+        const { data } = await sb()
+          .from("abastecimentos")
+          .select("*")
+          .eq("tecnico_id", tec.id)
+          .order("created_at", { ascending: false })
+          .limit(50);
+        return json({ abastecimentos: data || [] });
+      }
+
+      // ---------- HISTÓRICO UNIFICADO ----------
+      case "historico": {
+        if (!userId) return json({ historico: [] });
+        const p = payload || {};
+        const tipo = String(p.tipo || "todos");
+        const limit = 30;
+        const out: any[] = [];
+
+        if (tipo === "todos" || tipo === "ponto") {
+          const { data } = await sb()
+            .from("registros_ponto")
+            .select("id, tipo, data, hora, selfie_url, latitude, longitude, created_at")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(limit);
+          (data || []).forEach((r) => out.push({ ...r, _kind: "ponto" }));
+        }
+        if (tipo === "todos" || tipo === "km") {
+          const { data } = await sb()
+            .from("registros_km")
+            .select("id, km_valor, foto_url, data, hora, created_at")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(limit);
+          (data || []).forEach((r) => out.push({ ...r, _kind: "km" }));
+        }
+        if (tipo === "todos" || tipo === "chamado") {
+          const { data } = await sb()
+            .from("chamados")
+            .select("id, cliente, local_servico, tipo_servico, status, created_at, concluido_em")
+            .eq("colaborador_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(limit);
+          (data || []).forEach((r) => out.push({ ...r, _kind: "chamado" }));
+        }
+        if (tipo === "todos" || tipo === "abastecimento") {
+          const { data } = await sb()
+            .from("abastecimentos")
+            .select("id, valor, litros, placa, foto_bomba_url, data, hora, status, created_at")
+            .eq("tecnico_id", tec.id)
+            .order("created_at", { ascending: false })
+            .limit(limit);
+          (data || []).forEach((r) => out.push({ ...r, _kind: "abastecimento" }));
+        }
+        out.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return json({ historico: out.slice(0, 60) });
+      }
+
       default:
         return json({ error: "acao_desconhecida", action }, 400);
     }
