@@ -189,8 +189,10 @@ Deno.serve(async (req) => {
 
       // ---------- KM ----------
       case "registrar_km": {
-        if (!userId || !veiculoId) return json({ error: "sem_veiculo" }, 400);
+        if (!userId) return json({ error: "sem_user" }, 400);
         const p = payload || {};
+        const veicSel = resolveVeiculo(tec, p);
+        if (!veicSel.id) return json({ error: "sem_veiculo" }, 400);
         const km = Number(p.km_valor);
         if (!km || km < 0) return json({ error: "km_invalido" }, 400);
 
@@ -212,7 +214,7 @@ Deno.serve(async (req) => {
           .from("registros_km")
           .insert({
             user_id: userId,
-            veiculo_id: veiculoId,
+            veiculo_id: veicSel.id,
             km_valor: km,
             tipo_registro: p.foto_base64 ? "foto" : "manual",
             foto_url: fotoUrl,
