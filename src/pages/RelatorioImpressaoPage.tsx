@@ -55,18 +55,31 @@ const RelatorioImpressaoPage: React.FC = () => {
   if (!company) return <div className="p-10 text-center text-lg">Empresa não encontrada. Acesse via relatório.</div>;
 
   return (
-    <div className="bg-white text-black min-h-screen print:bg-white" style={{ fontFamily: "'Segoe UI', Arial, sans-serif" }}>
-      <div className="print:hidden flex items-center gap-3 px-8 py-3 bg-gray-100 border-b">
-        <button onClick={() => window.history.length > 1 ? window.history.back() : window.location.href = '/relatorio'}
-          className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-          ← Voltar
-        </button>
-        <button onClick={() => window.print()}
-          className="px-4 py-2 text-sm font-medium bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
-          🖨 Imprimir / PDF
-        </button>
-      </div>
-      <div className="max-w-[210mm] mx-auto px-8 py-6 print:px-6 print:py-4" style={{ fontSize: '11px' }}>
+    <>
+      <style>{`
+        @page { size: A4; margin: 12mm; }
+        @media print {
+          html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
+          body * { visibility: hidden !important; }
+          #fech-print-area, #fech-print-area * { visibility: visible !important; }
+          #fech-print-area { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
+          .no-print, .no-print *, iframe, nav, aside,
+          [role="dialog"], [aria-modal="true"],
+          [class*="lovable"], [id*="lovable"] { display: none !important; }
+        }
+      `}</style>
+      <div className="bg-white text-black min-h-screen print:bg-white" style={{ fontFamily: "'Segoe UI', Arial, sans-serif" }}>
+        <div className="no-print flex items-center gap-3 px-8 py-3 bg-gray-100 border-b">
+          <button onClick={() => window.history.length > 1 ? window.history.back() : window.location.href = '/relatorio'}
+            className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            ← Voltar
+          </button>
+          <button onClick={() => window.print()}
+            className="px-4 py-2 text-sm font-medium bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+            🖨 Imprimir / PDF
+          </button>
+        </div>
+        <div id="fech-print-area" className="max-w-[210mm] mx-auto px-8 py-6 print:px-6 print:py-4" style={{ fontSize: '11px' }}>
         {/* Header */}
         <div className="border-b-2 border-black pb-3 mb-4">
           <div className="flex justify-between items-start">
@@ -152,12 +165,9 @@ const RelatorioImpressaoPage: React.FC = () => {
           </div>
         )}
 
-        {/* Footer */}
-        <div className="mt-6 pt-3 border-t border-gray-400 text-center text-[9px] text-gray-500">
-          {' '}
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
