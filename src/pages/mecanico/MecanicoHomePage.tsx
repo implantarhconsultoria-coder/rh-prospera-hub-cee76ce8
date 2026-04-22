@@ -52,7 +52,8 @@ const MecanicoHomePage: React.FC = () => {
   }, [call]);
 
   const go = (sub: string) => navigate(`/m/${token}/${sub}`);
-  const veic = tecnico.veiculos;
+  const { veiculoSelecionado } = useTecnicoApp();
+  const veic = veiculoSelecionado;
 
   return (
     <div className="space-y-6">
