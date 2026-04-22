@@ -603,6 +603,15 @@ Deno.serve(async (req) => {
             .limit(limit);
           (data || []).forEach((r) => out.push({ ...r, _kind: "abastecimento" }));
         }
+        if (tipo === "todos" || tipo === "galao") {
+          const { data } = await sb()
+            .from("combustivel_galoes")
+            .select("id, tipo_combustivel, quantidade_litros, placa, foto_url, data, hora, observacao, created_at")
+            .eq("tecnico_id", tec.id)
+            .order("created_at", { ascending: false })
+            .limit(limit);
+          (data || []).forEach((r) => out.push({ ...r, _kind: "galao" }));
+        }
         out.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         return json({ historico: out.slice(0, 60) });
       }
