@@ -13,9 +13,11 @@ import { Html5Qrcode } from 'html5-qrcode';
 type Step = 'idle' | 'scan' | 'confirm' | 'photo' | 'fill' | 'done';
 
 interface ValeData {
-  vale: { id: string; codigo: string; valor_limite: number; litros_limite: number };
-  mecanico: { id: string; nome: string };
+  vale: { id: string; codigo: string; valor_limite: number; litros_limite: number; tipo?: string };
+  tipo?: string;
+  mecanico: { id: string; nome: string; cargo?: string };
   veiculo: { placa: string; modelo: string } | null;
+  posto?: { nome: string; cnpj: string; endereco: string };
   agora: string;
 }
 
