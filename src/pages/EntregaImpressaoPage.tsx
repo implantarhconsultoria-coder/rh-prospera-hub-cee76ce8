@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { RESPONSIBILITY_TEXT, type Delivery } from '@/data/deliveries';
 import type { Company, Employee } from '@/types/database';
 import { formatDate } from '@/lib/calculations';
+import { registrarDocumento } from '@/lib/documentoHistorico';
 
 type DeliveryPreview = Pick<Delivery, 'type' | 'date' | 'items'> & { responsavel?: string };
 
