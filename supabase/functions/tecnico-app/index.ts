@@ -286,13 +286,37 @@ Deno.serve(async (req) => {
 
       // ---------- ABASTECIMENTO ----------
       case "validar_vale": {
-        const codigo = String((payload || {}).codigo || "").trim();
-        if (!codigo) return json({ error: "codigo_vazio" }, 400);
-        const { data: vale } = await sb()
+        const raw = String((payload || {}).codigo || "").trim();
+        if (!raw) return json({ error: "codigo_vazio" }, 400);
+
+        // Normaliza: aceita "TOPAC-ABAST-001" mesmo se vier com espaços/case diferente
+        const codigo = raw.toUpperCase().replace(/\s+/g, "");
+        const isTopacAbast = /^TOPAC-ABAST-\d{1,6}$/.test(codigo);
+
+        let { data: vale } = await sb()
           .from("vales_combustivel")
           .select("*")
           .eq("codigo", codigo)
           .maybeSingle();
+
+        // Auto-provisiona vale TOPAC-ABAST se não existir (autorização impressa em série)
+        if (!vale && isTopacAbast) {
+          const ins = await sb()
+            .from("vales_combustivel")
+            .insert({
+              codigo,
+              tipo: "autorizacao_abastecimento",
+              status: "ativo",
+              valor_limite: 0,
+              litros_limite: 0,
+              emitido_por_nome: "Auto (QR TOPAC-ABAST)",
+              observacao: "Autorização da série TOPAC reconhecida automaticamente no app.",
+            })
+            .select("*")
+            .maybeSingle();
+          vale = ins.data;
+        }
+
         if (!vale) return json({ error: "vale_invalido" }, 404);
         if (vale.status !== "ativo") return json({ error: "vale_indisponivel", status: vale.status }, 400);
         if (vale.validade && new Date(vale.validade) < new Date(new Date().toISOString().split("T")[0])) {
