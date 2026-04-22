@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Clock, ClipboardList, Package, Gauge, LogIn, UtensilsCrossed, Coffee, LogOut as LogOutIcon, Car } from 'lucide-react';
+import { Clock, ClipboardList, Package, Gauge, LogIn, UtensilsCrossed, Coffee, LogOut as LogOutIcon, Car, Fuel, History } from 'lucide-react';
 import { useTecnicoApp } from '@/context/TecnicoAppContext';
 
 const TIPO_LABELS: Record<string, string> = {
@@ -22,6 +22,8 @@ const opActions = [
   { label: 'Chamados', sub: 'Aceitar / executar', icon: ClipboardList, sub2: 'chamados', gradient: 'from-purple-500 to-fuchsia-600' },
   { label: 'Estoque do Carro', sub: 'Itens disponíveis', icon: Package, sub2: 'estoque', gradient: 'from-teal-500 to-cyan-600' },
   { label: 'Registro de KM', sub: 'Foto + valor', icon: Gauge, sub2: 'km', gradient: 'from-amber-500 to-yellow-600' },
+  { label: 'Abastecimento', sub: 'QR + foto da bomba', icon: Fuel, sub2: 'abastecimento', gradient: 'from-orange-500 to-red-600' },
+  { label: 'Histórico', sub: 'Tudo o que registrei', icon: History, sub2: 'historico', gradient: 'from-slate-500 to-slate-700' },
 ];
 
 const greeting = (nome?: string) => {
