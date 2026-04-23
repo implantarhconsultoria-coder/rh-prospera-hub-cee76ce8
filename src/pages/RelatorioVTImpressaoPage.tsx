@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo } from 'react';
+import { Loader2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
-import { getFirstBusinessDayOfNextMonth, getWorkingDays } from '@/lib/workingDays';
+import { getWorkingDays } from '@/lib/workingDays';
 import { formatCurrency } from '@/lib/calculations';
 
 const RelatorioVTImpressaoPage: React.FC = () => {
