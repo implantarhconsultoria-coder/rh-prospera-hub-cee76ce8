@@ -7,7 +7,7 @@ import {
   Clock, Wallet, CalendarCheck, FileX, Fuel, Car,
   Stethoscope, UserCheck, Package, Monitor, Shield, ClipboardList,
   ChevronDown, ChevronRight, Receipt, RefreshCw, AlertTriangle, ClipboardCheck,
-  ArrowDownCircle, ArrowUpCircle, Truck, Landmark, Activity, Layers, CheckSquare, DollarSign, Wrench, FileSearch,
+  ArrowDownCircle, ArrowUpCircle, Truck, Landmark, Activity, Layers, CheckSquare, DollarSign, Wrench, FileSearch, Wand2,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
