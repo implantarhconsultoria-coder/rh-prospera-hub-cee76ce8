@@ -23,7 +23,9 @@ const RelatorioImpressaoPage: React.FC = () => {
   const fechamento = getFechamento(companyId, competencia);
 
   const { rows, totals } = useMemo(() => {
-    let tProv = 0, tDesc = 0, tLiq = 0, tBen = 0, tIns = 0, tHE = 0, tFaltaDias = 0, tFaltaVal = 0, tSalarios = 0, tAdiant = 0;
+    let tProv = 0, tDesc = 0, tLiq = 0, tBen = 0, tIns = 0;
+    let tHE50 = 0, tHE100 = 0, tAdic = 0, tVR = 0, tVT = 0;
+    let tFaltaDias = 0, tFaltaVal = 0, tSalarios = 0, tAdiant = 0, tDescDiv = 0;
     const r = compEmps.map(emp => {
       const entry = compEntries.find(e => e.employeeId === emp.id);
       if (!entry) return null;
@@ -34,16 +36,27 @@ const RelatorioImpressaoPage: React.FC = () => {
       const insVal = entry.insalubridadeAplicada && emp.insalubridadeAtiva ? emp.insalubridadeValor : 0;
 
       tProv += calc.proventos; tDesc += calc.descontos; tLiq += calc.liquido;
-      tBen += calc.beneficios; tIns += insVal; tHE += he50Val + he100Val;
+      tBen += calc.beneficios; tIns += insVal;
+      tHE50 += he50Val; tHE100 += he100Val;
+      tAdic += entry.adicionais;
+      tVR += calc.vrVal; tVT += calc.vtVal;
       tFaltaDias += entry.faltasDias; tFaltaVal += faltaVal;
-      tSalarios += emp.salarioBase; tAdiant += entry.adiantamento;
+      tSalarios += emp.salarioBase;
+      tAdiant += entry.adiantamento;
+      tDescDiv += entry.descontosDiversos;
 
       return { emp, entry, calc, he50Val, he100Val, faltaVal, insVal };
     }).filter(Boolean) as any[];
 
     return {
       rows: r,
-      totals: { proventos: tProv, descontos: tDesc, liquido: tLiq, beneficios: tBen, insalubridade: tIns, he: tHE, faltaDias: tFaltaDias, faltaVal: tFaltaVal, salarios: tSalarios, adiantamentos: tAdiant },
+      totals: {
+        proventos: tProv, descontos: tDesc, liquido: tLiq, beneficios: tBen,
+        insalubridade: tIns, he50: tHE50, he100: tHE100, adicionais: tAdic,
+        vr: tVR, vt: tVT,
+        faltaDias: tFaltaDias, faltaVal: tFaltaVal,
+        salarios: tSalarios, adiantamentos: tAdiant, descontosDiv: tDescDiv,
+      },
     };
   }, [compEmps, compEntries, diasUteis]);
 
