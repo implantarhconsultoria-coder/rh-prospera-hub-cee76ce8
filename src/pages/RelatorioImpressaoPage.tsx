@@ -154,13 +154,17 @@ const RelatorioImpressaoPage: React.FC = () => {
           </tbody>
           <tfoot>
             <tr className="bg-gray-200 font-bold">
-              <td colSpan={2} className="border border-gray-400 px-1 py-1">TOTAIS</td>
+              <td className="border border-gray-400 px-1 py-1" colSpan={2}>TOTAIS</td>
               <td className="border border-gray-400 px-1 py-1 text-right">{formatCurrency(totals.salarios)}</td>
-              <td colSpan={4} className="border border-gray-400 px-1 py-1 text-right">{formatCurrency(totals.he + totals.insalubridade)}</td>
-              <td colSpan={2} className="border border-gray-400 px-1 py-1 text-right">{formatCurrency(totals.beneficios)}</td>
-              <td className="border border-gray-400 px-1 py-1 text-right">{formatCurrency(totals.faltaVal)}</td>
+              <td className="border border-gray-400 px-1 py-1 text-right">{formatCurrency(totals.he50)}</td>
+              <td className="border border-gray-400 px-1 py-1 text-right">{formatCurrency(totals.he100)}</td>
+              <td className="border border-gray-400 px-1 py-1 text-right">{formatCurrency(totals.adicionais)}</td>
+              <td className="border border-gray-400 px-1 py-1 text-right">{formatCurrency(totals.insalubridade)}</td>
+              <td className="border border-gray-400 px-1 py-1 text-right">{formatCurrency(totals.vr)}</td>
+              <td className="border border-gray-400 px-1 py-1 text-right">{formatCurrency(totals.vt)}</td>
+              <td className="border border-gray-400 px-1 py-1 text-right">{totals.faltaDias > 0 ? `${totals.faltaDias}d — ${formatCurrency(totals.faltaVal)}` : '—'}</td>
               <td className="border border-gray-400 px-1 py-1 text-right">{formatCurrency(totals.adiantamentos)}</td>
-              <td className="border border-gray-400 px-1 py-1 text-right">{formatCurrency(totals.descontos)}</td>
+              <td className="border border-gray-400 px-1 py-1 text-right">{formatCurrency(totals.descontosDiv)}</td>
               <td className="border border-gray-400 px-1 py-1 text-right">{formatCurrency(totals.liquido)}</td>
             </tr>
           </tfoot>
