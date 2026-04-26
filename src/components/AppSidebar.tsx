@@ -8,6 +8,7 @@ import {
   Stethoscope, UserCheck, Package, Monitor, Shield, ClipboardList,
   ChevronDown, ChevronRight, Receipt, RefreshCw, AlertTriangle, ClipboardCheck,
   ArrowDownCircle, ArrowUpCircle, Truck, Landmark, Activity, Layers, CheckSquare, DollarSign, Wrench, FileSearch, Wand2,
+  ShoppingCart,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,8 @@ const menuItems: MenuItem[] = [
   { label: 'Fechamentos Filiais', icon: ClipboardCheck, path: '/admin/fechamentos-filiais' },
   { label: 'Fechamento', icon: FileCheck, path: '/admin/fechamento' },
   { label: 'Fechamento por Ponto', icon: Clock, path: '/admin/fechamento-ponto' },
+  { label: 'Folha de Pagamento', icon: Wallet, path: '/admin/folha-pagamento' },
+  { label: 'Rescisões', icon: FileX, path: '/admin/rescisoes' },
   { label: 'Relatório', icon: FileText, path: '/admin/relatorio' },
 ];
 
@@ -47,6 +50,7 @@ const operationalItems: MenuItem[] = [
   { label: 'ASO', icon: Stethoscope, path: '/admin/aso' },
   { label: 'Prestadores', icon: UserCheck, path: '/admin/prestadores' },
   { label: 'Almoxarifado', icon: Package, path: '/admin/almoxarifado' },
+  { label: 'Compras', icon: ShoppingCart, path: '/admin/compras' },
   { label: 'Despachar Chamados', icon: ClipboardList, path: '/admin/chamados' },
   { label: 'App Operacional', icon: Wrench, path: '/admin/app-operacional' },
   { label: 'Histórico', icon: History, path: '/admin/historico' },
@@ -80,10 +84,7 @@ const financeiroItems: MenuItem[] = [
   { label: 'Centros de Custo', icon: Layers, path: '/admin/financeiro/centros-custo' },
 ];
 
-const upcomingItems: MenuItem[] = [
-  { label: 'Folha de Pagamento', icon: Wallet, path: '#', disabled: true },
-  { label: 'Rescisões', icon: FileX, path: '#', disabled: true },
-];
+const upcomingItems: MenuItem[] = [];
 
 interface Props { collapsed: boolean; onToggle: () => void; }
 

@@ -43,7 +43,7 @@ export const defaultConfig: AppConfig = {
   platformName: 'Topac RH Multiempresa PRO',
   pctAdiantamento: 40,
   valorInsalubridade: 648.40,
-  mensagemInstitucional: 'Sistema desenvolvido por ImplantaRH ConsultoriaPRO',
+  mensagemInstitucional: '',
 };
 
 export const AppContext = createContext<AppState | null>(null);
