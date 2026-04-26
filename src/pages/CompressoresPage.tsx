@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Cog, Printer } from 'lucide-react';
 import { toast } from 'sonner';
+import { printDocumentInPage } from '@/lib/printInPage';
 
 const CompressoresPage: React.FC = () => {
   const { companies } = useApp();
