@@ -1092,6 +1092,111 @@ export type Database = {
         }
         Relationships: []
       }
+      compras: {
+        Row: {
+          centro_custo: string
+          company_id: string | null
+          created_at: string
+          data_aprovacao: string | null
+          data_compra: string | null
+          data_entrega: string | null
+          data_solicitacao: string
+          empresa_nome: string
+          fornecedor: string
+          id: string
+          item: string
+          numero_solicitacao: string
+          observacao: string
+          quantidade: number
+          solicitante_nome: string
+          solicitante_user_id: string
+          status: string
+          unidade: string
+          updated_at: string
+          valor_estimado: number
+          valor_real: number
+        }
+        Insert: {
+          centro_custo?: string
+          company_id?: string | null
+          created_at?: string
+          data_aprovacao?: string | null
+          data_compra?: string | null
+          data_entrega?: string | null
+          data_solicitacao?: string
+          empresa_nome?: string
+          fornecedor?: string
+          id?: string
+          item?: string
+          numero_solicitacao?: string
+          observacao?: string
+          quantidade?: number
+          solicitante_nome?: string
+          solicitante_user_id: string
+          status?: string
+          unidade?: string
+          updated_at?: string
+          valor_estimado?: number
+          valor_real?: number
+        }
+        Update: {
+          centro_custo?: string
+          company_id?: string | null
+          created_at?: string
+          data_aprovacao?: string | null
+          data_compra?: string | null
+          data_entrega?: string | null
+          data_solicitacao?: string
+          empresa_nome?: string
+          fornecedor?: string
+          id?: string
+          item?: string
+          numero_solicitacao?: string
+          observacao?: string
+          quantidade?: number
+          solicitante_nome?: string
+          solicitante_user_id?: string
+          status?: string
+          unidade?: string
+          updated_at?: string
+          valor_estimado?: number
+          valor_real?: number
+        }
+        Relationships: []
+      }
+      compras_historico: {
+        Row: {
+          compra_id: string
+          created_at: string
+          id: string
+          observacao: string
+          status_anterior: string
+          status_novo: string
+          user_id: string
+          usuario_nome: string
+        }
+        Insert: {
+          compra_id: string
+          created_at?: string
+          id?: string
+          observacao?: string
+          status_anterior?: string
+          status_novo?: string
+          user_id: string
+          usuario_nome?: string
+        }
+        Update: {
+          compra_id?: string
+          created_at?: string
+          id?: string
+          observacao?: string
+          status_anterior?: string
+          status_novo?: string
+          user_id?: string
+          usuario_nome?: string
+        }
+        Relationships: []
+      }
       conciliacoes: {
         Row: {
           conta_bancaria_id: string
@@ -2954,6 +3059,123 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rescisoes: {
+        Row: {
+          aviso_previo: string
+          aviso_previo_valor: number
+          cargo: string
+          company_id: string | null
+          created_at: string
+          data_admissao: string | null
+          data_desligamento: string
+          decimo_terceiro: number
+          dependentes: number
+          dias_aviso: number
+          empresa_nome: string
+          ferias_proporcionais: number
+          ferias_vencidas: number
+          fgts_mes: number
+          funcionario_id: string | null
+          funcionario_nome: string
+          id: string
+          inss: number
+          irrf: number
+          liquido: number
+          motivo: string
+          multa_fgts: number
+          observacoes: string
+          outros_descontos: number
+          salario_base: number
+          saldo_fgts_depositado: number
+          saldo_salario: number
+          snapshot_json: Json
+          status: string
+          terco_ferias: number
+          tipo_rescisao: string
+          total_descontos: number
+          total_proventos: number
+          updated_at: string
+          user_id: string
+          usuario_nome: string
+        }
+        Insert: {
+          aviso_previo?: string
+          aviso_previo_valor?: number
+          cargo?: string
+          company_id?: string | null
+          created_at?: string
+          data_admissao?: string | null
+          data_desligamento: string
+          decimo_terceiro?: number
+          dependentes?: number
+          dias_aviso?: number
+          empresa_nome?: string
+          ferias_proporcionais?: number
+          ferias_vencidas?: number
+          fgts_mes?: number
+          funcionario_id?: string | null
+          funcionario_nome?: string
+          id?: string
+          inss?: number
+          irrf?: number
+          liquido?: number
+          motivo?: string
+          multa_fgts?: number
+          observacoes?: string
+          outros_descontos?: number
+          salario_base?: number
+          saldo_fgts_depositado?: number
+          saldo_salario?: number
+          snapshot_json?: Json
+          status?: string
+          terco_ferias?: number
+          tipo_rescisao?: string
+          total_descontos?: number
+          total_proventos?: number
+          updated_at?: string
+          user_id: string
+          usuario_nome?: string
+        }
+        Update: {
+          aviso_previo?: string
+          aviso_previo_valor?: number
+          cargo?: string
+          company_id?: string | null
+          created_at?: string
+          data_admissao?: string | null
+          data_desligamento?: string
+          decimo_terceiro?: number
+          dependentes?: number
+          dias_aviso?: number
+          empresa_nome?: string
+          ferias_proporcionais?: number
+          ferias_vencidas?: number
+          fgts_mes?: number
+          funcionario_id?: string | null
+          funcionario_nome?: string
+          id?: string
+          inss?: number
+          irrf?: number
+          liquido?: number
+          motivo?: string
+          multa_fgts?: number
+          observacoes?: string
+          outros_descontos?: number
+          salario_base?: number
+          saldo_fgts_depositado?: number
+          saldo_salario?: number
+          snapshot_json?: Json
+          status?: string
+          terco_ferias?: number
+          tipo_rescisao?: string
+          total_descontos?: number
+          total_proventos?: number
+          updated_at?: string
+          user_id?: string
+          usuario_nome?: string
+        }
+        Relationships: []
       }
       tecnicos_campo: {
         Row: {

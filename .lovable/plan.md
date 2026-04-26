@@ -1,94 +1,114 @@
+# Liberar Folha de Pagamento, Rescisão, Compras e remover marca d'água
 
+Adicionar 3 módulos novos visíveis no menu admin, mantendo o padrão visual (mesmo layout das telas atuais como `FechamentoPage` e `AlmoxarifadoPage`), reaproveitando cálculos já existentes (`src/lib/calculations.ts`: INSS, IRRF, FGTS, DSR, HE) e dados já cadastrados (funcionários, lançamentos mensais, empresas). Sem refazer nada e sem quebrar telas atuais.
 
-# Correção crítica — Fluxo Ponto + Atestado → Fechamento automático
+## 1. Folha de Pagamento
 
-## Objetivo
-Transformar a aba atual ("Importação para o Fechamento") de **"sobe arquivos"** para **"sobe → lê → cruza → confere → alimenta o fechamento"**, com tela de conferência dedicada, status visuais e relatório de divergências.
+**Rota:** `/admin/folha-pagamento` — visível na barra lateral (substitui o item "Em breve" de Folha de Pagamento).
 
-## O que vai ser corrigido
+**Como funciona:**
+- Filtra por **empresa + competência** (mesmo padrão do Fechamento)
+- Lista todos os funcionários ativos da empresa
+- Para cada funcionário, puxa **automaticamente**:
+  - Salário base, insalubridade, VR/VT/VA, dependentes → da tabela `funcionarios`
+  - HE 50%, HE 100%, faltas, atrasos, comissão, adicionais, descontos diversos, adiantamento → da tabela `lancamentos_mensais` (mesmos dados que o Fechamento já usa)
+- Calcula em tela usando as funções **já existentes** em `src/lib/calculations.ts`:
+  - `calcHE50`, `calcHE100`, `calcDSR`, `calcINSS`, `calcIRRF`, `calcFGTS`, `calcFalta`, `calcAtraso`, `calcAdiantamento`, `calcTotalFuncionario`
+- Mostra coluna a coluna: Salário | Adicionais | Insalub | HE50 | HE100 | DSR | Comissão | Faltas | Desc.Falta | Adiant | Desc.Diversos | INSS | IRRF | FGTS (informativo) | **Líquido**
+- **Sem desconto VT** (regra já aplicada no fechamento — VT só como benefício)
+- Botões: **Imprimir Folha (PDF da empresa)** e **Holerite individual (PDF por funcionário)** usando `printDocumentInPage` (sem abrir nova aba)
 
-### 1. Persistir o cartão de ponto (hoje só fica em memória)
-Criar tabela `cartoes_ponto` para armazenar cada cartão lido (funcionário, competência, dias com batidas, totais calculados, status de conferência, link do arquivo). Hoje, se o usuário recarrega a página, perde tudo. Vai persistir igual ao atestado.
+**O que NÃO é criado:** nova tabela. A folha lê os mesmos `lancamentos_mensais` do Fechamento — **fonte única de verdade**, sem digitação dupla. Edições continuam sendo feitas em "Lançamentos Mensais".
 
-### 2. Status de conferência visual em cada linha
-Cada cartão vinculado vai mostrar um dos 4 status:
-- **Pendente** (cinza) — lido mas não conferido
-- **Conferido** (verde) — usuário validou
-- **Divergente** (laranja) — falta sem atestado, batida inconsistente, OCR baixa confiança
-- **Justificado** (azul) — falta coberta por atestado
+**Arquivos:**
+- Novo: `src/pages/FolhaPagamentoPage.tsx`
+- Novo: `src/lib/folhaPdf.ts` (gera HTML do holerite e da folha consolidada)
+- Editado: `src/App.tsx` (rota), `src/components/AppSidebar.tsx` (move "Folha de Pagamento" de `upcomingItems` para `menuItems`, remove o `disabled`)
 
-### 3. Tela "Conferência de Ponto e Atestados" (nova rota dedicada)
-Rota: `/admin/conferencia-ponto`  
-Filtros: Empresa + Competência  
-Mostra por funcionário:
-| Funcionário | Dias trab. | Faltas no ponto | Atestados vinculados | Divergências | Status | Ações |
-|---|---|---|---|---|---|---|
-| João Silva | 20 | 2 | 1 atestado (3 dias) | 1 falta sem justificativa | ⚠️ Divergente | Ver detalhes / Conferir / Enviar p/ fechamento |
+## 2. Rescisão
 
-Botões no topo: **"Enviar tudo conferido p/ fechamento"** e **"Gerar Relatório de Divergências (PDF)"**.
+**Rota:** `/admin/rescisoes` — visível na barra lateral (substitui o item "Em breve" de Rescisões).
 
-### 4. Cruzamento automático ampliado
-Hoje o cruzamento só roda quando o usuário clica. Vai passar a rodar:
-- Automaticamente após salvar atestado (recalcula cartões da mesma competência/funcionário)
-- Automaticamente após upload/leitura de cartão
-- Classificando cada dia ausente em: `falta_justificada`, `falta_sem_justificativa`, `atestado_sem_falta_correspondente`
+**Como funciona:**
+- Lista de rescisões salvas (filtro por empresa)
+- Botão **"Nova Rescisão"** abre formulário com:
+  - Seleção de funcionário (popula auto: empresa, cargo, admissão, salário, dependentes)
+  - Data do desligamento
+  - Tipo de rescisão (select): `sem_justa_causa`, `pedido_demissao`, `acordo_mutuo_484a`, `justa_causa`, `termino_contrato_experiencia`, `rescisao_indireta`
+  - Aviso prévio: `trabalhado` | `indenizado` | `dispensado`
+  - Saldo de FGTS depositado (input — usuário informa)
+  - Observações
+- Calcula automaticamente conforme tipo (utilitário novo `src/lib/rescisaoCalc.ts`):
+  - **Saldo de salário**: `(salario/30) × dias_trabalhados_no_mes`
+  - **Aviso prévio**: dias = 30 + 3 por ano de casa (máx 90); valor = `(salario/30) × dias`
+  - **Projeção do aviso indenizado** soma na contagem para férias/13º
+  - **Férias vencidas**: salário cheio + 1/3 (se houver período vencido)
+  - **Férias proporcionais**: `(salario × meses/12) + 1/3`
+  - **13º proporcional**: `salario × meses_trabalhados_no_ano/12`
+  - **INSS** sobre saldo + 13º (separados, usando `calcINSS`)
+  - **IRRF** sobre base apropriada (`calcIRRF`)
+  - **FGTS do mês**: 8% sobre verbas com incidência
+  - **Multa 40% FGTS** (sem justa causa) ou **20%** (acordo 484-A) — sobre saldo informado
+  - Regras por tipo:
+    - `pedido_demissao`: sem multa FGTS, sem aviso indenizado a receber
+    - `justa_causa`: só saldo de salário e férias vencidas
+    - `acordo_mutuo`: aviso e multa pela metade
+- **Líquido** = proventos − descontos
+- Salva em nova tabela `rescisoes` (snapshot dos cálculos)
+- Botão **"Gerar PDF da Rescisão"** via `printDocumentInPage`
 
-### 5. Alimentação do Fechamento sem digitação dupla
-Botão "Enviar p/ fechamento" no detalhe de cada funcionário (e em massa). Já existe a lógica em `aplicarNoFechamento` — vai ganhar:
-- Preview "antes vs. depois" antes de gravar
-- Preserva campos manuais (adicionais, descontos diversos, comissão)
-- Marca `lancamentos_mensais.observacoes` com origem ("Importado do cartão XYZ em DD/MM")
-- Bloqueia reenvio se a competência estiver fechada (status `fechado`)
+**Arquivos:**
+- Novo: `src/pages/RescisaoPage.tsx`
+- Novo: `src/lib/rescisaoCalc.ts`
+- Novo: `src/lib/rescisaoPdf.ts`
+- Migration: tabela `rescisoes` (campos espelhando os listados no pedido + JSON com snapshot dos cálculos, RLS por empresa via `get_user_empresas()`)
+- Editado: `src/App.tsx`, `src/components/AppSidebar.tsx`
 
-### 6. Tela manual assistida quando OCR falha
-Quando a IA não consegue ler (confiança < 0.5 ou erro), em vez de marcar erro e parar:
-- Mantém o arquivo anexado
-- Abre formulário lado a lado com o PDF embutido
-- Usuário digita batidas dia a dia (ou só faltas) e salva como cartão manual
+## 3. Compras (estrutura base)
 
-### 7. Relatório de Divergências (PDF)
-Gera lista por empresa/competência com:
-- Faltas sem atestado (nome, data, dias)
-- Atestados sem falta correspondente no ponto
-- Cartões com batidas inconsistentes
-- Cartões ignorados (Jerri, Rodrigo Sabino, Rodrigo Medrado, mecânicos de rua)
+**Rota:** `/admin/compras` — visível na barra lateral, novo grupo (ou ao lado de Almoxarifado).
 
-### 8. Estabilidade pós-save (regra crítica)
-Em todos os botões "Salvar / Confirmar / Aplicar":
-- Loading visível e botão desabilitado durante a operação
-- Toast de sucesso ao terminar
-- `await fetchData()` para atualizar lista sem reload manual
-- ErrorBoundary já está protegendo contra tela branca (já implementado)
+**Como funciona (versão inicial entregável):**
+- Tela com aba única "Solicitações de Compra"
+- Botão **"Nova Solicitação"** abre formulário:
+  - Empresa, Solicitante (auto do usuário logado), Data, Centro de Custo, Fornecedor (texto livre), Item, Quantidade, Valor estimado, Observação
+  - Status (select): `solicitado`, `em_cotacao`, `aprovado`, `comprado`, `entregue`, `cancelado`
+- Tabela lista solicitações com filtros por empresa/status
+- Cada linha permite mudar o status (botões discretos como já feito no Almoxarifado)
+- Histórico = audit trail simples: cada mudança grava linha em `compras_historico` (status anterior, novo, usuário, data)
 
-## Arquivos que serão alterados/criados
+**Arquivos:**
+- Novo: `src/pages/ComprasPage.tsx`
+- Migration: tabelas `compras` e `compras_historico` (RLS por empresa)
+- Editado: `src/App.tsx`, `src/components/AppSidebar.tsx`
 
-**Migration (banco):**
-- Nova tabela `cartoes_ponto` (funcionario_id, company_id, competencia, arquivo_url, dias_json, totais, status_conferencia, divergencias_json, criado_por, RLS)
-- Coluna `status_conferencia` em `atestados` (pendente/conferido/justificado)
+Pronto para receber regras detalhadas depois — estrutura, listagem, status e histórico já operam.
 
-**Código novo:**
-- `src/pages/ConferenciaPontoPage.tsx` — tela de conferência consolidada
-- `src/lib/divergenciasReport.ts` — geração do PDF de divergências
-- `src/components/CartaoManualForm.tsx` — fallback manual quando OCR falha
+## 4. Remover marca / menção institucional
 
-**Código alterado:**
-- `src/pages/ImportacaoFechamentoPage.tsx` — persistir cartões, classificação ampliada, status visuais, fallback manual
-- `src/lib/pontoFechamento.ts` — adicionar classificação `atestado_sem_falta` e cálculo de status por funcionário
-- `src/App.tsx` + `src/components/AppSidebar.tsx` — rota e link "Conferência de Ponto"
-- `src/pages/FechamentoPage.tsx` — badge "Importado" nos lançamentos vindos do cartão
+Removo todas as ocorrências de "ImplantaRH ConsultoriaPRO" / "Sistema desenvolvido por…" da interface:
+- `src/pages/ConfiguracoesPage.tsx` (3 ocorrências)
+- `src/pages/LoginPage.tsx` (subtítulo)
+- `src/context/AppContextValue.ts` (`mensagemInstitucional` vira string vazia)
+- `index.html` (meta description e author — apenas mantém "Topac RH")
+- Faço varredura final por `rg` em PDFs e impressões (`pdfGenerator.ts`, `printInPage.ts`, `divergenciasReport.ts`, `RelatorioImpressaoPage.tsx` etc.) e removo qualquer rodapé/cabeçalho com a marca.
 
-## O que NÃO será alterado
-- Layout geral, menus, permissões existentes, regras de cálculo do Fechamento (HE, INSS, FGTS, IRRF, VR, VT)
-- Exceções já implementadas (Jerri, Rodrigos, mecânicos, Marcelo HE 50%)
-- Tolerância de 15 min (mantida)
+Não há marca d'água sobreposta nas telas de preview hoje (verifiquei — nenhum CSS `watermark` no projeto). Se aparecer alguma menção residual nos PDFs, é removida na mesma passagem.
 
-## Risco de dados já salvos
-**Nenhum.** A migration só **cria** uma tabela nova e **adiciona** coluna nova com default. Os atestados já salvos continuam intactos.
+## Padrão visual
 
-## Resultado esperado
-1. Sobe atestados → ficam arquivados e marcados como "pendente"
-2. Sobe cartões → ficam persistidos com status automático (Conferido / Divergente / Justificado)
-3. Abre "Conferência de Ponto" → vê tudo consolidado por funcionário com divergências destacadas
-4. Confere e clica "Enviar p/ Fechamento" → `lancamentos_mensais` é atualizado preservando dados manuais
-5. Imprime "Relatório de Divergências" para revisão final
+Todas as 3 telas novas usam exatamente o mesmo estilo já aprovado:
+- `Card`, `Table`, `Button`, `Select`, `Input` do shadcn
+- Mesmo cabeçalho, mesmos toasts (`sonner`), mesmo `formatCurrency`
+- Sem nova paleta, sem novos componentes visuais
 
+## O que NÃO muda
+
+- Nenhuma tela existente é refeita
+- Nenhum cálculo do Fechamento é alterado
+- Layout, cores, sidebar, login, permissões, rotas atuais permanecem intactos
+- Itens "Em breve" (Folha/Rescisões) deixam de existir e são substituídos pelas telas reais
+
+## Risco em dados
+
+**Nenhum** — só inserimos 3 tabelas novas (`rescisoes`, `compras`, `compras_historico`). Folha de Pagamento não cria tabela, lê dos `lancamentos_mensais` já existentes.
