@@ -50,7 +50,7 @@ const LoginPage: React.FC = () => {
             <Building2 className="w-8 h-8 text-accent-foreground" />
           </div>
           <h1 className="text-2xl font-bold font-display text-foreground">Topac RH Multiempresa PRO</h1>
-          <p className="text-sm text-muted-foreground mt-1">ImplantaRH ConsultoriaPRO</p>
+          <p className="text-sm text-muted-foreground mt-1">Plataforma de Gestão</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative">

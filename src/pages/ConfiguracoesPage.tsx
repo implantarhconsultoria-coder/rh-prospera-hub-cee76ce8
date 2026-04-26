@@ -22,26 +22,10 @@ const ConfiguracoesPage: React.FC = () => {
 
         <div className="space-y-4">
           <div className="flex items-start gap-3">
-            <Code className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-foreground">Desenvolvido por</p>
-              <p className="text-sm text-muted-foreground">ImplantaRH ConsultoriaPRO</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
             <Award className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
             <div>
               <p className="text-sm font-semibold text-foreground">Versão</p>
               <p className="text-sm text-muted-foreground">1.0.0 — Multiempresa PRO</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <Shield className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-foreground">Direitos Autorais</p>
-              <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} ImplantaRH ConsultoriaPRO. Todos os direitos reservados.</p>
             </div>
           </div>
 
@@ -52,11 +36,6 @@ const ConfiguracoesPage: React.FC = () => {
               <p className="text-sm text-muted-foreground">Gestão completa de RH: folha, benefícios, EPI, uniformes, relatórios e controle multiempresa.</p>
             </div>
           </div>
-        </div>
-
-        <div className="bg-muted/50 rounded-lg p-4 text-center text-xs text-muted-foreground mt-4">
-          <p>Sistema de uso exclusivo da empresa contratante.</p>
-          <p className="mt-1">Suporte técnico: ImplantaRH ConsultoriaPRO</p>
         </div>
       </div>
     </div>
