@@ -288,4 +288,91 @@ export default function FichaRetiradaPage() {
       </div>
     </PrintOnly>
   )
+}import React, { useMemo, useState } from 'react'
+
+export type FuncionarioOption = {
+  id: string
+  nome: string
+  cpf?: string
+  matricula?: string
+  funcao?: string
+}
+
+type Props = {
+  options: FuncionarioOption[]
+  value?: FuncionarioOption | null
+  onChange: (value: FuncionarioOption | null) => void
+  placeholder?: string
+  label?: string
+}
+
+export default function FuncionarioCombobox({
+  options,
+  value,
+  onChange,
+  placeholder = 'Digite nome, CPF, matrícula ou função...',
+  label = 'Funcionário'
+}: Props) {
+  const [query, setQuery] = useState(value?.nome || '')
+  const [open, setOpen] = useState(false)
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return options.slice(0, 15)
+
+    return options
+      .filter((f) => {
+        const text = [
+          f.nome,
+          f.cpf || '',
+          f.matricula || '',
+          f.funcao || '',
+        ].join(' ').toLowerCase()
+
+        return text.includes(q)
+      })
+      .slice(0, 20)
+  }, [query, options])
+
+  return (
+    <div className="relative w-full">
+      <label className="block text-sm mb-1">{label}</label>
+
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value)
+          setOpen(true)
+          if (!e.target.value.trim()) onChange(null)
+        }}
+        onFocus={() => setOpen(true)}
+        placeholder={placeholder}
+        className="w-full border rounded px-3 py-2"
+      />
+
+      {open && filtered.length > 0 && (
+        <div className="absolute z-50 mt-1 w-full rounded border bg-white shadow max-h-64 overflow-auto">
+          {filtered.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              className="block w-full text-left px-3 py-2 hover:bg-gray-100"
+              onMouseDown={(e) => {
+                e.preventDefault()
+                setQuery(f.nome)
+                onChange(f)
+                setOpen(false)
+              }}
+            >
+              <div className="font-medium">{f.nome}</div>
+              <div className="text-xs text-gray-500">
+                {f.funcao || 'Sem função'} • CPF: {f.cpf || '-'} • Matrícula: {f.matricula || '-'}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
