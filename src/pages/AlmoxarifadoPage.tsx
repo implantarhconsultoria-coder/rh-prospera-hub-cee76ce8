@@ -9,6 +9,18 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import AlmoxarifadoCargaTab from '@/components/AlmoxarifadoCargaTab';
+import * as XLSX from 'xlsx';
+
+// Detecta nomes corrompidos vindos de importação binária ou linhas inválidas
+const INVALID_NAME_RE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFD]/;
+const isValidItemName = (n: unknown): n is string => {
+  if (typeof n !== 'string') return false;
+  const t = n.trim();
+  if (!t || t.length > 200) return false;
+  if (INVALID_NAME_RE.test(t)) return false;
+  if (!/[A-Za-z0-9]/.test(t)) return false;
+  return true;
+};
 
 type Tab = 'estoque' | 'entrada' | 'saida' | 'carregamento' | 'carga' | 'fechamento' | 'relatorio';
 
@@ -170,41 +182,123 @@ const AlmoxarifadoPage: React.FC = () => {
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !uid) return;
+
+    const name = file.name.toLowerCase();
+    const ext = name.split('.').pop() || '';
+    const allowedExt = ['xlsx', 'xls', 'csv'];
+    if (!allowedExt.includes(ext)) {
+      toast.error('Arquivo inválido. Envie uma planilha XLSX, XLS ou CSV no modelo correto.');
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
+
     setLoading(true);
     try {
-      const text = await file.text();
-      const lines = text.split('\n').filter(l => l.trim());
-      const header = lines[0].split(/[;\t,]/).map(h => h.trim().toLowerCase());
-      const nameIdx = header.findIndex(h => h.includes('nome') || h.includes('item') || h.includes('descri'));
-      const catIdx = header.findIndex(h => h.includes('categ'));
-      const unIdx = header.findIndex(h => h.includes('unid'));
-      const qtdIdx = header.findIndex(h => h.includes('qtd') || h.includes('quant'));
-      const valIdx = header.findIndex(h => h.includes('valor') || h.includes('preco') || h.includes('preço'));
-      const locIdx = header.findIndex(h => h.includes('local'));
-
-      let imported = 0;
-      for (let i = 1; i < lines.length; i++) {
-        const cols = lines[i].split(/[;\t,]/).map(c => c.trim());
-        const nome = nameIdx >= 0 ? cols[nameIdx] : cols[0];
-        if (!nome) continue;
-        await supabase.from('almoxarifado_itens').insert({
-          user_id: uid, nome,
-          categoria: catIdx >= 0 ? cols[catIdx] || '' : '',
-          unidade: unIdx >= 0 ? cols[unIdx] || 'un' : 'un',
-          quantidade: qtdIdx >= 0 ? Number(cols[qtdIdx]) || 0 : 0,
-          valor_unitario: valIdx >= 0 ? Number(cols[valIdx]?.replace(',', '.')) || 0 : 0,
-          localizacao: locIdx >= 0 ? cols[locIdx] || '' : '',
-        } as any);
-        imported++;
+      const buf = await file.arrayBuffer();
+      let wb: XLSX.WorkBook;
+      try {
+        wb = XLSX.read(buf, { type: 'array' });
+      } catch {
+        toast.error('Arquivo inválido. Envie uma planilha XLSX, XLS ou CSV no modelo correto.');
+        setLoading(false);
+        if (fileRef.current) fileRef.current.value = '';
+        return;
       }
-      toast.success(`${imported} itens importados!`);
-      fetchAll();
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      if (!ws) {
+        toast.error('Planilha vazia ou ilegível.');
+        setLoading(false);
+        if (fileRef.current) fileRef.current.value = '';
+        return;
+      }
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: '', raw: false });
+      if (!rows.length) {
+        toast.error('Planilha sem linhas de dados.');
+        setLoading(false);
+        if (fileRef.current) fileRef.current.value = '';
+        return;
+      }
+
+      // Normaliza headers
+      const norm = (s: string) => s.toString().trim().toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const headers = Object.keys(rows[0]).map(norm);
+      const findKey = (orig: string[], match: (h: string) => boolean) => {
+        const idx = headers.findIndex(match);
+        return idx >= 0 ? orig[idx] : null;
+      };
+      const origKeys = Object.keys(rows[0]);
+      const kNome = findKey(origKeys, h => h === 'item' || h.includes('nome'));
+      const kDesc = findKey(origKeys, h => h.includes('descri'));
+      const kCat = findKey(origKeys, h => h.includes('categ'));
+      const kUn = findKey(origKeys, h => h.includes('unid'));
+      const kQtd = findKey(origKeys, h => h.includes('quant') || h === 'qtd');
+      const kMin = findKey(origKeys, h => h.includes('minim'));
+      const kLoc = findKey(origKeys, h => h.includes('local'));
+      const kEmp = findKey(origKeys, h => h.includes('empresa') || h.includes('filial'));
+      const kObs = findKey(origKeys, h => h.includes('observ'));
+
+      if (!kNome) {
+        toast.error('Cabeçalho inválido. Colunas obrigatórias: item, descrição, categoria, unidade, quantidade, estoque mínimo, localização, empresa/filial, observações.');
+        setLoading(false);
+        if (fileRef.current) fileRef.current.value = '';
+        return;
+      }
+
+      const toInsert: any[] = [];
+      let invalid = 0;
+      for (const row of rows) {
+        const nome = String(row[kNome] ?? '').trim();
+        if (!isValidItemName(nome)) { invalid++; continue; }
+        toInsert.push({
+          user_id: uid,
+          nome,
+          descricao: kDesc ? String(row[kDesc] ?? '').trim().slice(0, 500) : '',
+          categoria: kCat ? String(row[kCat] ?? '').trim().slice(0, 100) : '',
+          unidade: kUn ? (String(row[kUn] ?? '').trim().slice(0, 20) || 'un') : 'un',
+          quantidade: kQtd ? (Number(String(row[kQtd] ?? '0').replace(',', '.')) || 0) : 0,
+          valor_unitario: 0,
+          localizacao: kLoc ? String(row[kLoc] ?? '').trim().slice(0, 100) : '',
+        });
+      }
+
+      if (!toInsert.length) {
+        toast.error('Nenhuma linha válida encontrada na planilha.');
+        setLoading(false);
+        if (fileRef.current) fileRef.current.value = '';
+        return;
+      }
+
+      // Insere em lote
+      const { error } = await supabase.from('almoxarifado_itens').insert(toInsert as any);
+      if (error) {
+        toast.error('Erro ao importar: ' + error.message);
+      } else {
+        toast.success(`${toInsert.length} itens importados${invalid ? ` (${invalid} linhas inválidas ignoradas)` : ''}.`);
+        fetchAll();
+      }
     } catch {
-      toast.error('Erro ao importar planilha');
+      toast.error('Arquivo inválido. Envie uma planilha XLSX, XLS ou CSV no modelo correto.');
     }
     setLoading(false);
     setShowImport(false);
+    if (fileRef.current) fileRef.current.value = '';
   };
+
+  const handleLimparInvalidos = async () => {
+    if (!confirm('Remover todos os registros corrompidos/inválidos do estoque? Itens válidos serão mantidos.')) return;
+    setLoading(true);
+    const { data, error } = await supabase.from('almoxarifado_itens').select('id, nome');
+    if (error || !data) { toast.error('Erro ao listar itens'); setLoading(false); return; }
+    const badIds = data.filter(r => !isValidItemName(r.nome)).map(r => r.id);
+    if (!badIds.length) { toast.success('Nenhum registro inválido encontrado.'); setLoading(false); return; }
+    const { error: delErr } = await supabase.from('almoxarifado_itens').delete().in('id', badIds);
+    if (delErr) toast.error('Erro ao remover: ' + delErr.message);
+    else toast.success(`${badIds.length} registros inválidos removidos.`);
+    fetchAll();
+    setLoading(false);
+  };
+
 
   const handleEntrada = async () => {
     if (!entItemId || entQtd <= 0 || !uid) { toast.error('Preencha item e quantidade'); return; }
@@ -356,7 +450,9 @@ const AlmoxarifadoPage: React.FC = () => {
   };
 
   const getItemName = (id: string) => itens.find(i => i.id === id)?.nome || '—';
-  const filteredItens = itens.filter(i => i.nome.toLowerCase().includes(search.toLowerCase()));
+  const filteredItens = itens
+    .filter(i => isValidItemName(i.nome))
+    .filter(i => i.nome.toLowerCase().includes(search.toLowerCase()));
 
   const tabs: { key: Tab; label: string; icon: React.ElementType }[] = [
     { key: 'estoque', label: 'Estoque', icon: Package },
@@ -504,12 +600,25 @@ const AlmoxarifadoPage: React.FC = () => {
                   <Upload className="w-4 h-4 mr-1" />Importar Planilha
                 </Button>
               )}
+              {isAdmin && (
+                <Button size="sm" variant="outline" onClick={handleLimparInvalidos}>
+                  <Trash2 className="w-4 h-4 mr-1" />Limpar registros inválidos
+                </Button>
+              )}
             </div>
 
             {showImport && (
-              <div className="border rounded-lg p-4 bg-muted/20">
-                <p className="text-xs text-muted-foreground mb-2">Envie um CSV/TXT com colunas: Nome, Categoria, Unidade, Quantidade, Valor, Localização</p>
-                <input ref={fileRef} type="file" accept=".csv,.txt,.tsv" onChange={handleImport} className="text-xs" />
+              <div className="border rounded-lg p-4 bg-muted/20 space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Envie XLSX, XLS ou CSV com as colunas: <strong>item, descrição, categoria, unidade, quantidade, estoque mínimo, localização, empresa/filial, observações</strong>.
+                </p>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+                  onChange={handleImport}
+                  className="text-xs"
+                />
               </div>
             )}
 
