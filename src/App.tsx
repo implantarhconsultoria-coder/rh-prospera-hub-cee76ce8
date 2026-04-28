@@ -9,6 +9,8 @@ import FilialLayout from "@/components/FilialLayout";
 import OperacionalLayout from "@/components/OperacionalLayout";
 import CampoLayout from "@/components/CampoLayout";
 import MecanicoLayout from "@/components/MecanicoLayout";
+import FaturamentoLayout from "@/components/FaturamentoLayout";
+import FinanceiroLayout from "@/components/FinanceiroLayout";
 import MecanicoHomePage from "@/pages/mecanico/MecanicoHomePage";
 import MecanicoPontoPage from "@/pages/mecanico/MecanicoPontoPage";
 import MecanicoChamadosPage from "@/pages/mecanico/MecanicoChamadosPage";
@@ -103,6 +105,8 @@ const RoleRedirect = () => {
 
   // Priority: admin always wins (admin can also have tecnico_campo for testing the field app)
   if (userRoles.includes('admin')) return <Navigate to="/admin" replace />;
+  if (userRoles.includes('faturamento')) return <Navigate to="/faturamento" replace />;
+  if (userRoles.includes('financeiro')) return <Navigate to="/financeiro" replace />;
   if (userRoles.includes('operacional')) return <Navigate to="/operacional" replace />;
   if (userRoles.includes('filial_praia') || userRoles.includes('filial_goiania')) return <Navigate to="/filial" replace />;
   if (userRoles.includes('almoxarifado')) return <Navigate to="/filial" replace />;
@@ -223,6 +227,32 @@ const AuthGate = () => {
       {/* ========== OPERACIONAL PORTAL ========== */}
       <Route element={<OperacionalLayout />}>
         <Route path="/operacional" element={<DespacharChamadoPage />} />
+      </Route>
+
+      {/* ========== FATURAMENTO PORTAL (acesso teste FAT) ========== */}
+      <Route element={<FaturamentoLayout />}>
+        <Route path="/faturamento" element={<FaturamentoDashboardPage />} />
+        <Route path="/faturamento/clientes" element={<ClientesFatPage />} />
+        <Route path="/faturamento/clientes/:id" element={<ClienteDetailPage />} />
+        <Route path="/faturamento/contratos" element={<ContratosPage />} />
+        <Route path="/faturamento/contratos/:id" element={<ContratoDetailPage />} />
+        <Route path="/faturamento/faturas" element={<FaturasPage />} />
+        <Route path="/faturamento/medicoes" element={<MedicoesPage />} />
+        <Route path="/faturamento/reajustes" element={<ReajustesPage />} />
+        <Route path="/faturamento/pendencias" element={<PendenciasPage />} />
+      </Route>
+
+      {/* ========== FINANCEIRO PORTAL (acesso teste FIN) ========== */}
+      <Route element={<FinanceiroLayout />}>
+        <Route path="/financeiro" element={<FinanceiroDashboardPage />} />
+        <Route path="/financeiro/contas-receber" element={<ContasReceberPage />} />
+        <Route path="/financeiro/contas-pagar" element={<ContasPagarPage />} />
+        <Route path="/financeiro/fornecedores" element={<FornecedoresPage />} />
+        <Route path="/financeiro/bancos" element={<BancosPage />} />
+        <Route path="/financeiro/fluxo-caixa" element={<FluxoCaixaPage />} />
+        <Route path="/financeiro/inadimplencia" element={<InadimplenciaPage />} />
+        <Route path="/financeiro/centros-custo" element={<CentrosCustoPage />} />
+        <Route path="/financeiro/conciliacao" element={<ConciliacaoPage />} />
       </Route>
 
       {/* Catch-all */}
