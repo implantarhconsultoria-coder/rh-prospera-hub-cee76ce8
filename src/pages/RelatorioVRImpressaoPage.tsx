@@ -77,7 +77,8 @@ const RelatorioVRImpressaoPage: React.FC = () => {
               </div>
               <div className="text-right">
                 <p className="text-sm font-bold">RELATÓRIO DE VALE REFEIÇÃO</p>
-                <p className="text-xs">Competência: {competenciaLabel}</p>
+                <p className="text-xs">Apuração: {competenciaLabel}</p>
+                <p className="text-xs font-bold">Pagamento referente a: {competenciaPagamentoLabel}</p>
                 <p className="text-xs">Dias úteis: {diasUteis}</p>
                 {dataFechamento && <p className="text-xs">Fechamento: {new Date(dataFechamento).toLocaleDateString('pt-BR')}</p>}
               </div>
