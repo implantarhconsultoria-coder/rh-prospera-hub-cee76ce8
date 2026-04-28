@@ -1304,6 +1304,39 @@ export type Database = {
           },
         ]
       }
+      config_acesso_horario: {
+        Row: {
+          dias_semana: string
+          enabled: boolean
+          hora_fim: string
+          hora_inicio: string
+          id: string
+          observacao: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          dias_semana?: string
+          enabled?: boolean
+          hora_fim?: string
+          hora_inicio?: string
+          id?: string
+          observacao?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          dias_semana?: string
+          enabled?: boolean
+          hora_fim?: string
+          hora_inicio?: string
+          id?: string
+          observacao?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       config_financeiro: {
         Row: {
           chave: string
@@ -3713,6 +3746,8 @@ export type Database = {
         | "usuario"
         | "tecnico_campo"
         | "operacional"
+        | "faturamento"
+        | "financeiro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3848,6 +3883,8 @@ export const Constants = {
         "usuario",
         "tecnico_campo",
         "operacional",
+        "faturamento",
+        "financeiro",
       ],
     },
   },
