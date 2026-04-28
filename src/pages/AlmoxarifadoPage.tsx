@@ -50,6 +50,7 @@ const AlmoxarifadoPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showNewItem, setShowNewItem] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Daily closing state
