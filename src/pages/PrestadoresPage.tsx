@@ -371,6 +371,59 @@ const PrestadoresPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Dialog de edição completa */}
+      <Dialog open={!!editTarget} onOpenChange={(o) => { if (!o) setEditTarget(null); }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Editar Prestador</DialogTitle></DialogHeader>
+          {editForm && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div><label className="text-xs text-muted-foreground block mb-1">Nome</label><Input value={editForm.nome || ''} onChange={e => setEditForm({ ...editForm, nome: e.target.value })} /></div>
+                <div><label className="text-xs text-muted-foreground block mb-1">CPF</label><Input value={editForm.cpf || ''} onChange={e => setEditForm({ ...editForm, cpf: e.target.value })} /></div>
+                <div><label className="text-xs text-muted-foreground block mb-1">Função</label><Input value={editForm.funcao || ''} onChange={e => setEditForm({ ...editForm, funcao: e.target.value })} /></div>
+                <div><label className="text-xs text-muted-foreground block mb-1">Empresa pagadora</label>
+                  <select value={editForm.empresa_pagadora} onChange={e => setEditForm({ ...editForm, empresa_pagadora: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm bg-background text-foreground">
+                    <option>ALQUI OBRAS</option><option>TOPAC MATRIZ</option><option>TOPAC FILIAL PRAIA GRANDE</option><option>TOPAC FILIAL GOIÂNIA</option><option>LMT</option>
+                  </select></div>
+                <div><label className="text-xs text-muted-foreground block mb-1">Valor / dia (R$)</label><Input type="number" step="0.01" value={editForm.valor_diario || 0} onChange={e => setEditForm({ ...editForm, valor_diario: Number(e.target.value) })} /></div>
+                <div><label className="text-xs text-muted-foreground block mb-1">Tipo de pagamento</label>
+                  <select value={editForm.pagamento_tipo} onChange={e => setEditForm({ ...editForm, pagamento_tipo: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm bg-background text-foreground">
+                    <option value="quinzenal">Quinzenal</option><option value="semanal">Semanal</option><option value="mensal">Mensal</option><option value="diaria">Por diária</option>
+                  </select></div>
+                <div><label className="text-xs text-muted-foreground block mb-1">Dias de trabalho</label><Input value={editForm.dias_trabalho || ''} onChange={e => setEditForm({ ...editForm, dias_trabalho: e.target.value })} placeholder="ex: segunda,quinta" /></div>
+                <div><label className="text-xs text-muted-foreground block mb-1">Status</label>
+                  <select value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm bg-background text-foreground">
+                    <option value="ativo">Ativo</option><option value="inativo">Inativo</option>
+                  </select></div>
+                <div><label className="text-xs text-muted-foreground block mb-1">Último pagamento</label><Input type="date" value={editForm.ultimo_pagamento || ''} onChange={e => setEditForm({ ...editForm, ultimo_pagamento: e.target.value })} /></div>
+                <div><label className="text-xs text-muted-foreground block mb-1">Próximo pagamento</label><Input type="date" value={editForm.proximo_pagamento || ''} onChange={e => setEditForm({ ...editForm, proximo_pagamento: e.target.value })} /></div>
+              </div>
+              <div className="border-t pt-3">
+                <p className="text-xs font-bold text-muted-foreground mb-2 flex items-center gap-1"><Landmark className="w-3 h-3" /> Dados bancários</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div><label className="text-xs text-muted-foreground block mb-1">Banco</label><Input value={editForm.banco || ''} onChange={e => setEditForm({ ...editForm, banco: e.target.value })} /></div>
+                  <div><label className="text-xs text-muted-foreground block mb-1">Titular</label><Input value={editForm.banco_titular || ''} onChange={e => setEditForm({ ...editForm, banco_titular: e.target.value })} /></div>
+                  <div><label className="text-xs text-muted-foreground block mb-1">Tipo de conta</label>
+                    <select value={editForm.banco_tipo_conta || 'Conta corrente'} onChange={e => setEditForm({ ...editForm, banco_tipo_conta: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm bg-background text-foreground">
+                      <option>Conta corrente</option><option>Conta poupança</option><option>PIX</option>
+                    </select></div>
+                  <div><label className="text-xs text-muted-foreground block mb-1">Agência</label><Input value={editForm.banco_agencia || ''} onChange={e => setEditForm({ ...editForm, banco_agencia: e.target.value })} /></div>
+                  <div><label className="text-xs text-muted-foreground block mb-1">Conta</label><Input value={editForm.banco_conta || ''} onChange={e => setEditForm({ ...editForm, banco_conta: e.target.value })} /></div>
+                </div>
+              </div>
+              <div><label className="text-xs text-muted-foreground block mb-1">Observação</label><Input value={editForm.observacao || ''} onChange={e => setEditForm({ ...editForm, observacao: e.target.value })} /></div>
+              <div className="flex justify-between pt-3 border-t">
+                <Button variant="destructive" onClick={() => editTarget && handleDelete(editTarget)}><Trash2 className="w-4 h-4 mr-1" /> Excluir</Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setEditTarget(null)}>Cancelar</Button>
+                  <Button onClick={saveEdit} disabled={loading}><Save className="w-4 h-4 mr-1" /> Salvar alterações</Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
