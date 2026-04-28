@@ -1,114 +1,91 @@
-# Liberar Folha de Pagamento, Rescisão, Compras e remover marca d'água
+## Plano de execução — Pente fino + acessos de teste + editabilidade
 
-Adicionar 3 módulos novos visíveis no menu admin, mantendo o padrão visual (mesmo layout das telas atuais como `FechamentoPage` e `AlmoxarifadoPage`), reaproveitando cálculos já existentes (`src/lib/calculations.ts`: INSS, IRRF, FGTS, DSR, HE) e dados já cadastrados (funcionários, lançamentos mensais, empresas). Sem refazer nada e sem quebrar telas atuais.
+Sigo a fila já definida sem abrir nova pergunta. Itens novos desta rodada estão integrados.
 
-## 1. Folha de Pagamento
+### 1. Acessos de teste (FAT e FINANCEIRO) — prioridade alta
+Como o Supabase Auth exige e-mail, vou criar duas contas internas com e-mail "técnico" mas login amigável:
+- **fat@topac.local** — senha `TOPAC2026` — role nova `faturamento`
+- **fin@topac.local** — senha `TOPAC2026` — role nova `financeiro`
 
-**Rota:** `/admin/folha-pagamento` — visível na barra lateral (substitui o item "Em breve" de Folha de Pagamento).
+Na tela de login, aceitar o atalho **`FAT`** e **`FIN`** (sem @) e converter automaticamente para o e-mail interno antes de chamar `signInWithPassword`. Assim o usuário digita só `FAT` / `FIN` + senha.
 
-**Como funciona:**
-- Filtra por **empresa + competência** (mesmo padrão do Fechamento)
-- Lista todos os funcionários ativos da empresa
-- Para cada funcionário, puxa **automaticamente**:
-  - Salário base, insalubridade, VR/VT/VA, dependentes → da tabela `funcionarios`
-  - HE 50%, HE 100%, faltas, atrasos, comissão, adicionais, descontos diversos, adiantamento → da tabela `lancamentos_mensais` (mesmos dados que o Fechamento já usa)
-- Calcula em tela usando as funções **já existentes** em `src/lib/calculations.ts`:
-  - `calcHE50`, `calcHE100`, `calcDSR`, `calcINSS`, `calcIRRF`, `calcFGTS`, `calcFalta`, `calcAtraso`, `calcAdiantamento`, `calcTotalFuncionario`
-- Mostra coluna a coluna: Salário | Adicionais | Insalub | HE50 | HE100 | DSR | Comissão | Faltas | Desc.Falta | Adiant | Desc.Diversos | INSS | IRRF | FGTS (informativo) | **Líquido**
-- **Sem desconto VT** (regra já aplicada no fechamento — VT só como benefício)
-- Botões: **Imprimir Folha (PDF da empresa)** e **Holerite individual (PDF por funcionário)** usando `printDocumentInPage` (sem abrir nova aba)
+Migration:
+- Adicionar valores `faturamento` e `financeiro` ao enum `app_role`.
+- Criar/garantir as contas via edge function `provision-test-user` (já existe) chamada uma vez, e inserir as roles em `user_roles`.
+- Criar policies `SELECT` para essas roles nas tabelas `clientes_fat`, `contratos`, `contrato_equipamentos`, `titulos_receber`, `titulos_pagar`, `contas_bancarias`, `categorias_financeiras`, `centros_custo`, `cobrancas_tentativas`, `conciliacoes`, `movimentacoes_bancarias`, `recebimentos`, `pagamentos` (somente leitura nesta fase de teste — evita estragar dados enquanto o pessoal só está olhando).
 
-**O que NÃO é criado:** nova tabela. A folha lê os mesmos `lancamentos_mensais` do Fechamento — **fonte única de verdade**, sem digitação dupla. Edições continuam sendo feitas em "Lançamentos Mensais".
+Roteamento:
+- `RoleRedirect` envia `faturamento` → `/faturamento` e `financeiro` → `/financeiro`.
+- Layouts de Faturamento e Financeiro ficam acessíveis com essas roles (além de admin).
 
-**Arquivos:**
-- Novo: `src/pages/FolhaPagamentoPage.tsx`
-- Novo: `src/lib/folhaPdf.ts` (gera HTML do holerite e da folha consolidada)
-- Editado: `src/App.tsx` (rota), `src/components/AppSidebar.tsx` (move "Folha de Pagamento" de `upcomingItems` para `menuItems`, remove o `disabled`)
+### 2. Links dos portais visíveis e copiáveis
+Adicionar bloco **"Links de acesso"** em `/admin/configuracoes` (seção nova "Acessos de teste e portais"), com botão Copiar para cada link:
+- Plataforma admin: `/admin`
+- Filial Praia Grande: `/filial`
+- Filial Goiânia: `/filial`
+- App Operacional / Mecânicos: `/mecanico` (e link individual por técnico já gerado em `/admin/app-operacional`)
+- Campo: `/campo`
+- Faturamento: `/faturamento` (login `FAT` / `TOPAC2026`)
+- Financeiro: `/financeiro` (login `FIN` / `TOPAC2026`)
 
-## 2. Rescisão
+URL base = `window.location.origin` (funciona tanto em preview quanto no domínio publicado `https://implantarhprpro.com`).
 
-**Rota:** `/admin/rescisoes` — visível na barra lateral (substitui o item "Em breve" de Rescisões).
+### 3. Prestadores totalmente editável
+Refatorar `PrestadoresPage`:
+- Adicionar botão **Editar** em cada linha → abre painel lateral com TODOS os campos editáveis: nome, CPF, função, empresa pagadora (select), valor diário/quinzenal, próximo pagamento (date), status (ativo/inativo), banco/titular/tipo conta/agência/conta, observação, dias de trabalho, dias trabalhados, valor a pagar, data de referência.
+- Botão **Excluir** com confirmação.
+- Botão **Recibo** já existente: garantir que pega dados atualizados.
+- Persistir via `supabase.from('prestadores').update(...)` — sem voltar ao valor antigo.
+- Histórico de pagamentos: tabela `prestadores_pagamentos` (já existe ou criar) listada abaixo, editável e excluível.
 
-**Como funciona:**
-- Lista de rescisões salvas (filtro por empresa)
-- Botão **"Nova Rescisão"** abre formulário com:
-  - Seleção de funcionário (popula auto: empresa, cargo, admissão, salário, dependentes)
-  - Data do desligamento
-  - Tipo de rescisão (select): `sem_justa_causa`, `pedido_demissao`, `acordo_mutuo_484a`, `justa_causa`, `termino_contrato_experiencia`, `rescisao_indireta`
-  - Aviso prévio: `trabalhado` | `indenizado` | `dispensado`
-  - Saldo de FGTS depositado (input — usuário informa)
-  - Observações
-- Calcula automaticamente conforme tipo (utilitário novo `src/lib/rescisaoCalc.ts`):
-  - **Saldo de salário**: `(salario/30) × dias_trabalhados_no_mes`
-  - **Aviso prévio**: dias = 30 + 3 por ano de casa (máx 90); valor = `(salario/30) × dias`
-  - **Projeção do aviso indenizado** soma na contagem para férias/13º
-  - **Férias vencidas**: salário cheio + 1/3 (se houver período vencido)
-  - **Férias proporcionais**: `(salario × meses/12) + 1/3`
-  - **13º proporcional**: `salario × meses_trabalhados_no_ano/12`
-  - **INSS** sobre saldo + 13º (separados, usando `calcINSS`)
-  - **IRRF** sobre base apropriada (`calcIRRF`)
-  - **FGTS do mês**: 8% sobre verbas com incidência
-  - **Multa 40% FGTS** (sem justa causa) ou **20%** (acordo 484-A) — sobre saldo informado
-  - Regras por tipo:
-    - `pedido_demissao`: sem multa FGTS, sem aviso indenizado a receber
-    - `justa_causa`: só saldo de salário e férias vencidas
-    - `acordo_mutuo`: aviso e multa pela metade
-- **Líquido** = proventos − descontos
-- Salva em nova tabela `rescisoes` (snapshot dos cálculos)
-- Botão **"Gerar PDF da Rescisão"** via `printDocumentInPage`
+### 4. Compras editável
+Em `ComprasPage`: adicionar coluna ações com **Editar** (abre dialog reaproveitando o de criação, pré-preenchido) e **Excluir**. Permite alterar item, quantidade, fornecedor, valor estimado, valor real, observação, status e datas.
 
-**Arquivos:**
-- Novo: `src/pages/RescisaoPage.tsx`
-- Novo: `src/lib/rescisaoCalc.ts`
-- Novo: `src/lib/rescisaoPdf.ts`
-- Migration: tabela `rescisoes` (campos espelhando os listados no pedido + JSON com snapshot dos cálculos, RLS por empresa via `get_user_empresas()`)
-- Editado: `src/App.tsx`, `src/components/AppSidebar.tsx`
+Policies já permitem UPDATE/DELETE para admin; adicionar DELETE para filial dona.
 
-## 3. Compras (estrutura base)
+### 5. Editabilidade geral nos demais módulos
+Auditar e garantir botão Editar/Excluir nos cards/linhas de:
+- Almoxarifado (itens, entradas, saídas) — já existe, validar.
+- Combustível (lançamentos do admin) — adicionar editar/excluir.
+- Protocolos — adicionar editar/excluir.
+- Avisos de férias — adicionar editar/excluir.
+- Documentos de veículos — adicionar editar/excluir.
+- Folha de pagamento e Rescisão — campos editáveis antes de gerar PDF (já estão).
+- Fechamento — soft-delete já existe; garantir que UPDATE em campo individual persiste (já está corrigido em wave 1).
 
-**Rota:** `/admin/compras` — visível na barra lateral, novo grupo (ou ao lado de Almoxarifado).
+Padrão: reaproveitar Dialog + form controlado, `supabase.update().eq('id', x)`, refresh local imediato.
 
-**Como funciona (versão inicial entregável):**
-- Tela com aba única "Solicitações de Compra"
-- Botão **"Nova Solicitação"** abre formulário:
-  - Empresa, Solicitante (auto do usuário logado), Data, Centro de Custo, Fornecedor (texto livre), Item, Quantidade, Valor estimado, Observação
-  - Status (select): `solicitado`, `em_cotacao`, `aprovado`, `comprado`, `entregue`, `cancelado`
-- Tabela lista solicitações com filtros por empresa/status
-- Cada linha permite mudar o status (botões discretos como já feito no Almoxarifado)
-- Histórico = audit trail simples: cada mudança grava linha em `compras_historico` (status anterior, novo, usuário, data)
+### 6. Continuação da fila já definida
+- Build estável: ok (já corrigido).
+- Telas quebradas (uniformes/atestados/importar-fechamento/conferência-ponto): trocar `<table>` aninhadas dentro de `<div>` com `whitespace` por estruturas válidas; envolver listas dinâmicas com `key` estável; usar `ItemCombobox`/`EmployeeCombobox` onde houver busca; eliminar `insertBefore` causados por translate.
+- Marca d'água: já removida via `vite.config.ts`. Adicionar `<meta name="lovable-badge" content="false">` por garantia.
+- Impressão/PDF: revisar `printInPage.ts` para usar `@media print { body * { visibility: hidden } .print-sheet, .print-sheet * { visibility: visible } }` — isola área de impressão.
+- Importações separadas: já estão (atestados em `/admin/atestados`, fechamento em `/admin/importar-fechamento`).
+- Arquivamento automático: ao gerar PDF (folha, rescisão, recibo), inserir registro em `documentos_funcionario` com `arquivo_url` do storage.
+- Busca fácil: integrar `EmployeeCombobox` em ASO, EPI, Uniforme, Atestados, Folha, Rescisão.
+- Estoque/almoxarifado: ajustar lógica de **recarga** (ItemCombobox + "lançar manualmente" para item não cadastrado, sem travar).
+- Monitoramento: tela já existe; garantir consulta em `activity_log` com "online agora" (last_activity_at > now()-5min) e histórico por pessoa.
+- Bloqueio por horário: tabela `config_acesso_horario` com flag `enabled=false` por padrão; admin (você) sempre liberado via `acesso_excepcional` ou bypass por role admin.
+- Módulos visíveis no menu: Combustível, Doc. Veículos, Protocolo, Liberação, Aviso Férias, Compras, Folha, Rescisão — já roteados; revisar `AppSidebar` para garantir que aparecem.
 
-**Arquivos:**
-- Novo: `src/pages/ComprasPage.tsx`
-- Migration: tabelas `compras` e `compras_historico` (RLS por empresa)
-- Editado: `src/App.tsx`, `src/components/AppSidebar.tsx`
+### 7. Resumo das mudanças técnicas
+- **Migration nova**: extender enum `app_role` (+ faturamento, +financeiro), policies SELECT, tabela `config_acesso_horario` (se não existir).
+- **Edge function**: chamar `provision-test-user` para criar `fat@topac.local` e `fin@topac.local`.
+- **Front**:
+  - `LoginPage`: alias `FAT`/`FIN` → e-mail interno.
+  - `App.tsx` + `RoleRedirect`: roteamento das novas roles.
+  - `ConfiguracoesPage`: bloco "Links de acesso" com copy-to-clipboard.
+  - `PrestadoresPage`: edição completa + exclusão.
+  - `ComprasPage`: edição + exclusão.
+  - Diversos módulos: botão editar/excluir consistente.
+  - `index.css`: regras de impressão isoladas.
+  - `useUserRole`: incluir `faturamento` e `financeiro` na lista de prioridade.
 
-Pronto para receber regras detalhadas depois — estrutura, listagem, status e histórico já operam.
+### Entrega final
+Devolverei:
+- Lista do que foi corrigido.
+- Acessos criados (FAT / FIN).
+- Links prontos para copiar/testar.
+- Pendências de validação visual (telas que dependem de dados reais para conferir).
 
-## 4. Remover marca / menção institucional
-
-Removo todas as ocorrências de "ImplantaRH ConsultoriaPRO" / "Sistema desenvolvido por…" da interface:
-- `src/pages/ConfiguracoesPage.tsx` (3 ocorrências)
-- `src/pages/LoginPage.tsx` (subtítulo)
-- `src/context/AppContextValue.ts` (`mensagemInstitucional` vira string vazia)
-- `index.html` (meta description e author — apenas mantém "Topac RH")
-- Faço varredura final por `rg` em PDFs e impressões (`pdfGenerator.ts`, `printInPage.ts`, `divergenciasReport.ts`, `RelatorioImpressaoPage.tsx` etc.) e removo qualquer rodapé/cabeçalho com a marca.
-
-Não há marca d'água sobreposta nas telas de preview hoje (verifiquei — nenhum CSS `watermark` no projeto). Se aparecer alguma menção residual nos PDFs, é removida na mesma passagem.
-
-## Padrão visual
-
-Todas as 3 telas novas usam exatamente o mesmo estilo já aprovado:
-- `Card`, `Table`, `Button`, `Select`, `Input` do shadcn
-- Mesmo cabeçalho, mesmos toasts (`sonner`), mesmo `formatCurrency`
-- Sem nova paleta, sem novos componentes visuais
-
-## O que NÃO muda
-
-- Nenhuma tela existente é refeita
-- Nenhum cálculo do Fechamento é alterado
-- Layout, cores, sidebar, login, permissões, rotas atuais permanecem intactos
-- Itens "Em breve" (Folha/Rescisões) deixam de existir e são substituídos pelas telas reais
-
-## Risco em dados
-
-**Nenhum** — só inserimos 3 tabelas novas (`rescisoes`, `compras`, `compras_historico`). Folha de Pagamento não cria tabela, lê dos `lancamentos_mensais` já existentes.
+Sem questionários intermediários.
