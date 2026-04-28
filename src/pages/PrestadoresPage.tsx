@@ -259,28 +259,35 @@ const PrestadoresPage: React.FC = () => {
               <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Valor Quinzenal</th>
               <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Próx. Pagamento</th>
               <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
+              <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground uppercase">Ações</th>
             </tr>
           </thead>
           <tbody>
             {prestadores.map(p => {
               const alert = getAlertStatus(p.proximo_pagamento);
               return (
-                <tr key={p.id} className={`border-b hover:bg-muted/30 cursor-pointer ${selectedId === p.id ? 'bg-primary/5 ring-1 ring-primary/20' : ''}`} onClick={() => setSelectedId(selectedId === p.id ? '' : p.id)}>
-                  <td className="px-3 py-2 font-medium">{p.nome}</td>
-                  <td className="px-3 py-2">{p.funcao}</td>
-                  <td className="px-3 py-2">R$ {(p.valor_diario || 0).toFixed(2)}</td>
-                  <td className="px-3 py-2">
+                <tr key={p.id} className={`border-b hover:bg-muted/30 ${selectedId === p.id ? 'bg-primary/5 ring-1 ring-primary/20' : ''}`}>
+                  <td className="px-3 py-2 font-medium cursor-pointer" onClick={() => setSelectedId(selectedId === p.id ? '' : p.id)}>{p.nome}</td>
+                  <td className="px-3 py-2 cursor-pointer" onClick={() => setSelectedId(selectedId === p.id ? '' : p.id)}>{p.funcao}</td>
+                  <td className="px-3 py-2 cursor-pointer" onClick={() => setSelectedId(selectedId === p.id ? '' : p.id)}>R$ {(p.valor_diario || 0).toFixed(2)}</td>
+                  <td className="px-3 py-2 cursor-pointer" onClick={() => setSelectedId(selectedId === p.id ? '' : p.id)}>
                     <div className="flex items-center gap-2">
                       <span className="text-xs">{p.proximo_pagamento ? new Date(p.proximo_pagamento + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</span>
                       {alert && <Badge className={`text-[10px] ${alert.color}`}>{alert.label}</Badge>}
                     </div>
                   </td>
-                  <td className="px-3 py-2"><Badge className="text-[10px] bg-success text-success-foreground">{p.status}</Badge></td>
+                  <td className="px-3 py-2"><Badge className={`text-[10px] ${p.status === 'ativo' ? 'bg-success text-success-foreground' : 'bg-muted text-foreground'}`}>{p.status}</Badge></td>
+                  <td className="px-3 py-2 text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); openEdit(p); }}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); handleDelete(p); }}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
+                    </div>
+                  </td>
                 </tr>
               );
             })}
             {prestadores.length === 0 && (
-              <tr><td colSpan={5} className="px-3 py-8 text-center text-muted-foreground text-sm">Nenhum prestador cadastrado</td></tr>
+              <tr><td colSpan={6} className="px-3 py-8 text-center text-muted-foreground text-sm">Nenhum prestador cadastrado</td></tr>
             )}
           </tbody>
         </table>
