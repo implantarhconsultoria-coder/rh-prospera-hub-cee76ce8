@@ -90,7 +90,10 @@ const RelatorioVTPage: React.FC = () => {
             <div>
               <h2 className="font-bold text-foreground">{company.name}</h2>
               <p className="text-xs text-muted-foreground">
-                CNPJ: {company.cnpj} — Competência: {competencia} — Dias úteis: {diasUteis}
+                CNPJ: {company.cnpj} — Apuração: {formatCompetencia(competencia)} — Dias úteis: {diasUteis}
+              </p>
+              <p className="text-sm font-semibold text-primary">
+                Vale Transporte — Competência de pagamento: {formatCompetencia(getNextCompetencia(competencia))}
               </p>
               <p className="text-xs text-muted-foreground">
                 Emissão: {emissaoDate}
