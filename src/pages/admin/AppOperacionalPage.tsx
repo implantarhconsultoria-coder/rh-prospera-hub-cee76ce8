@@ -302,7 +302,7 @@ const AppOperacionalPage: React.FC = () => {
                           <div className="font-medium">{t.apelido}</div>
                           <div className="text-muted-foreground">{t.funcionario?.nome}</div>
                         </td>
-                        <td className="px-3 py-2 text-xs">{t.funcionario?.empresa || '—'}</td>
+                        <td className="px-3 py-2 text-xs">{t.funcionario?.companies?.nome || '—'}</td>
                         <td className="px-3 py-2 text-xs">{t.funcionario?.cpf || '—'}</td>
                         <td className="px-3 py-2 text-xs">{t.veiculo ? `${t.veiculo.placa}` : '—'}</td>
                         <td className="px-3 py-2 text-xs"><Badge variant="outline">Link individual</Badge></td>
