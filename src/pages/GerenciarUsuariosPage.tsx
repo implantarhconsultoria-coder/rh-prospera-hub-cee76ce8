@@ -26,10 +26,12 @@ const ROLE_LABELS: Record<AppRole, { label: string; color: string; portal: strin
   almoxarifado: { label: 'Almoxarifado', color: 'bg-amber-500', portal: 'Portal Filial' },
   tecnico_campo: { label: 'Técnico de Campo', color: 'bg-purple-500', portal: 'Portal Campo' },
   operacional: { label: 'Operacional', color: 'bg-teal-500', portal: 'Portal Operacional' },
+  faturamento: { label: 'Faturamento', color: 'bg-indigo-500', portal: 'Portal Faturamento' },
+  financeiro: { label: 'Financeiro', color: 'bg-cyan-600', portal: 'Portal Financeiro' },
   usuario: { label: 'Usuário Básico', color: 'bg-gray-500', portal: 'Sem portal' },
 };
 
-const ALL_ROLES: AppRole[] = ['admin', 'filial_praia', 'filial_goiania', 'almoxarifado', 'tecnico_campo', 'operacional', 'usuario'];
+const ALL_ROLES: AppRole[] = ['admin', 'filial_praia', 'filial_goiania', 'almoxarifado', 'tecnico_campo', 'operacional', 'faturamento', 'financeiro', 'usuario'];
 
 const GerenciarUsuariosPage: React.FC = () => {
   const [users, setUsers] = useState<UserWithRole[]>([]);

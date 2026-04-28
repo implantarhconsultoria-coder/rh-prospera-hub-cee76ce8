@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Users, Plus, Printer, Save, X, ChevronLeft, Landmark } from 'lucide-react';
+import { Users, Plus, Printer, Save, X, ChevronLeft, Landmark, Pencil, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { printDocumentInPage } from '@/lib/printInPage';
 
@@ -54,6 +55,50 @@ const PrestadoresPage: React.FC = () => {
   const [valorPago, setValorPago] = useState(0);
   const [dataPagamento, setDataPagamento] = useState(new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState(false);
+  const [editTarget, setEditTarget] = useState<Prestador | null>(null);
+  const [editForm, setEditForm] = useState<any>(null);
+
+  const openEdit = (p: Prestador) => {
+    setEditTarget(p);
+    setEditForm({ ...p });
+  };
+
+  const saveEdit = async () => {
+    if (!editTarget || !editForm) return;
+    setLoading(true);
+    const { error } = await supabase.from('prestadores').update({
+      nome: editForm.nome,
+      cpf: editForm.cpf,
+      funcao: editForm.funcao,
+      empresa_pagadora: editForm.empresa_pagadora,
+      dias_trabalho: editForm.dias_trabalho,
+      pagamento_tipo: editForm.pagamento_tipo,
+      valor_diario: Number(editForm.valor_diario) || 0,
+      observacao: editForm.observacao || '',
+      status: editForm.status,
+      banco: editForm.banco || '',
+      banco_titular: editForm.banco_titular || '',
+      banco_tipo_conta: editForm.banco_tipo_conta || '',
+      banco_agencia: editForm.banco_agencia || '',
+      banco_conta: editForm.banco_conta || '',
+      ultimo_pagamento: editForm.ultimo_pagamento || null,
+      proximo_pagamento: editForm.proximo_pagamento || null,
+    } as any).eq('id', editTarget.id);
+    setLoading(false);
+    if (error) { toast.error('Erro: ' + error.message); return; }
+    toast.success('Prestador atualizado');
+    setEditTarget(null);
+    fetchPrestadores();
+  };
+
+  const handleDelete = async (p: Prestador) => {
+    if (!confirm(`Excluir o prestador "${p.nome}"? Esta ação não pode ser desfeita.`)) return;
+    const { error } = await supabase.from('prestadores').delete().eq('id', p.id);
+    if (error) { toast.error('Erro: ' + error.message); return; }
+    toast.success('Prestador excluído');
+    if (selectedId === p.id) setSelectedId('');
+    fetchPrestadores();
+  };
 
   const fetchPrestadores = async () => {
     const { data, error } = await supabase.from('prestadores').select('*').order('created_at', { ascending: false });
@@ -214,28 +259,35 @@ const PrestadoresPage: React.FC = () => {
               <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Valor Quinzenal</th>
               <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Próx. Pagamento</th>
               <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
+              <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground uppercase">Ações</th>
             </tr>
           </thead>
           <tbody>
             {prestadores.map(p => {
               const alert = getAlertStatus(p.proximo_pagamento);
               return (
-                <tr key={p.id} className={`border-b hover:bg-muted/30 cursor-pointer ${selectedId === p.id ? 'bg-primary/5 ring-1 ring-primary/20' : ''}`} onClick={() => setSelectedId(selectedId === p.id ? '' : p.id)}>
-                  <td className="px-3 py-2 font-medium">{p.nome}</td>
-                  <td className="px-3 py-2">{p.funcao}</td>
-                  <td className="px-3 py-2">R$ {(p.valor_diario || 0).toFixed(2)}</td>
-                  <td className="px-3 py-2">
+                <tr key={p.id} className={`border-b hover:bg-muted/30 ${selectedId === p.id ? 'bg-primary/5 ring-1 ring-primary/20' : ''}`}>
+                  <td className="px-3 py-2 font-medium cursor-pointer" onClick={() => setSelectedId(selectedId === p.id ? '' : p.id)}>{p.nome}</td>
+                  <td className="px-3 py-2 cursor-pointer" onClick={() => setSelectedId(selectedId === p.id ? '' : p.id)}>{p.funcao}</td>
+                  <td className="px-3 py-2 cursor-pointer" onClick={() => setSelectedId(selectedId === p.id ? '' : p.id)}>R$ {(p.valor_diario || 0).toFixed(2)}</td>
+                  <td className="px-3 py-2 cursor-pointer" onClick={() => setSelectedId(selectedId === p.id ? '' : p.id)}>
                     <div className="flex items-center gap-2">
                       <span className="text-xs">{p.proximo_pagamento ? new Date(p.proximo_pagamento + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</span>
                       {alert && <Badge className={`text-[10px] ${alert.color}`}>{alert.label}</Badge>}
                     </div>
                   </td>
-                  <td className="px-3 py-2"><Badge className="text-[10px] bg-success text-success-foreground">{p.status}</Badge></td>
+                  <td className="px-3 py-2"><Badge className={`text-[10px] ${p.status === 'ativo' ? 'bg-success text-success-foreground' : 'bg-muted text-foreground'}`}>{p.status}</Badge></td>
+                  <td className="px-3 py-2 text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); openEdit(p); }}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); handleDelete(p); }}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
+                    </div>
+                  </td>
                 </tr>
               );
             })}
             {prestadores.length === 0 && (
-              <tr><td colSpan={5} className="px-3 py-8 text-center text-muted-foreground text-sm">Nenhum prestador cadastrado</td></tr>
+              <tr><td colSpan={6} className="px-3 py-8 text-center text-muted-foreground text-sm">Nenhum prestador cadastrado</td></tr>
             )}
           </tbody>
         </table>
@@ -319,6 +371,59 @@ const PrestadoresPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Dialog de edição completa */}
+      <Dialog open={!!editTarget} onOpenChange={(o) => { if (!o) setEditTarget(null); }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Editar Prestador</DialogTitle></DialogHeader>
+          {editForm && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div><label className="text-xs text-muted-foreground block mb-1">Nome</label><Input value={editForm.nome || ''} onChange={e => setEditForm({ ...editForm, nome: e.target.value })} /></div>
+                <div><label className="text-xs text-muted-foreground block mb-1">CPF</label><Input value={editForm.cpf || ''} onChange={e => setEditForm({ ...editForm, cpf: e.target.value })} /></div>
+                <div><label className="text-xs text-muted-foreground block mb-1">Função</label><Input value={editForm.funcao || ''} onChange={e => setEditForm({ ...editForm, funcao: e.target.value })} /></div>
+                <div><label className="text-xs text-muted-foreground block mb-1">Empresa pagadora</label>
+                  <select value={editForm.empresa_pagadora} onChange={e => setEditForm({ ...editForm, empresa_pagadora: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm bg-background text-foreground">
+                    <option>ALQUI OBRAS</option><option>TOPAC MATRIZ</option><option>TOPAC FILIAL PRAIA GRANDE</option><option>TOPAC FILIAL GOIÂNIA</option><option>LMT</option>
+                  </select></div>
+                <div><label className="text-xs text-muted-foreground block mb-1">Valor / dia (R$)</label><Input type="number" step="0.01" value={editForm.valor_diario || 0} onChange={e => setEditForm({ ...editForm, valor_diario: Number(e.target.value) })} /></div>
+                <div><label className="text-xs text-muted-foreground block mb-1">Tipo de pagamento</label>
+                  <select value={editForm.pagamento_tipo} onChange={e => setEditForm({ ...editForm, pagamento_tipo: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm bg-background text-foreground">
+                    <option value="quinzenal">Quinzenal</option><option value="semanal">Semanal</option><option value="mensal">Mensal</option><option value="diaria">Por diária</option>
+                  </select></div>
+                <div><label className="text-xs text-muted-foreground block mb-1">Dias de trabalho</label><Input value={editForm.dias_trabalho || ''} onChange={e => setEditForm({ ...editForm, dias_trabalho: e.target.value })} placeholder="ex: segunda,quinta" /></div>
+                <div><label className="text-xs text-muted-foreground block mb-1">Status</label>
+                  <select value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm bg-background text-foreground">
+                    <option value="ativo">Ativo</option><option value="inativo">Inativo</option>
+                  </select></div>
+                <div><label className="text-xs text-muted-foreground block mb-1">Último pagamento</label><Input type="date" value={editForm.ultimo_pagamento || ''} onChange={e => setEditForm({ ...editForm, ultimo_pagamento: e.target.value })} /></div>
+                <div><label className="text-xs text-muted-foreground block mb-1">Próximo pagamento</label><Input type="date" value={editForm.proximo_pagamento || ''} onChange={e => setEditForm({ ...editForm, proximo_pagamento: e.target.value })} /></div>
+              </div>
+              <div className="border-t pt-3">
+                <p className="text-xs font-bold text-muted-foreground mb-2 flex items-center gap-1"><Landmark className="w-3 h-3" /> Dados bancários</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div><label className="text-xs text-muted-foreground block mb-1">Banco</label><Input value={editForm.banco || ''} onChange={e => setEditForm({ ...editForm, banco: e.target.value })} /></div>
+                  <div><label className="text-xs text-muted-foreground block mb-1">Titular</label><Input value={editForm.banco_titular || ''} onChange={e => setEditForm({ ...editForm, banco_titular: e.target.value })} /></div>
+                  <div><label className="text-xs text-muted-foreground block mb-1">Tipo de conta</label>
+                    <select value={editForm.banco_tipo_conta || 'Conta corrente'} onChange={e => setEditForm({ ...editForm, banco_tipo_conta: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm bg-background text-foreground">
+                      <option>Conta corrente</option><option>Conta poupança</option><option>PIX</option>
+                    </select></div>
+                  <div><label className="text-xs text-muted-foreground block mb-1">Agência</label><Input value={editForm.banco_agencia || ''} onChange={e => setEditForm({ ...editForm, banco_agencia: e.target.value })} /></div>
+                  <div><label className="text-xs text-muted-foreground block mb-1">Conta</label><Input value={editForm.banco_conta || ''} onChange={e => setEditForm({ ...editForm, banco_conta: e.target.value })} /></div>
+                </div>
+              </div>
+              <div><label className="text-xs text-muted-foreground block mb-1">Observação</label><Input value={editForm.observacao || ''} onChange={e => setEditForm({ ...editForm, observacao: e.target.value })} /></div>
+              <div className="flex justify-between pt-3 border-t">
+                <Button variant="destructive" onClick={() => editTarget && handleDelete(editTarget)}><Trash2 className="w-4 h-4 mr-1" /> Excluir</Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setEditTarget(null)}>Cancelar</Button>
+                  <Button onClick={saveEdit} disabled={loading}><Save className="w-4 h-4 mr-1" /> Salvar alterações</Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
