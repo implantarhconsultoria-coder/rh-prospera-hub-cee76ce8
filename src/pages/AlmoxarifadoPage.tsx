@@ -608,6 +608,41 @@ const AlmoxarifadoPage: React.FC = () => {
               )}
             </div>
 
+            {isAdmin && (
+              <div className="flex items-center gap-3 flex-wrap p-3 rounded-lg border bg-muted/20">
+                <span className="text-xs font-medium">
+                  {selectedIds.size > 0
+                    ? `${selectedIds.size} item(ns) selecionado(s)`
+                    : 'Nenhum item selecionado'}
+                </span>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  disabled={selectedIds.size === 0}
+                  onClick={async () => {
+                    if (!selectedIds.size) return;
+                    if (!confirm(`Tem certeza que deseja excluir os itens selecionados? Essa ação não pode ser desfeita.`)) return;
+                    const ids = Array.from(selectedIds);
+                    const { error } = await supabase.from('almoxarifado_itens').delete().in('id', ids);
+                    if (error) { toast.error('Erro ao excluir: ' + error.message); return; }
+                    toast.success(`${ids.length} item(ns) excluído(s)`);
+                    setSelectedIds(new Set());
+                    fetchAll();
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />Excluir selecionados
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={selectedIds.size === 0}
+                  onClick={() => setSelectedIds(new Set())}
+                >
+                  Limpar seleção
+                </Button>
+              </div>
+            )}
+
             {showImport && (
               <div className="border rounded-lg p-4 bg-muted/20 space-y-2">
                 <p className="text-xs text-muted-foreground">
