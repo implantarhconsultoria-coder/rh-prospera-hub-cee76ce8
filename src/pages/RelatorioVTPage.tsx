@@ -55,7 +55,6 @@ const RelatorioVTPage: React.FC = () => {
 
   const compEmps = employees.filter(e => e.companyId === selectedCompany && e.status === 'ativo' && e.categoria === 'operacional' && e.vtAtivo);
   const compEntries = entries.filter(e => e.companyId === selectedCompany && e.competencia === competencia);
-  const company = companies.find(c => c.id === selectedCompany);
 
   const rows = useMemo(() => {
     return buildVTReportRows(compEmps, compEntries, diasUteis);
