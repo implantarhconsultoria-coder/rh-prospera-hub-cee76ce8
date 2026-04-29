@@ -665,6 +665,67 @@ export type Database = {
           },
         ]
       }
+      apontamento_falta_dsr_detalhe: {
+        Row: {
+          ajustado_em: string
+          ajustado_por_nome: string | null
+          apontamento_item_id: string
+          created_at: string
+          data: string
+          funcionario_id: string | null
+          id: string
+          observacao: string | null
+          origem: string
+          tipo: string
+        }
+        Insert: {
+          ajustado_em?: string
+          ajustado_por_nome?: string | null
+          apontamento_item_id: string
+          created_at?: string
+          data: string
+          funcionario_id?: string | null
+          id?: string
+          observacao?: string | null
+          origem?: string
+          tipo: string
+        }
+        Update: {
+          ajustado_em?: string
+          ajustado_por_nome?: string | null
+          apontamento_item_id?: string
+          created_at?: string
+          data?: string
+          funcionario_id?: string | null
+          id?: string
+          observacao?: string | null
+          origem?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "apontamento_falta_dsr_detalhe_apontamento_item_id_fkey"
+            columns: ["apontamento_item_id"]
+            isOneToOne: false
+            referencedRelation: "apontamentos_contabilidade_itens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apontamento_falta_dsr_detalhe_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "funcionarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apontamento_falta_dsr_detalhe_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "vw_funcionario_permissoes"
+            referencedColumns: ["funcionario_id"]
+          },
+        ]
+      }
       apontamentos_contabilidade: {
         Row: {
           atualizado_por_nome: string | null
@@ -734,6 +795,7 @@ export type Database = {
       }
       apontamentos_contabilidade_itens: {
         Row: {
+          adiantamento: number
           alterado_em: string | null
           alterado_por_nome: string | null
           apontamento_id: string
@@ -741,10 +803,18 @@ export type Database = {
           comissao: number
           cpf: string | null
           created_at: string
+          desconto_dsr: number
+          desconto_falta: number
+          dsr_qtd: number
           falta_dsr: number
+          faltas_qtd: number
           funcionario_id: string | null
           hora_extra_100: number
+          hora_extra_100_horas: number
+          hora_extra_50: number
+          hora_extra_50_horas: number
           hora_extra_60: number
+          hora_extra_60_horas: number
           id: string
           insalubridade: number
           nome: string
@@ -753,6 +823,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          adiantamento?: number
           alterado_em?: string | null
           alterado_por_nome?: string | null
           apontamento_id: string
@@ -760,10 +831,18 @@ export type Database = {
           comissao?: number
           cpf?: string | null
           created_at?: string
+          desconto_dsr?: number
+          desconto_falta?: number
+          dsr_qtd?: number
           falta_dsr?: number
+          faltas_qtd?: number
           funcionario_id?: string | null
           hora_extra_100?: number
+          hora_extra_100_horas?: number
+          hora_extra_50?: number
+          hora_extra_50_horas?: number
           hora_extra_60?: number
+          hora_extra_60_horas?: number
           id?: string
           insalubridade?: number
           nome: string
@@ -772,6 +851,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          adiantamento?: number
           alterado_em?: string | null
           alterado_por_nome?: string | null
           apontamento_id?: string
@@ -779,10 +859,18 @@ export type Database = {
           comissao?: number
           cpf?: string | null
           created_at?: string
+          desconto_dsr?: number
+          desconto_falta?: number
+          dsr_qtd?: number
           falta_dsr?: number
+          faltas_qtd?: number
           funcionario_id?: string | null
           hora_extra_100?: number
+          hora_extra_100_horas?: number
+          hora_extra_50?: number
+          hora_extra_50_horas?: number
           hora_extra_60?: number
+          hora_extra_60_horas?: number
           id?: string
           insalubridade?: number
           nome?: string
@@ -3754,19 +3842,109 @@ export type Database = {
           },
         ]
       }
+      rescisao_historico: {
+        Row: {
+          acao: string
+          cpf: string | null
+          created_at: string
+          empresa: string | null
+          funcionario_id: string | null
+          funcionario_nome: string | null
+          id: string
+          observacao: string | null
+          rescisao_id: string
+          rubrica: string | null
+          user_email: string | null
+          user_id: string | null
+          valor_anterior: number | null
+          valor_novo: number | null
+        }
+        Insert: {
+          acao: string
+          cpf?: string | null
+          created_at?: string
+          empresa?: string | null
+          funcionario_id?: string | null
+          funcionario_nome?: string | null
+          id?: string
+          observacao?: string | null
+          rescisao_id: string
+          rubrica?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          valor_anterior?: number | null
+          valor_novo?: number | null
+        }
+        Update: {
+          acao?: string
+          cpf?: string | null
+          created_at?: string
+          empresa?: string | null
+          funcionario_id?: string | null
+          funcionario_nome?: string | null
+          id?: string
+          observacao?: string | null
+          rescisao_id?: string
+          rubrica?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          valor_anterior?: number | null
+          valor_novo?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rescisao_historico_rescisao_id_fkey"
+            columns: ["rescisao_id"]
+            isOneToOne: false
+            referencedRelation: "rescisoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rescisoes: {
         Row: {
           aviso_previo: string
           aviso_previo_valor: number
+          bairro: string | null
           cargo: string
+          categoria_trabalhador: string | null
+          causa_afastamento: string | null
+          cep: string | null
+          codigo_afastamento: string | null
+          codigo_sindical: string | null
           company_id: string | null
+          cpf: string | null
           created_at: string
+          ctps: string | null
           data_admissao: string | null
+          data_aviso: string | null
           data_desligamento: string
+          data_nascimento: string | null
           decimo_terceiro: number
+          ded_100_pensao: number | null
+          ded_101_adiantamento: number | null
+          ded_102_adiant_13: number | null
+          ded_103_aviso_indenizado: number | null
+          ded_104_indenizacao_480: number | null
+          ded_105_emprestimo_consig: number | null
+          ded_106_vale_transporte: number | null
+          ded_112_1_inss: number | null
+          ded_112_2_inss_13: number | null
+          ded_114_1_irrf: number | null
+          ded_114_2_irrf_13: number | null
+          ded_115_2_arredondamento: number | null
+          ded_115_3_vale_refeicao: number | null
           dependentes: number
           dias_aviso: number
+          empresa_bairro: string | null
+          empresa_cep: string | null
+          empresa_cnae: string | null
+          empresa_cnpj: string | null
+          empresa_endereco: string | null
+          empresa_municipio: string | null
           empresa_nome: string
+          empresa_uf: string | null
+          endereco: string | null
           ferias_proporcionais: number
           ferias_vencidas: number
           fgts_mes: number
@@ -3776,35 +3954,100 @@ export type Database = {
           inss: number
           irrf: number
           liquido: number
+          liquido_rescisorio: number | null
           motivo: string
           multa_fgts: number
+          municipio: string | null
+          nome_mae: string | null
           observacoes: string
           outros_descontos: number
+          pensao_fgts: number | null
+          pensao_trct: number | null
+          pis_pasep: string | null
+          remuneracao_mes_anterior: number | null
           salario_base: number
           saldo_fgts_depositado: number
           saldo_salario: number
+          sindicato_cnpj: string | null
+          sindicato_nome: string | null
           snapshot_json: Json
           status: string
           terco_ferias: number
+          tipo_contrato: string | null
           tipo_rescisao: string
+          total_bruto: number | null
+          total_dedu: number | null
           total_descontos: number
           total_proventos: number
+          uf: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
           usuario_nome: string
+          verba_50_saldo_dias: number | null
+          verba_51_comissoes: number | null
+          verba_52_gratificacao: number | null
+          verba_53_insalubridade: number | null
+          verba_54_periculosidade: number | null
+          verba_55_adic_noturno: number | null
+          verba_56_horas_extras: number | null
+          verba_57_gorjetas: number | null
+          verba_58_dsr: number | null
+          verba_59_reflexo_dsr: number | null
+          verba_60_multa_477: number | null
+          verba_61_multa_479: number | null
+          verba_62_salario_familia: number | null
+          verba_63_13_proporcional: number | null
+          verba_64_13_exercicio: number | null
+          verba_65_ferias_proporcionais: number | null
+          verba_66_ferias_vencidas: number | null
+          verba_68_terco_ferias: number | null
+          verba_69_aviso_indenizado: number | null
+          verba_70_13_sobre_aviso: number | null
+          verba_71_ferias_sobre_aviso: number | null
         }
         Insert: {
           aviso_previo?: string
           aviso_previo_valor?: number
+          bairro?: string | null
           cargo?: string
+          categoria_trabalhador?: string | null
+          causa_afastamento?: string | null
+          cep?: string | null
+          codigo_afastamento?: string | null
+          codigo_sindical?: string | null
           company_id?: string | null
+          cpf?: string | null
           created_at?: string
+          ctps?: string | null
           data_admissao?: string | null
+          data_aviso?: string | null
           data_desligamento: string
+          data_nascimento?: string | null
           decimo_terceiro?: number
+          ded_100_pensao?: number | null
+          ded_101_adiantamento?: number | null
+          ded_102_adiant_13?: number | null
+          ded_103_aviso_indenizado?: number | null
+          ded_104_indenizacao_480?: number | null
+          ded_105_emprestimo_consig?: number | null
+          ded_106_vale_transporte?: number | null
+          ded_112_1_inss?: number | null
+          ded_112_2_inss_13?: number | null
+          ded_114_1_irrf?: number | null
+          ded_114_2_irrf_13?: number | null
+          ded_115_2_arredondamento?: number | null
+          ded_115_3_vale_refeicao?: number | null
           dependentes?: number
           dias_aviso?: number
+          empresa_bairro?: string | null
+          empresa_cep?: string | null
+          empresa_cnae?: string | null
+          empresa_cnpj?: string | null
+          empresa_endereco?: string | null
+          empresa_municipio?: string | null
           empresa_nome?: string
+          empresa_uf?: string | null
+          endereco?: string | null
           ferias_proporcionais?: number
           ferias_vencidas?: number
           fgts_mes?: number
@@ -3814,35 +4057,100 @@ export type Database = {
           inss?: number
           irrf?: number
           liquido?: number
+          liquido_rescisorio?: number | null
           motivo?: string
           multa_fgts?: number
+          municipio?: string | null
+          nome_mae?: string | null
           observacoes?: string
           outros_descontos?: number
+          pensao_fgts?: number | null
+          pensao_trct?: number | null
+          pis_pasep?: string | null
+          remuneracao_mes_anterior?: number | null
           salario_base?: number
           saldo_fgts_depositado?: number
           saldo_salario?: number
+          sindicato_cnpj?: string | null
+          sindicato_nome?: string | null
           snapshot_json?: Json
           status?: string
           terco_ferias?: number
+          tipo_contrato?: string | null
           tipo_rescisao?: string
+          total_bruto?: number | null
+          total_dedu?: number | null
           total_descontos?: number
           total_proventos?: number
+          uf?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           usuario_nome?: string
+          verba_50_saldo_dias?: number | null
+          verba_51_comissoes?: number | null
+          verba_52_gratificacao?: number | null
+          verba_53_insalubridade?: number | null
+          verba_54_periculosidade?: number | null
+          verba_55_adic_noturno?: number | null
+          verba_56_horas_extras?: number | null
+          verba_57_gorjetas?: number | null
+          verba_58_dsr?: number | null
+          verba_59_reflexo_dsr?: number | null
+          verba_60_multa_477?: number | null
+          verba_61_multa_479?: number | null
+          verba_62_salario_familia?: number | null
+          verba_63_13_proporcional?: number | null
+          verba_64_13_exercicio?: number | null
+          verba_65_ferias_proporcionais?: number | null
+          verba_66_ferias_vencidas?: number | null
+          verba_68_terco_ferias?: number | null
+          verba_69_aviso_indenizado?: number | null
+          verba_70_13_sobre_aviso?: number | null
+          verba_71_ferias_sobre_aviso?: number | null
         }
         Update: {
           aviso_previo?: string
           aviso_previo_valor?: number
+          bairro?: string | null
           cargo?: string
+          categoria_trabalhador?: string | null
+          causa_afastamento?: string | null
+          cep?: string | null
+          codigo_afastamento?: string | null
+          codigo_sindical?: string | null
           company_id?: string | null
+          cpf?: string | null
           created_at?: string
+          ctps?: string | null
           data_admissao?: string | null
+          data_aviso?: string | null
           data_desligamento?: string
+          data_nascimento?: string | null
           decimo_terceiro?: number
+          ded_100_pensao?: number | null
+          ded_101_adiantamento?: number | null
+          ded_102_adiant_13?: number | null
+          ded_103_aviso_indenizado?: number | null
+          ded_104_indenizacao_480?: number | null
+          ded_105_emprestimo_consig?: number | null
+          ded_106_vale_transporte?: number | null
+          ded_112_1_inss?: number | null
+          ded_112_2_inss_13?: number | null
+          ded_114_1_irrf?: number | null
+          ded_114_2_irrf_13?: number | null
+          ded_115_2_arredondamento?: number | null
+          ded_115_3_vale_refeicao?: number | null
           dependentes?: number
           dias_aviso?: number
+          empresa_bairro?: string | null
+          empresa_cep?: string | null
+          empresa_cnae?: string | null
+          empresa_cnpj?: string | null
+          empresa_endereco?: string | null
+          empresa_municipio?: string | null
           empresa_nome?: string
+          empresa_uf?: string | null
+          endereco?: string | null
           ferias_proporcionais?: number
           ferias_vencidas?: number
           fgts_mes?: number
@@ -3852,22 +4160,56 @@ export type Database = {
           inss?: number
           irrf?: number
           liquido?: number
+          liquido_rescisorio?: number | null
           motivo?: string
           multa_fgts?: number
+          municipio?: string | null
+          nome_mae?: string | null
           observacoes?: string
           outros_descontos?: number
+          pensao_fgts?: number | null
+          pensao_trct?: number | null
+          pis_pasep?: string | null
+          remuneracao_mes_anterior?: number | null
           salario_base?: number
           saldo_fgts_depositado?: number
           saldo_salario?: number
+          sindicato_cnpj?: string | null
+          sindicato_nome?: string | null
           snapshot_json?: Json
           status?: string
           terco_ferias?: number
+          tipo_contrato?: string | null
           tipo_rescisao?: string
+          total_bruto?: number | null
+          total_dedu?: number | null
           total_descontos?: number
           total_proventos?: number
+          uf?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           usuario_nome?: string
+          verba_50_saldo_dias?: number | null
+          verba_51_comissoes?: number | null
+          verba_52_gratificacao?: number | null
+          verba_53_insalubridade?: number | null
+          verba_54_periculosidade?: number | null
+          verba_55_adic_noturno?: number | null
+          verba_56_horas_extras?: number | null
+          verba_57_gorjetas?: number | null
+          verba_58_dsr?: number | null
+          verba_59_reflexo_dsr?: number | null
+          verba_60_multa_477?: number | null
+          verba_61_multa_479?: number | null
+          verba_62_salario_familia?: number | null
+          verba_63_13_proporcional?: number | null
+          verba_64_13_exercicio?: number | null
+          verba_65_ferias_proporcionais?: number | null
+          verba_66_ferias_vencidas?: number | null
+          verba_68_terco_ferias?: number | null
+          verba_69_aviso_indenizado?: number | null
+          verba_70_13_sobre_aviso?: number | null
+          verba_71_ferias_sobre_aviso?: number | null
         }
         Relationships: []
       }
