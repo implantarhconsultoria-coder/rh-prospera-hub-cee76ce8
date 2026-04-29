@@ -243,6 +243,8 @@ const AvisoFeriasPage: React.FC = () => {
           companyId: companySelecionada.id,
           empresaNome: companySelecionada.name,
           tipoDocumento: 'Aviso de Férias',
+          categoria: 'ferias',
+          competencia: gozoInicio.slice(0, 7),
           descricao: `Início ${formatDate(gozoInicio)} • Retorno ${formatDate(dataRetorno)} • ${diasFerias} dias`,
           arquivoUrl: url,
           geradoPorUserId: session.user.id,
