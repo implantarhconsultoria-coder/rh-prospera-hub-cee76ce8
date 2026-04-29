@@ -726,6 +726,23 @@ Topac RH PRO`;
                   {formatDate(detail.periodo_gozo_inicio)} → {formatDate(detail.periodo_gozo_fim)}</div>
                 <div><span className="text-xs text-muted-foreground block">Retorno</span><strong>{formatDate(detail.data_retorno)}</strong></div>
                 <div><span className="text-xs text-muted-foreground block">Dias</span>{detail.dias_ferias}</div>
+                <div><span className="text-xs text-muted-foreground block">Prazo de Pagamento</span>
+                  <strong>{detail.prazo_pagamento ? formatDate(detail.prazo_pagamento) : '—'}</strong>
+                  <Badge className={`ml-2 text-[10px] ${detail.pagamento.cor}`}>{detail.pagamento.label}</Badge>
+                </div>
+                {detail.data_pagamento && (
+                  <div><span className="text-xs text-muted-foreground block">Pago em</span>{formatDate(detail.data_pagamento)}</div>
+                )}
+                {detail.enviado_contabilidade_em && (
+                  <div className="col-span-2 text-xs bg-primary/5 p-2 rounded border border-primary/20">
+                    <span className="text-muted-foreground">Enviado para contabilidade em </span>
+                    <strong>{new Date(detail.enviado_contabilidade_em).toLocaleString('pt-BR')}</strong>
+                    {detail.enviado_contabilidade_por && <> por <strong>{detail.enviado_contabilidade_por}</strong></>}
+                    {detail.enviado_contabilidade_destinos && (
+                      <div className="text-[10px] text-muted-foreground mt-1">Destinatários: {detail.enviado_contabilidade_destinos}</div>
+                    )}
+                  </div>
+                )}
               </div>
               {detail.observacao && (
                 <div>
