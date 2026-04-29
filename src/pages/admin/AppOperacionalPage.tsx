@@ -21,7 +21,9 @@ interface TecnicoRow {
   user_id: string | null;
   access_token: string | null;
   link_bloqueado: boolean;
+  link_status: 'ativo' | 'bloqueado' | 'revogado';
   link_regenerado_em: string | null;
+  ultimo_acesso_em: string | null;
   funcionario: { id: string; nome: string; cargo: string; celular: string; cpf: string; companies?: { nome: string } | null };
   veiculo: { id: string; placa: string; modelo: string; identificacao_interna: string } | null;
   ultimaAtividade?: { last_activity_at: string; route: string; status: string } | null;
@@ -49,7 +51,7 @@ const AppOperacionalPage: React.FC = () => {
     setLoading(true);
     const { data: tcs } = await supabase
       .from('tecnicos_campo')
-      .select('id, apelido, status, user_id, access_token, link_bloqueado, link_regenerado_em, veiculo_id, funcionario_id, funcionarios:funcionario_id(id, nome, cargo, celular, cpf, company_id, companies:company_id(nome)), veiculos:veiculo_id(id, placa, modelo, identificacao_interna)' as any)
+      .select('id, apelido, status, user_id, access_token, link_bloqueado, link_status, link_regenerado_em, ultimo_acesso_em, veiculo_id, funcionario_id, funcionarios:funcionario_id(id, nome, cargo, celular, cpf, company_id, companies:company_id(nome)), veiculos:veiculo_id(id, placa, modelo, identificacao_interna)' as any)
       .order('apelido');
 
     const userIds = (tcs || []).map((t: any) => t.user_id).filter(Boolean) as string[];
@@ -78,7 +80,9 @@ const AppOperacionalPage: React.FC = () => {
       user_id: t.user_id,
       access_token: t.access_token,
       link_bloqueado: !!t.link_bloqueado,
+      link_status: (t.link_status || (t.link_bloqueado ? 'bloqueado' : 'ativo')) as TecnicoRow['link_status'],
       link_regenerado_em: t.link_regenerado_em,
+      ultimo_acesso_em: t.ultimo_acesso_em || null,
       funcionario: t.funcionarios,
       veiculo: t.veiculos,
       ultimaAtividade: t.user_id ? activityMap[t.user_id] : null,
@@ -105,17 +109,21 @@ const AppOperacionalPage: React.FC = () => {
 
   const regenerar = async (tec: TecnicoRow) => {
     if (!confirm(`Regenerar o link do ${tec.apelido}? O link anterior deixará de funcionar.`)) return;
-    // gera novo token via DEFAULT da coluna chamando a função
     const { data: novo, error: errFn } = await supabase.rpc('gen_tecnico_access_token' as any).single();
     let novoToken: string | null = null;
     if (!errFn && novo && typeof novo === 'string') novoToken = novo as any;
     if (!novoToken) {
-      // fallback simples client-side
       novoToken = (crypto.randomUUID() + crypto.randomUUID()).replace(/-/g, '').slice(0, 40);
     }
     const { error } = await supabase
       .from('tecnicos_campo')
-      .update({ access_token: novoToken, link_regenerado_em: new Date().toISOString(), link_bloqueado: false } as any)
+      .update({
+        access_token: novoToken,
+        link_regenerado_em: new Date().toISOString(),
+        link_bloqueado: false,
+        link_status: 'ativo',
+        revogado_em: null,
+      } as any)
       .eq('id', tec.id);
     if (error) { toast.error('Erro: ' + error.message); return; }
     await supabase.from('tecnicos_link_historico' as any).insert({
@@ -125,7 +133,7 @@ const AppOperacionalPage: React.FC = () => {
       token_novo: novoToken,
       realizado_por_nome: '',
     });
-    toast.success('Link regenerado');
+    toast.success('Link regenerado e ativado');
     load();
   };
 
@@ -134,7 +142,12 @@ const AppOperacionalPage: React.FC = () => {
     if (!confirm(`Confirma ${acao} o link de ${tec.apelido}?`)) return;
     const { error } = await supabase
       .from('tecnicos_campo')
-      .update({ link_bloqueado: bloqueado, link_bloqueado_em: bloqueado ? new Date().toISOString() : null } as any)
+      .update({
+        link_bloqueado: bloqueado,
+        link_bloqueado_em: bloqueado ? new Date().toISOString() : null,
+        link_status: bloqueado ? 'bloqueado' : 'ativo',
+        revogado_em: null,
+      } as any)
       .eq('id', tec.id);
     if (error) { toast.error('Erro: ' + error.message); return; }
     await supabase.from('tecnicos_link_historico' as any).insert({
@@ -147,6 +160,23 @@ const AppOperacionalPage: React.FC = () => {
     toast.success(bloqueado ? 'Link bloqueado' : 'Link reativado');
     load();
   };
+
+  const revogar = async (tec: TecnicoRow) => {
+    if (!confirm(`Revogar o link de ${tec.apelido}? Para reativar é preciso regenerar.`)) return;
+    const { error } = await supabase
+      .from('tecnicos_campo')
+      .update({ link_status: 'revogado', revogado_em: new Date().toISOString(), link_bloqueado: false } as any)
+      .eq('id', tec.id);
+    if (error) { toast.error('Erro: ' + error.message); return; }
+    await supabase.from('tecnicos_link_historico' as any).insert({
+      tecnico_id: tec.id, acao: 'revogado', token_anterior: tec.access_token, token_novo: tec.access_token, realizado_por_nome: '',
+    });
+    toast.success('Link revogado');
+    load();
+  };
+
+  const reativarRevogado = async (tec: TecnicoRow) => regenerar(tec);
+
 
   const excluirTecnico = async (tec: TecnicoRow) => {
     if (!confirm(`Excluir o técnico ${tec.apelido}? Essa ação não pode ser desfeita.`)) return;
@@ -230,7 +260,8 @@ const AppOperacionalPage: React.FC = () => {
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-bold text-base truncate">{t.apelido}</h3>
                         {statusBadge(t.ultimaAtividade?.status || t.status)}
-                        {t.link_bloqueado && <Badge variant="destructive">Bloqueado</Badge>}
+                        {t.link_status === 'revogado' && <Badge className="bg-rose-500/10 text-rose-700 border-rose-500/30">Revogado</Badge>}
+                        {t.link_status === 'bloqueado' && <Badge variant="destructive">Bloqueado</Badge>}
                       </div>
                       <p className="text-xs text-muted-foreground truncate">{t.funcionario?.nome}</p>
                       <p className="text-[11px] text-muted-foreground/70">{t.funcionario?.cargo}</p>
@@ -269,13 +300,33 @@ const AppOperacionalPage: React.FC = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="links">
+        <TabsContent value="links" className="space-y-4">
+          <Card className="p-4 bg-blue-500/5 border-blue-500/20">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div>
+                <h3 className="font-bold text-sm flex items-center gap-2"><Link2 className="w-4 h-4 text-blue-600" />Link único Goiânia (acesso por CPF)</h3>
+                <p className="text-xs text-muted-foreground mt-1 max-w-xl">
+                  Link permanente compartilhado: o colaborador abre, digita o CPF e o app valida pelo banco. Permite uso simultâneo, sem misturar dados entre usuários.
+                </p>
+                <code className="block mt-2 text-[11px] bg-muted px-2 py-1 rounded">{`${window.location.origin}/g`}</code>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/g`); toast.success('Link único copiado'); }}>
+                  <Copy className="w-3.5 h-3.5 mr-1" />Copiar
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => window.open(`${window.location.origin}/g`, '_blank')}>
+                  <ExternalLink className="w-3.5 h-3.5 mr-1" />Abrir
+                </Button>
+              </div>
+            </div>
+          </Card>
+
           <Card className="p-0 overflow-hidden">
             <div className="p-4 border-b">
               <h2 className="font-bold flex items-center gap-2"><Link2 className="w-4 h-4" />Links dos Aplicativos</h2>
               <p className="text-xs text-muted-foreground mt-1">
-                Cada técnico tem um link individual <strong>vitalício</strong> que abre o app direto com seus dados.
-                O link continua válido após atualizações; só deixa de funcionar se for bloqueado ou regenerado.
+                Cada técnico tem um link individual <strong>vitalício e permanente</strong> que abre o app direto com seus dados.
+                O link continua válido após publicação de novas versões; só deixa de funcionar se for bloqueado, revogado ou regenerado.
               </p>
             </div>
             <div className="overflow-x-auto">
@@ -307,14 +358,18 @@ const AppOperacionalPage: React.FC = () => {
                         <td className="px-3 py-2 text-xs">{t.veiculo ? `${t.veiculo.placa}` : '—'}</td>
                         <td className="px-3 py-2 text-xs"><Badge variant="outline">Link individual</Badge></td>
                         <td className="px-3 py-2 text-xs">
-                          {t.link_bloqueado
-                            ? <Badge variant="destructive">Bloqueado</Badge>
-                            : <Badge className="bg-green-500/10 text-green-700 border-green-500/30">Ativo</Badge>}
+                          {t.link_status === 'revogado'
+                            ? <Badge className="bg-rose-500/10 text-rose-700 border-rose-500/30">Revogado</Badge>
+                            : t.link_status === 'bloqueado'
+                              ? <Badge variant="destructive">Bloqueado</Badge>
+                              : <Badge className="bg-green-500/10 text-green-700 border-green-500/30">Ativo</Badge>}
                         </td>
                         <td className="px-3 py-2 text-xs">
-                          {t.ultimaAtividade
-                            ? formatDistanceToNow(new Date(t.ultimaAtividade.last_activity_at), { addSuffix: true, locale: ptBR })
-                            : '—'}
+                          {t.ultimo_acesso_em
+                            ? formatDistanceToNow(new Date(t.ultimo_acesso_em), { addSuffix: true, locale: ptBR })
+                            : t.ultimaAtividade
+                              ? formatDistanceToNow(new Date(t.ultimaAtividade.last_activity_at), { addSuffix: true, locale: ptBR })
+                              : '—'}
                         </td>
                         <td className="px-3 py-2 text-xs max-w-[260px]">
                           <code className="block truncate text-[11px] bg-muted px-1.5 py-0.5 rounded" title={url}>{url || '—'}</code>
@@ -330,13 +385,22 @@ const AppOperacionalPage: React.FC = () => {
                             <Button size="icon" variant="outline" className="h-7 w-7" title="Regenerar link" onClick={() => regenerar(t)}>
                               <RefreshCw className="w-3.5 h-3.5" />
                             </Button>
-                            {t.link_bloqueado ? (
+                            {t.link_status === 'revogado' ? (
+                              <Button size="icon" variant="outline" className="h-7 w-7 text-green-600" title="Reativar (regenerar link)" onClick={() => reativarRevogado(t)}>
+                                <Unlock className="w-3.5 h-3.5" />
+                              </Button>
+                            ) : t.link_status === 'bloqueado' ? (
                               <Button size="icon" variant="outline" className="h-7 w-7 text-green-600" title="Reativar link" onClick={() => setBloqueio(t, false)}>
                                 <Unlock className="w-3.5 h-3.5" />
                               </Button>
                             ) : (
                               <Button size="icon" variant="outline" className="h-7 w-7 text-amber-600" title="Bloquear link" onClick={() => setBloqueio(t, true)}>
                                 <Lock className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                            {t.link_status !== 'revogado' && (
+                              <Button size="icon" variant="outline" className="h-7 w-7 text-rose-600" title="Revogar link" onClick={() => revogar(t)}>
+                                <Trash2 className="w-3.5 h-3.5" />
                               </Button>
                             )}
                             <Button size="icon" variant="outline" className="h-7 w-7" title="Editar técnico" onClick={() => navigate(`/admin/app-operacional/${t.id}`)}>

@@ -20,18 +20,22 @@ const sb = () =>
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-// Resolve técnico from token; returns null if invalid or blocked.
-async function resolveTecnico(token: string) {
-  if (!token || token.length < 10) return null;
+// Resolve técnico from token. Returns { ok, tec, reason }.
+// reason ∈ 'invalid_token' | 'blocked_link' | 'revoked_link'
+async function resolveTecnico(token: string): Promise<{ ok: boolean; tec: any | null; reason?: string }> {
+  if (!token || token.length < 10) return { ok: false, tec: null, reason: "invalid_token" };
   const { data } = await sb()
     .from("tecnicos_campo")
     .select(
-      "id, apelido, status, user_id, veiculo_id, funcionario_id, link_bloqueado, funcionarios:funcionario_id(id, nome, cargo, celular, cpf), veiculos:veiculo_id(id, placa, modelo, identificacao_interna)",
+      "id, apelido, status, user_id, veiculo_id, funcionario_id, link_bloqueado, link_status, funcionarios:funcionario_id(id, nome, cargo, celular, cpf), veiculos:veiculo_id(id, placa, modelo, identificacao_interna)",
     )
     .eq("access_token", token)
     .maybeSingle();
-  if (!data) return null;
-  if ((data as any).link_bloqueado) return null;
+  if (!data) return { ok: false, tec: null, reason: "invalid_token" };
+  const status = ((data as any).link_status || "ativo") as string;
+  if (status === "revogado") return { ok: false, tec: null, reason: "revoked_link" };
+  if (status === "bloqueado" || (data as any).link_bloqueado)
+    return { ok: false, tec: null, reason: "blocked_link" };
   // Carrega TODOS os veiculos vinculados a esse colaborador (suporte a multi-veiculo, ex: Rafael)
   let veiculos_disponiveis: any[] = [];
   if (data.user_id) {
@@ -47,7 +51,30 @@ async function resolveTecnico(token: string) {
   if (!veiculos_disponiveis.length && (data as any).veiculos) {
     veiculos_disponiveis = [(data as any).veiculos];
   }
-  return { ...data, veiculos_disponiveis };
+  return { ok: true, tec: { ...data, veiculos_disponiveis } };
+}
+
+// Tela única de Goiânia: resolve técnico pelo CPF (link permanente compartilhado).
+async function resolveTokenPorCpf(cpf: string): Promise<{ ok: boolean; token?: string; reason?: string }> {
+  const cpfDigits = (cpf || "").replace(/\D/g, "");
+  if (cpfDigits.length < 11) return { ok: false, reason: "cpf_invalido" };
+  const { data: func } = await sb()
+    .from("funcionarios")
+    .select("id")
+    .filter("cpf", "ilike", `%${cpfDigits}%`)
+    .maybeSingle();
+  if (!func) return { ok: false, reason: "funcionario_nao_encontrado" };
+  const { data: tec } = await sb()
+    .from("tecnicos_campo")
+    .select("access_token, link_status, link_bloqueado")
+    .eq("funcionario_id", func.id)
+    .maybeSingle();
+  if (!tec) return { ok: false, reason: "tecnico_nao_encontrado" };
+  const status = ((tec as any).link_status || "ativo") as string;
+  if (status === "revogado") return { ok: false, reason: "revoked_link" };
+  if (status === "bloqueado" || (tec as any).link_bloqueado) return { ok: false, reason: "blocked_link" };
+  if (!(tec as any).access_token) return { ok: false, reason: "invalid_token" };
+  return { ok: true, token: (tec as any).access_token as string };
 }
 
 // Resolve veiculo a usar nesta operacao: payload.veiculo_id se valido, senao o padrao.
@@ -61,11 +88,12 @@ function resolveVeiculo(tec: any, payload: any): { id: string | null; placa: str
   return { id: chosen.id, placa: chosen.placa || "", modelo: chosen.modelo || "" };
 }
 
-// Touch ultima_atividade_em + status online
+// Touch ultima_atividade_em + ultimo_acesso_em + status online
 async function touch(tecnicoId: string) {
+  const nowIso = new Date().toISOString();
   await sb()
     .from("tecnicos_campo")
-    .update({ ultima_atividade_em: new Date().toISOString(), status: "online" })
+    .update({ ultima_atividade_em: nowIso, ultimo_acesso_em: nowIso, status: "online" })
     .eq("id", tecnicoId);
 }
 
@@ -80,12 +108,25 @@ Deno.serve(async (req) => {
       payload?: Record<string, unknown>;
     };
 
-    const tec = await resolveTecnico(token);
-    if (!tec) return json({ error: "invalid_token" }, 401);
+    // Ação pública: resolver token a partir do CPF (link único permanente, ex.: Goiânia).
+    if (action === "resolver_cpf") {
+      const cpf = String((payload || {} as any).cpf || "");
+      const r = await resolveTokenPorCpf(cpf);
+      if (!r.ok) return json({ error: r.reason || "invalid_token" }, 404);
+      return json({ ok: true, token: r.token });
+    }
+
+    const r = await resolveTecnico(token);
+    if (!r.ok) return json({ error: r.reason || "invalid_token" }, 401);
+    const tec = r.tec;
 
     const userId = tec.user_id as string | null;
     const veiculoId = tec.veiculo_id as string | null;
     const veiculosDisponiveis = (tec as any).veiculos_disponiveis || [];
+
+    // Marca último acesso de forma assíncrona (não bloqueia a resposta)
+    sb().from("tecnicos_campo").update({ ultimo_acesso_em: new Date().toISOString() }).eq("id", tec.id).then(() => {});
+
     switch (action) {
       // ---------- BOOTSTRAP ----------
       case "perfil": {

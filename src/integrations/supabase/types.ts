@@ -3412,9 +3412,13 @@ export type Database = {
           link_bloqueado: boolean
           link_bloqueado_em: string | null
           link_regenerado_em: string | null
+          link_status: string
           observacoes: string | null
+          revogado_em: string | null
+          revogado_por: string | null
           status: string
           ultima_atividade_em: string | null
+          ultimo_acesso_em: string | null
           updated_at: string
           user_id: string | null
           veiculo_id: string | null
@@ -3428,9 +3432,13 @@ export type Database = {
           link_bloqueado?: boolean
           link_bloqueado_em?: string | null
           link_regenerado_em?: string | null
+          link_status?: string
           observacoes?: string | null
+          revogado_em?: string | null
+          revogado_por?: string | null
           status?: string
           ultima_atividade_em?: string | null
+          ultimo_acesso_em?: string | null
           updated_at?: string
           user_id?: string | null
           veiculo_id?: string | null
@@ -3444,9 +3452,13 @@ export type Database = {
           link_bloqueado?: boolean
           link_bloqueado_em?: string | null
           link_regenerado_em?: string | null
+          link_status?: string
           observacoes?: string | null
+          revogado_em?: string | null
+          revogado_por?: string | null
           status?: string
           ultima_atividade_em?: string | null
+          ultimo_acesso_em?: string | null
           updated_at?: string
           user_id?: string | null
           veiculo_id?: string | null
