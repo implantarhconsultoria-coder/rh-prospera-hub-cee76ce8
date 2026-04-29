@@ -54,7 +54,9 @@ const ContasReceberPage: React.FC = () => {
     const { data: { user } } = await supabase.auth.getUser();
     const { data: prof } = await supabase.from('profiles').select('nome_completo').eq('user_id', user?.id || '').single();
 
-    const { error } = await supabase.from('recebimentos').insert({
+    const ator = await obterAtorAtual();
+    const nomeAtor = ator.funcionarioNome || prof?.nome_completo || user?.email || '';
+    const { data: rec, error } = await supabase.from('recebimentos').insert({
       titulo_id: showBaixa.id,
       data: baixa.data,
       valor: Number(baixa.valor),
@@ -62,9 +64,17 @@ const ContasReceberPage: React.FC = () => {
       conta_bancaria_id: baixa.conta_bancaria_id || null,
       observacoes: baixa.observacoes,
       user_id: user?.id,
-      usuario_nome: prof?.nome_completo || '',
-    });
+      usuario_nome: nomeAtor,
+    } as any).select().single();
     if (error) return toast.error(error.message);
+    await registrarAcao({
+      modulo: 'financeiro',
+      entidade: 'titulo_receber',
+      entidadeId: showBaixa.id,
+      acao: 'baixou',
+      depois: { recebimento_id: (rec as any)?.id, valor: Number(baixa.valor), forma: baixa.forma },
+      observacao: `Baixa de ${showBaixa.numero}`,
+    }, ator);
     toast.success('Baixa registrada');
     setShowBaixa(null);
     carregar();
