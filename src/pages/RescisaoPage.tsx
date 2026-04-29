@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, FileX, Printer, Loader2 } from 'lucide-react';
+import { Plus, FileX, Printer, Loader2, Eye, Pencil, Trash2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   calcularTrct, causaLabel, codigoAfastamentoSugerido,
@@ -29,6 +29,7 @@ const RescisaoPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [list, setList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewing, setViewing] = useState<any | null>(null);
 
   // form
   const [empId, setEmpId] = useState('');
@@ -310,7 +311,39 @@ const RescisaoPage: React.FC = () => {
     } catch (e) { console.warn('autosave doc rescisao', e); }
   };
 
-  // Edição inline de uma rubrica numérica
+  const visualizar = (r: any) => setViewing(r);
+
+  const baixarPdf = async (r: any) => {
+    // Reusa o HTML do imprimir mas baixa como .html (compatível com qualquer navegador)
+    const snap = (r.snapshot_json && (r.snapshot_json as any).resultado) || null;
+    if (!snap) { toast.error('Sem snapshot da rescisão'); return; }
+    const html = buildRescisaoProHtml({
+      empresaNome: r.empresa_nome, empresaCnpj: r.empresa_cnpj,
+      funcionarioNome: r.funcionario_nome, cpf: r.cpf, cargo: r.cargo,
+      causa: (r.tipo_rescisao || 'sj_empregador') as CausaAfastamento,
+      avisoTrabalhado: r.aviso_previo === 'trabalhado',
+      remuneracaoMesAnterior: Number(r.remuneracao_mes_anterior || r.salario_base || 0),
+      dataAdmissao: r.data_admissao, dataAviso: r.data_aviso, dataAfastamento: r.data_desligamento,
+      observacoes: r.observacoes, resultado: snap,
+    });
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rescisao_${(r.funcionario_nome || 'func').replace(/\s+/g, '_')}_${r.data_desligamento || ''}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Download iniciado');
+  };
+
+  const excluir = async (r: any) => {
+    if (!confirm(`Excluir rescisão de ${r.funcionario_nome}? Essa ação será registrada.`)) return;
+    const { error } = await supabase.from('rescisoes').delete().eq('id', r.id);
+    if (error) return toast.error('Erro: ' + error.message);
+    await registrarAcao({ modulo: 'rh', entidade: 'rescisao', entidadeId: r.id, acao: 'excluiu', antes: { liquido: r.liquido_rescisorio } });
+    toast.success('Rescisão excluída');
+    fetchList();
+  };
   const RubricaInput: React.FC<{ k: RubricaKey; label: string }> = ({ k, label }) => (
     <div className="flex items-center justify-between gap-2 py-0.5">
       <span className="text-xs">{label}</span>
@@ -511,6 +544,8 @@ const RescisaoPage: React.FC = () => {
                 <th className="p-2 text-left">Empresa</th>
                 <th className="p-2 text-left">Afastamento</th>
                 <th className="p-2 text-left">Causa</th>
+                <th className="p-2 text-right">Bruto</th>
+                <th className="p-2 text-right">Deduções</th>
                 <th className="p-2 text-right">Líquido</th>
                 <th className="p-2 text-center">Ações</th>
               </tr>
@@ -522,19 +557,53 @@ const RescisaoPage: React.FC = () => {
                   <td className="p-2">{r.empresa_nome}</td>
                   <td className="p-2">{r.data_desligamento}</td>
                   <td className="p-2">{r.causa_afastamento || r.tipo_rescisao}</td>
+                  <td className="p-2 text-right">{formatCurrency(Number(r.total_bruto || r.total_proventos || 0))}</td>
+                  <td className="p-2 text-right text-destructive">{formatCurrency(Number(r.total_dedu || r.total_descontos || 0))}</td>
                   <td className="p-2 text-right font-bold text-success">{formatCurrency(Number(r.liquido_rescisorio || r.liquido || 0))}</td>
-                  <td className="p-2 text-center">
-                    <Button size="sm" variant="ghost" onClick={() => imprimir(r)}><Printer className="w-4 h-4" /></Button>
+                  <td className="p-2 text-center whitespace-nowrap">
+                    <Button size="sm" variant="ghost" onClick={() => visualizar(r)} title="Visualizar"><Eye className="w-4 h-4" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => imprimir(r)} title="Imprimir / PDF"><Printer className="w-4 h-4" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => baixarPdf(r)} title="Baixar PDF"><Download className="w-4 h-4" /></Button>
+                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => excluir(r)} title="Excluir"><Trash2 className="w-4 h-4" /></Button>
                   </td>
                 </tr>
               ))}
               {list.length === 0 && (
-                <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">Nenhuma rescisão registrada.</td></tr>
+                <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">Nenhuma rescisão registrada.</td></tr>
               )}
             </tbody>
           </table>
         )}
       </Card>
+
+      {/* Dialog de visualização */}
+      <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Rescisão — {viewing?.funcionario_nome}</DialogTitle></DialogHeader>
+          {viewing && (
+            <div className="space-y-3 text-sm">
+              <div className="grid grid-cols-2 gap-2 bg-muted p-3 rounded">
+                <div><strong>Empresa:</strong> {viewing.empresa_nome}</div>
+                <div><strong>CPF:</strong> {viewing.cpf}</div>
+                <div><strong>Cargo:</strong> {viewing.cargo}</div>
+                <div><strong>Admissão:</strong> {viewing.data_admissao}</div>
+                <div><strong>Aviso:</strong> {viewing.data_aviso}</div>
+                <div><strong>Afastamento:</strong> {viewing.data_desligamento}</div>
+                <div className="col-span-2"><strong>Causa:</strong> {viewing.causa_afastamento || viewing.tipo_rescisao} ({viewing.codigo_afastamento})</div>
+              </div>
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="p-3 rounded bg-success/10"><p className="text-xs text-muted-foreground">Bruto</p><p className="font-bold">{formatCurrency(Number(viewing.total_bruto || viewing.total_proventos || 0))}</p></div>
+                <div className="p-3 rounded bg-destructive/10"><p className="text-xs text-muted-foreground">Deduções</p><p className="font-bold text-destructive">{formatCurrency(Number(viewing.total_dedu || viewing.total_descontos || 0))}</p></div>
+                <div className="p-3 rounded bg-primary/10"><p className="text-xs text-muted-foreground">Líquido</p><p className="font-bold text-primary">{formatCurrency(Number(viewing.liquido_rescisorio || viewing.liquido || 0))}</p></div>
+              </div>
+              {viewing.observacoes && <div className="text-xs"><strong>Obs:</strong> {viewing.observacoes}</div>}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => imprimir(viewing)}><Printer className="w-4 h-4 mr-2" />Imprimir / PDF</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
