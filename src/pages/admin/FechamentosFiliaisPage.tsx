@@ -185,6 +185,8 @@ const FechamentosFiliaisPage: React.FC = () => {
                     {l.status === 'fechado' && <Badge variant="default" className="bg-success text-success-foreground gap-1"><Lock className="w-3 h-3" /> Fechado</Badge>}
                     {l.status === 'aberto' && <Badge variant="secondary" className="gap-1"><Unlock className="w-3 h-3" /> Aberto</Badge>}
                     {l.status === 'reaberto' && <Badge variant="outline" className="gap-1 border-warning text-warning"><Unlock className="w-3 h-3" /> Reaberto</Badge>}
+                    {l.status === 'enviado_central' && <Badge variant="default" className="gap-1 bg-primary text-primary-foreground"><CheckCircle2 className="w-3 h-3" /> Enviado p/ Central</Badge>}
+                    {l.status === 'em_conferencia' && <Badge variant="default" className="gap-1 bg-accent text-accent-foreground"><Clock className="w-3 h-3" /> Em Conferência</Badge>}
                     {l.status === 'pendente' && <Badge variant="destructive" className="gap-1"><AlertTriangle className="w-3 h-3" /> Pendente</Badge>}
                   </td>
                   <td className="px-3 py-2">{l.fech?.total_funcionarios || 0}</td>
