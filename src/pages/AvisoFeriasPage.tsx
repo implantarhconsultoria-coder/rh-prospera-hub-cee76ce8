@@ -342,8 +342,75 @@ const AvisoFeriasPage: React.FC = () => {
     fetchAvisos();
   };
 
+
+  const enviarParaContabilidade = async (a: FeriasAviso) => {
+    if (!session?.user) return;
+    // Buscar destinatários configurados
+    const { data: cfg } = await supabase
+      .from('config_emails_contabilidade' as any)
+      .select('*').limit(1).maybeSingle();
+    const c = (cfg as any) || {};
+    const to = [c.email_robson, c.email_marisa].filter(Boolean);
+    const cc = (c.emails_copia || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+    if (to.length === 0) {
+      toast.error('Configure os e-mails da contabilidade em Admin → E-mails Contabilidade');
+      return;
+    }
+
+    // Baixa o PDF localmente para o operador anexar manualmente
+    baixarAviso(a);
+
+    const subject = `Aviso de Férias - ${a.funcionario_nome} - ${a.empresa_nome}`;
+    const body =
+`Olá,
+
+Segue aviso de férias para conferência e providências de pagamento.
+
+Funcionário: ${a.funcionario_nome}
+CPF: ${a.funcionario_cpf}
+Empresa/Filial: ${a.empresa_nome}
+Cargo: ${a.funcionario_cargo}
+Período de férias: ${formatDate(a.periodo_gozo_inicio)} até ${formatDate(a.data_retorno)}
+Quantidade de dias: ${a.dias_ferias}
+Data limite para pagamento: ${a.prazo_pagamento ? formatDate(a.prazo_pagamento) : '—'}
+Status: ${a.status_pagamento || 'pendente'}
+
+(O PDF do aviso foi baixado automaticamente — arraste-o nesta janela do Outlook para anexar.)
+
+Atenciosamente,
+Topac RH PRO`;
+
+    openEmailClient({ to, cc, subject, body });
+
+    const destinos = [...to, ...cc].join(', ');
+    await supabase.from('ferias_avisos' as any).update({
+      status_pagamento: a.status_pagamento === 'pago' ? 'pago' : 'enviado',
+      enviado_contabilidade_em: new Date().toISOString(),
+      enviado_contabilidade_por: session.user.email || '',
+      enviado_contabilidade_destinos: destinos,
+    } as any).eq('id', a.id);
+
+    toast.success('Enviado para contabilidade — registrado no histórico');
+    fetchAvisos();
+  };
+
+  const marcarPago = async (a: FeriasAviso, valor?: number) => {
+    const { error } = await supabase.from('ferias_avisos' as any).update({
+      status_pagamento: 'pago',
+      data_pagamento: today(),
+      valor_pago: valor ?? null,
+    } as any).eq('id', a.id);
+    if (error) { toast.error('Erro: ' + error.message); return; }
+    toast.success('Pagamento confirmado');
+    fetchAvisos();
+  };
+
   // Listagens com situação calculada
-  const avisosCalc = useMemo(() => avisos.map(a => ({ ...a, situacao: computarSituacao(a) })), [avisos]);
+  const avisosCalc = useMemo(() => avisos.map(a => ({
+    ...a,
+    situacao: computarSituacao(a),
+    pagamento: computarPagamento(a),
+  })), [avisos]);
 
   const filtrados = useMemo(() => {
     let list = avisosCalc;
@@ -360,6 +427,9 @@ const AvisoFeriasPage: React.FC = () => {
     if (filterStatus === 'retorno') list = list.filter(a => a.situacao.tipo === 'em_ferias' && a.situacao.dias <= 7);
     if (filterStatus === 'concluidos') list = list.filter(a => a.situacao.tipo === 'retornado');
     if (filterStatus === 'cancelados') list = list.filter(a => a.situacao.tipo === 'cancelado');
+    if (filterStatus === 'pgto_pendente') list = list.filter(a => a.pagamento.tipo === 'pendente' || a.pagamento.tipo === 'enviado');
+    if (filterStatus === 'pgto_vencendo') list = list.filter(a => a.pagamento.tipo === 'vencendo');
+    if (filterStatus === 'pgto_vencido') list = list.filter(a => a.pagamento.tipo === 'vencido');
     return list;
   }, [avisosCalc, search, filterStatus]);
 
@@ -368,6 +438,9 @@ const AvisoFeriasPage: React.FC = () => {
     em_ferias: avisosCalc.filter(a => a.situacao.tipo === 'em_ferias' || a.situacao.tipo === 'ate_retorno').length,
     retornos: avisosCalc.filter(a => a.situacao.tipo === 'em_ferias' && a.situacao.dias <= 7).length,
     urgentes: avisosCalc.filter(a => a.situacao.tipo === 'ate_inicio' && a.situacao.dias <= 7).length,
+    pgtoPendente: avisosCalc.filter(a => a.pagamento.tipo === 'pendente' || a.pagamento.tipo === 'enviado').length,
+    pgtoVencendo: avisosCalc.filter(a => a.pagamento.tipo === 'vencendo').length,
+    pgtoVencido: avisosCalc.filter(a => a.pagamento.tipo === 'vencido').length,
   }), [avisosCalc]);
 
   const detail = detailId ? avisosCalc.find(a => a.id === detailId) : null;
