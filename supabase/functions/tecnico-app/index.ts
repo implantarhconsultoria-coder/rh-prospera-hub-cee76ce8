@@ -51,7 +51,30 @@ async function resolveTecnico(token: string): Promise<{ ok: boolean; tec: any | 
   if (!veiculos_disponiveis.length && (data as any).veiculos) {
     veiculos_disponiveis = [(data as any).veiculos];
   }
-  return { ...data, veiculos_disponiveis };
+  return { ok: true, tec: { ...data, veiculos_disponiveis } };
+}
+
+// Tela única de Goiânia: resolve técnico pelo CPF (link permanente compartilhado).
+async function resolveTokenPorCpf(cpf: string): Promise<{ ok: boolean; token?: string; reason?: string }> {
+  const cpfDigits = (cpf || "").replace(/\D/g, "");
+  if (cpfDigits.length < 11) return { ok: false, reason: "cpf_invalido" };
+  const { data: func } = await sb()
+    .from("funcionarios")
+    .select("id")
+    .filter("cpf", "ilike", `%${cpfDigits}%`)
+    .maybeSingle();
+  if (!func) return { ok: false, reason: "funcionario_nao_encontrado" };
+  const { data: tec } = await sb()
+    .from("tecnicos_campo")
+    .select("access_token, link_status, link_bloqueado")
+    .eq("funcionario_id", func.id)
+    .maybeSingle();
+  if (!tec) return { ok: false, reason: "tecnico_nao_encontrado" };
+  const status = ((tec as any).link_status || "ativo") as string;
+  if (status === "revogado") return { ok: false, reason: "revoked_link" };
+  if (status === "bloqueado" || (tec as any).link_bloqueado) return { ok: false, reason: "blocked_link" };
+  if (!(tec as any).access_token) return { ok: false, reason: "invalid_token" };
+  return { ok: true, token: (tec as any).access_token as string };
 }
 
 // Resolve veiculo a usar nesta operacao: payload.veiculo_id se valido, senao o padrao.
