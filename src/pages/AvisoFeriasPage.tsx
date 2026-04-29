@@ -44,6 +44,13 @@ interface FeriasAviso {
   observacao: string;
   user_nome: string;
   created_at: string;
+  prazo_pagamento?: string | null;
+  status_pagamento?: string;
+  data_pagamento?: string | null;
+  valor_pago?: number | null;
+  enviado_contabilidade_em?: string | null;
+  enviado_contabilidade_por?: string | null;
+  enviado_contabilidade_destinos?: string | null;
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
