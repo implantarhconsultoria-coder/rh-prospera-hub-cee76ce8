@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.provision-portal-users]
 verify_jwt = false
+
+[functions.acesso-cpf]
+verify_jwt = false

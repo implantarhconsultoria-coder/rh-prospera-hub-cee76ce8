@@ -89,6 +89,9 @@ import CentrosCustoPage from "@/pages/financeiro/CentrosCustoPage";
 import ConciliacaoPage from "@/pages/financeiro/ConciliacaoPage";
 import NotFound from "@/pages/NotFound";
 import AcessoCpfPage from "@/pages/AcessoCpfPage";
+import AcessoModuloCpfPage from "@/pages/AcessoModuloCpfPage";
+import { FinanceiroCpfLayout, FaturamentoCpfLayout } from "@/components/CpfPortalLayout";
+import LinksAcessoCpfPage from "@/pages/admin/LinksAcessoCpfPage";
 import { Loader2 } from "lucide-react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
@@ -179,6 +182,7 @@ const AuthGate = () => {
         <Route path="/admin/chamados" element={<DespacharChamadoPage />} />
         <Route path="/admin/app-operacional" element={<AppOperacionalPage />} />
         <Route path="/admin/app-operacional/:id" element={<TecnicoDetailPage />} />
+        <Route path="/admin/links-acesso-cpf" element={<LinksAcessoCpfPage />} />
         <Route path="/admin/configuracoes" element={<ConfiguracoesPage />} />
         {/* Faturamento */}
         <Route path="/admin/faturamento" element={<FaturamentoDashboardPage />} />
@@ -284,6 +288,29 @@ const App = () => (
               </Route>
               {/* Link único permanente por CPF (Goiânia e demais filiais com link compartilhado) */}
               <Route path="/g" element={<AcessoCpfPage />} />
+              {/* Links permanentes por módulo/unidade — acesso por CPF */}
+              <Route path="/acesso/:slug" element={<AcessoModuloCpfPage />} />
+              {/* Portais isolados Financeiro/Faturamento por CPF */}
+              <Route path="/financeiro-cpf" element={<FinanceiroCpfLayout />}>
+                <Route index element={<FinanceiroDashboardPage />} />
+                <Route path="contas-receber" element={<ContasReceberPage />} />
+                <Route path="contas-pagar" element={<ContasPagarPage />} />
+                <Route path="bancos" element={<BancosPage />} />
+                <Route path="fluxo-caixa" element={<FluxoCaixaPage />} />
+                <Route path="inadimplencia" element={<InadimplenciaPage />} />
+                <Route path="conciliacao" element={<ConciliacaoPage />} />
+              </Route>
+              <Route path="/faturamento-cpf" element={<FaturamentoCpfLayout />}>
+                <Route index element={<FaturamentoDashboardPage />} />
+                <Route path="clientes" element={<ClientesFatPage />} />
+                <Route path="clientes/:id" element={<ClienteDetailPage />} />
+                <Route path="contratos" element={<ContratosPage />} />
+                <Route path="contratos/:id" element={<ContratoDetailPage />} />
+                <Route path="faturas" element={<FaturasPage />} />
+                <Route path="medicoes" element={<MedicoesPage />} />
+                <Route path="reajustes" element={<ReajustesPage />} />
+                <Route path="pendencias" element={<PendenciasPage />} />
+              </Route>
               <Route path="/relatorio-impressao" element={<ErrorBoundary><RelatorioImpressaoPage /></ErrorBoundary>} />
               <Route path="/entrega-impressao" element={<ErrorBoundary><EntregaImpressaoPage /></ErrorBoundary>} />
               <Route path="/relatorio-vr-impressao" element={<ErrorBoundary><RelatorioVRImpressaoPage /></ErrorBoundary>} />
