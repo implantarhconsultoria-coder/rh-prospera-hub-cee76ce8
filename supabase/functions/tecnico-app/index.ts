@@ -88,11 +88,12 @@ function resolveVeiculo(tec: any, payload: any): { id: string | null; placa: str
   return { id: chosen.id, placa: chosen.placa || "", modelo: chosen.modelo || "" };
 }
 
-// Touch ultima_atividade_em + status online
+// Touch ultima_atividade_em + ultimo_acesso_em + status online
 async function touch(tecnicoId: string) {
+  const nowIso = new Date().toISOString();
   await sb()
     .from("tecnicos_campo")
-    .update({ ultima_atividade_em: new Date().toISOString(), status: "online" })
+    .update({ ultima_atividade_em: nowIso, ultimo_acesso_em: nowIso, status: "online" })
     .eq("id", tecnicoId);
 }
 
@@ -107,12 +108,25 @@ Deno.serve(async (req) => {
       payload?: Record<string, unknown>;
     };
 
-    const tec = await resolveTecnico(token);
-    if (!tec) return json({ error: "invalid_token" }, 401);
+    // Ação pública: resolver token a partir do CPF (link único permanente, ex.: Goiânia).
+    if (action === "resolver_cpf") {
+      const cpf = String((payload || {} as any).cpf || "");
+      const r = await resolveTokenPorCpf(cpf);
+      if (!r.ok) return json({ error: r.reason || "invalid_token" }, 404);
+      return json({ ok: true, token: r.token });
+    }
+
+    const r = await resolveTecnico(token);
+    if (!r.ok) return json({ error: r.reason || "invalid_token" }, 401);
+    const tec = r.tec;
 
     const userId = tec.user_id as string | null;
     const veiculoId = tec.veiculo_id as string | null;
     const veiculosDisponiveis = (tec as any).veiculos_disponiveis || [];
+
+    // Marca último acesso de forma assíncrona (não bloqueia a resposta)
+    sb().from("tecnicos_campo").update({ ultimo_acesso_em: new Date().toISOString() }).eq("id", tec.id).then(() => {});
+
     switch (action) {
       // ---------- BOOTSTRAP ----------
       case "perfil": {
