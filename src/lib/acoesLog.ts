@@ -37,14 +37,15 @@ interface AtorContext {
 export const obterAtorAtual = async (): Promise<AtorContext> => {
   // Portal CPF (sessionStorage)
   try {
-    const raw = sessionStorage.getItem('cpf_portal_session');
+    const raw = sessionStorage.getItem('cpf_session');
     if (raw) {
       const s = JSON.parse(raw);
+      const u = s?.usuario || {};
       return {
-        funcionarioId: s.funcionario_id || null,
-        funcionarioNome: s.nome || null,
-        cpf: s.cpf || null,
-        empresa: s.empresa || null,
+        funcionarioId: u.funcionario_id || null,
+        funcionarioNome: u.nome || null,
+        cpf: u.cpf || null,
+        empresa: u.empresa || s.unidade || null,
         origem: 'cpf-portal',
       };
     }
