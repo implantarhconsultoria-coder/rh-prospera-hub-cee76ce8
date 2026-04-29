@@ -200,52 +200,59 @@
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-/* Quando existir um #print-root na página, isolamos só ele.
-   Quando NÃO existir, deixamos a página inteira ser impressa
-   (apenas escondemos chrome de UI: sidebar, botões, toasts, etc.). */
+/* Padrão de impressão cirúrgico:
+   - se existir #print-root OU .print-area → isola somente essa área
+   - sempre esconde sidebar, header, botões, toasts, badges Lovable
+   - nunca imprime tela inteira do app */
 @media print {
-  /* Caso 1: página tem #print-root → isola */
-  body:has(#print-root) * {
+  /* Esconder TODO chrome de UI sempre */
+  .no-print,
+  [data-sidebar],
+  aside.sidebar,
+  nav.sidebar,
+  header.app-header,
+  .app-sidebar,
+  .lovable-badge,
+  [data-sonner-toaster],
+  .toast,
+  .modal-backdrop,
+  button:not(.print-keep),
+  .filtros-bar,
+  .toolbar:not(.print-keep) {
+    display: none !important;
+  }
+
+  /* Caso 1: página tem #print-root ou .print-area → isola */
+  body:has(#print-root) *,
+  body:has(.print-area) * {
     visibility: hidden !important;
   }
   body:has(#print-root) #print-root,
-  body:has(#print-root) #print-root * {
+  body:has(#print-root) #print-root *,
+  body:has(.print-area) .print-area,
+  body:has(.print-area) .print-area * {
     visibility: visible !important;
   }
-  body:has(#print-root) #print-root {
+  body:has(#print-root) #print-root,
+  body:has(.print-area) .print-area {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
-    width: 190mm !important;
-    min-height: 277mm !important;
-    margin: 0 auto !important;
-    padding: 10mm !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 6mm !important;
     background: #fff !important;
     color: #000 !important;
     box-shadow: none !important;
     border: none !important;
   }
 
-  /* Caso 2 (sem #print-root) e também caso 1: esconder chrome */
-  .no-print,
-  [data-sidebar],
-  aside.sidebar,
-  .lovable-badge,
-  [data-sonner-toaster],
-  .toast,
-  .modal-backdrop {
-    display: none !important;
-  }
+  @page { size: A4 portrait; margin: 8mm; }
+  @page landscape { size: A4 landscape; margin: 8mm; }
 
-  @page {
-    size: A4 portrait;
-    margin: 8mm;
-  }
-
-  body {
-    background: #fff !important;
-    color: #000 !important;
-  }
+  body { background: #fff !important; color: #000 !important; }
+  table { page-break-inside: auto; }
+  tr { page-break-inside: avoid; page-break-after: auto; }
 }
 
 .print-sheet {
