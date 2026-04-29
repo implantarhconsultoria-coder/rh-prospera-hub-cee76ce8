@@ -7,7 +7,7 @@ interface CpfSession {
   modulo: 'financeiro' | 'faturamento';
   unidade: string;
   link_nome: string;
-  usuario: { nome: string; cpf: string; empresa?: string; perfil?: string };
+  usuario: { funcionario_id: string; nome: string; cpf: string; empresa?: string; cargo?: string; company_id?: string };
   ts: number;
 }
 
