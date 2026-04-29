@@ -364,13 +364,22 @@ const AppOperacionalPage: React.FC = () => {
                             <Button size="icon" variant="outline" className="h-7 w-7" title="Regenerar link" onClick={() => regenerar(t)}>
                               <RefreshCw className="w-3.5 h-3.5" />
                             </Button>
-                            {t.link_bloqueado ? (
+                            {t.link_status === 'revogado' ? (
+                              <Button size="icon" variant="outline" className="h-7 w-7 text-green-600" title="Reativar (regenerar link)" onClick={() => reativarRevogado(t)}>
+                                <Unlock className="w-3.5 h-3.5" />
+                              </Button>
+                            ) : t.link_status === 'bloqueado' ? (
                               <Button size="icon" variant="outline" className="h-7 w-7 text-green-600" title="Reativar link" onClick={() => setBloqueio(t, false)}>
                                 <Unlock className="w-3.5 h-3.5" />
                               </Button>
                             ) : (
                               <Button size="icon" variant="outline" className="h-7 w-7 text-amber-600" title="Bloquear link" onClick={() => setBloqueio(t, true)}>
                                 <Lock className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                            {t.link_status !== 'revogado' && (
+                              <Button size="icon" variant="outline" className="h-7 w-7 text-rose-600" title="Revogar link" onClick={() => revogar(t)}>
+                                <Trash2 className="w-3.5 h-3.5" />
                               </Button>
                             )}
                             <Button size="icon" variant="outline" className="h-7 w-7" title="Editar técnico" onClick={() => navigate(`/admin/app-operacional/${t.id}`)}>
