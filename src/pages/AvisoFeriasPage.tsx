@@ -547,14 +547,16 @@ Topac RH PRO`;
               <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Início</th>
               <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Retorno</th>
               <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Dias</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Prazo Pgto</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Pagamento</th>
               <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Situação</th>
               <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Ações</th>
             </tr>
           </thead>
           <tbody>
-            {loading && (<tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Carregando...</td></tr>)}
+            {loading && (<tr><td colSpan={9} className="p-6 text-center text-muted-foreground">Carregando...</td></tr>)}
             {!loading && filtrados.length === 0 && (
-              <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Nenhum aviso de férias cadastrado.</td></tr>
+              <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">Nenhum aviso de férias cadastrado.</td></tr>
             )}
             {filtrados.map(a => (
               <tr key={a.id} className="border-b hover:bg-muted/20">
@@ -563,6 +565,15 @@ Topac RH PRO`;
                 <td className="px-3 py-2.5 text-xs">{formatDate(a.periodo_gozo_inicio)}</td>
                 <td className="px-3 py-2.5 text-xs">{formatDate(a.data_retorno)}</td>
                 <td className="px-3 py-2.5 text-xs">{a.dias_ferias}</td>
+                <td className="px-3 py-2.5 text-xs">{a.prazo_pagamento ? formatDate(a.prazo_pagamento) : '—'}</td>
+                <td className="px-3 py-2.5">
+                  <Badge className={`text-[10px] ${a.pagamento.cor}`}>{a.pagamento.label}</Badge>
+                  {a.enviado_contabilidade_em && (
+                    <div className="text-[10px] text-muted-foreground mt-1">
+                      Enviado em {new Date(a.enviado_contabilidade_em).toLocaleDateString('pt-BR')}
+                    </div>
+                  )}
+                </td>
                 <td className="px-3 py-2.5">
                   <Badge className={`text-[10px] ${a.situacao.cor}`}>{a.situacao.label}</Badge>
                   {a.assinado_pdf_url && <Badge variant="outline" className="text-[10px] ml-1 border-success text-success">Assinado</Badge>}
@@ -575,6 +586,14 @@ Topac RH PRO`;
                     <Button size="icon" variant="ghost" className="h-7 w-7" title="Baixar PDF" onClick={() => baixarAviso(a)}>
                       <Printer className="w-3.5 h-3.5" />
                     </Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-primary" title="Enviar para Contabilidade" onClick={() => enviarParaContabilidade(a)}>
+                      <Send className="w-3.5 h-3.5" />
+                    </Button>
+                    {a.pagamento.tipo !== 'pago' && (
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-success" title="Marcar como pago" onClick={() => marcarPago(a)}>
+                        <DollarSign className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
                     <Button size="icon" variant="ghost" className="h-7 w-7" title="Editar" onClick={() => abrirEdicao(a)}>
                       <FileText className="w-3.5 h-3.5" />
                     </Button>
