@@ -337,14 +337,18 @@ const AppOperacionalPage: React.FC = () => {
                         <td className="px-3 py-2 text-xs">{t.veiculo ? `${t.veiculo.placa}` : '—'}</td>
                         <td className="px-3 py-2 text-xs"><Badge variant="outline">Link individual</Badge></td>
                         <td className="px-3 py-2 text-xs">
-                          {t.link_bloqueado
-                            ? <Badge variant="destructive">Bloqueado</Badge>
-                            : <Badge className="bg-green-500/10 text-green-700 border-green-500/30">Ativo</Badge>}
+                          {t.link_status === 'revogado'
+                            ? <Badge className="bg-rose-500/10 text-rose-700 border-rose-500/30">Revogado</Badge>
+                            : t.link_status === 'bloqueado'
+                              ? <Badge variant="destructive">Bloqueado</Badge>
+                              : <Badge className="bg-green-500/10 text-green-700 border-green-500/30">Ativo</Badge>}
                         </td>
                         <td className="px-3 py-2 text-xs">
-                          {t.ultimaAtividade
-                            ? formatDistanceToNow(new Date(t.ultimaAtividade.last_activity_at), { addSuffix: true, locale: ptBR })
-                            : '—'}
+                          {t.ultimo_acesso_em
+                            ? formatDistanceToNow(new Date(t.ultimo_acesso_em), { addSuffix: true, locale: ptBR })
+                            : t.ultimaAtividade
+                              ? formatDistanceToNow(new Date(t.ultimaAtividade.last_activity_at), { addSuffix: true, locale: ptBR })
+                              : '—'}
                         </td>
                         <td className="px-3 py-2 text-xs max-w-[260px]">
                           <code className="block truncate text-[11px] bg-muted px-1.5 py-0.5 rounded" title={url}>{url || '—'}</code>
