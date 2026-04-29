@@ -29,6 +29,7 @@ const RescisaoPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [list, setList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewing, setViewing] = useState<any | null>(null);
 
   // form
   const [empId, setEmpId] = useState('');
