@@ -1,13 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { getWorkingDays, getFirstBusinessDayOfNextMonth, getNextCompetencia, formatCompetencia } from '@/lib/workingDays';
+import { getFirstBusinessDayOfNextMonth, getNextCompetencia, formatCompetencia } from '@/lib/workingDays';
 import { formatCurrency } from '@/lib/calculations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Bus, FileText, User } from 'lucide-react';
+import { Bus, FileText, User, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { buildVTReportRows, sumBenefitRows } from '@/lib/benefitReports';
+import { calcularDiasUteisBeneficio, formatFeriadoData, type DiasUteisBeneficio, diasUteisBrutos } from '@/lib/feriados';
 
 const RelatorioVTPage: React.FC = () => {
   const { companies, employees, entries, getOrCreateEntries, addBenefitReport, getFechamento } = useApp();
@@ -15,10 +16,35 @@ const RelatorioVTPage: React.FC = () => {
   const [selectedCompany, setSelectedCompany] = useState('');
   const [competencia, setCompetencia] = useState(new Date().toISOString().slice(0, 7));
   const [generated, setGenerated] = useState(false);
+  const [feriadoInfo, setFeriadoInfo] = useState<DiasUteisBeneficio>({
+    diasUteisBrutos: diasUteisBrutos(new Date().toISOString().slice(0, 7)),
+    feriadosConsiderados: 0,
+    diasUteisFinais: diasUteisBrutos(new Date().toISOString().slice(0, 7)),
+    listaFeriados: [],
+  });
 
-  const diasUteis = getWorkingDays(competencia);
+  const company = companies.find(c => c.id === selectedCompany);
+  const diasUteis = feriadoInfo.diasUteisFinais;
   const fechamento = getFechamento(selectedCompany, competencia);
   const dataFechamento = fechamento.dataFechamento || '';
+
+  const recalcularFeriados = async () => {
+    if (!company) {
+      const brutos = diasUteisBrutos(competencia);
+      setFeriadoInfo({ diasUteisBrutos: brutos, feriadosConsiderados: 0, diasUteisFinais: brutos, listaFeriados: [] });
+      return;
+    }
+    const info = await calcularDiasUteisBeneficio(company.name, competencia, company.id);
+    setFeriadoInfo(info);
+    if (info.feriadosConsiderados === 0) {
+      toast.message('Não há feriados cadastrados para esta competência/filial. Cadastre no Calendário de Feriados para o cálculo considerar.');
+    }
+  };
+
+  useEffect(() => {
+    recalcularFeriados();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCompany, competencia]);
 
   const handleGenerate = () => {
     if (!selectedCompany) { toast.error('Selecione uma empresa'); return; }
