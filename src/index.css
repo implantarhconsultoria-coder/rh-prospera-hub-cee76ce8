@@ -255,13 +255,16 @@
   background: #fff;
 }
 
-/* Remove spinners de inputs number em todo o sistema */
+/* Remove spinners de TODOS inputs number — Chrome/Safari/Edge/Firefox */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  margin: 0 !important;
 }
-input[type="number"] {
-  -moz-appearance: textfield;
-  appearance: textfield;
+input[type="number"],
+input[type="number"]:hover,
+input[type="number"]:focus {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
 }
