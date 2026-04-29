@@ -281,6 +281,8 @@ const App = () => (
                 <Route path="galoes" element={<MecanicoGaloesPage />} />
                 <Route path="historico" element={<MecanicoHistoricoPage />} />
               </Route>
+              {/* Link único permanente por CPF (Goiânia e demais filiais com link compartilhado) */}
+              <Route path="/g" element={<AcessoCpfPage />} />
               <Route path="/relatorio-impressao" element={<ErrorBoundary><RelatorioImpressaoPage /></ErrorBoundary>} />
               <Route path="/entrega-impressao" element={<ErrorBoundary><EntregaImpressaoPage /></ErrorBoundary>} />
               <Route path="/relatorio-vr-impressao" element={<ErrorBoundary><RelatorioVRImpressaoPage /></ErrorBoundary>} />
