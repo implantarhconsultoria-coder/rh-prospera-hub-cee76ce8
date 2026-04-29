@@ -95,6 +95,7 @@ import AcessoModuloCpfPage from "@/pages/AcessoModuloCpfPage";
 import { FinanceiroCpfLayout, FaturamentoCpfLayout } from "@/components/CpfPortalLayout";
 import LinksAcessoCpfPage from "@/pages/admin/LinksAcessoCpfPage";
 import PermissoesFuncionariosPage from "@/pages/admin/PermissoesFuncionariosPage";
+import EmailsContabilidadePage from "@/pages/admin/EmailsContabilidadePage";
 import { Loader2 } from "lucide-react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
@@ -189,6 +190,7 @@ const AuthGate = () => {
         <Route path="/admin/app-operacional/:id" element={<TecnicoDetailPage />} />
         <Route path="/admin/links-acesso-cpf" element={<LinksAcessoCpfPage />} />
         <Route path="/admin/permissoes-funcionarios" element={<PermissoesFuncionariosPage />} />
+        <Route path="/admin/emails-contabilidade" element={<EmailsContabilidadePage />} />
         <Route path="/admin/configuracoes" element={<ConfiguracoesPage />} />
         {/* Faturamento */}
         <Route path="/admin/faturamento" element={<FaturamentoDashboardPage />} />
