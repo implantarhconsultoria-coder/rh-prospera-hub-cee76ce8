@@ -1997,6 +1997,39 @@ export type Database = {
         }
         Relationships: []
       }
+      config_emails_contabilidade: {
+        Row: {
+          created_at: string
+          email_marisa: string
+          email_robson: string
+          emails_copia: string
+          id: string
+          updated_at: string
+          updated_by: string | null
+          updated_by_nome: string | null
+        }
+        Insert: {
+          created_at?: string
+          email_marisa?: string
+          email_robson?: string
+          emails_copia?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+          updated_by_nome?: string | null
+        }
+        Update: {
+          created_at?: string
+          email_marisa?: string
+          email_robson?: string
+          emails_copia?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+          updated_by_nome?: string | null
+        }
+        Relationships: []
+      }
       config_financeiro: {
         Row: {
           chave: string
@@ -2781,9 +2814,13 @@ export type Database = {
           company_id: string | null
           created_at: string
           data_entrega: string | null
+          data_pagamento: string | null
           data_retorno: string
           dias_ferias: number
           empresa_nome: string
+          enviado_contabilidade_destinos: string | null
+          enviado_contabilidade_em: string | null
+          enviado_contabilidade_por: string | null
           funcionario_cargo: string
           funcionario_cpf: string
           funcionario_id: string | null
@@ -2794,10 +2831,13 @@ export type Database = {
           periodo_aquisitivo_inicio: string | null
           periodo_gozo_fim: string
           periodo_gozo_inicio: string
+          prazo_pagamento: string | null
           status: string
+          status_pagamento: string
           updated_at: string
           user_id: string
           user_nome: string
+          valor_pago: number | null
         }
         Insert: {
           assinado_pdf_url?: string
@@ -2805,9 +2845,13 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           data_entrega?: string | null
+          data_pagamento?: string | null
           data_retorno: string
           dias_ferias?: number
           empresa_nome?: string
+          enviado_contabilidade_destinos?: string | null
+          enviado_contabilidade_em?: string | null
+          enviado_contabilidade_por?: string | null
           funcionario_cargo?: string
           funcionario_cpf?: string
           funcionario_id?: string | null
@@ -2818,10 +2862,13 @@ export type Database = {
           periodo_aquisitivo_inicio?: string | null
           periodo_gozo_fim: string
           periodo_gozo_inicio: string
+          prazo_pagamento?: string | null
           status?: string
+          status_pagamento?: string
           updated_at?: string
           user_id: string
           user_nome?: string
+          valor_pago?: number | null
         }
         Update: {
           assinado_pdf_url?: string
@@ -2829,9 +2876,13 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           data_entrega?: string | null
+          data_pagamento?: string | null
           data_retorno?: string
           dias_ferias?: number
           empresa_nome?: string
+          enviado_contabilidade_destinos?: string | null
+          enviado_contabilidade_em?: string | null
+          enviado_contabilidade_por?: string | null
           funcionario_cargo?: string
           funcionario_cpf?: string
           funcionario_id?: string | null
@@ -2842,10 +2893,13 @@ export type Database = {
           periodo_aquisitivo_inicio?: string | null
           periodo_gozo_fim?: string
           periodo_gozo_inicio?: string
+          prazo_pagamento?: string | null
           status?: string
+          status_pagamento?: string
           updated_at?: string
           user_id?: string
           user_nome?: string
+          valor_pago?: number | null
         }
         Relationships: []
       }

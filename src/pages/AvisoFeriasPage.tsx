@@ -14,13 +14,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   CalendarCheck, Printer, Save, AlertTriangle, Plus, Upload, Eye, Trash2,
-  CheckCircle2, FileText, Plane, ArrowRight,
+  CheckCircle2, FileText, Plane, ArrowRight, Mail, DollarSign, Send,
 } from 'lucide-react';
 import { formatDate } from '@/lib/calculations';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { gerarAvisoFeriasPdf, downloadPdf } from '@/lib/pdfGenerator';
 import { registrarDocumento, uploadDocumentoPdf } from '@/lib/documentoHistorico';
+import { openEmailClient } from '@/lib/emailUtils';
 
 interface FeriasAviso {
   id: string;
@@ -43,6 +44,13 @@ interface FeriasAviso {
   observacao: string;
   user_nome: string;
   created_at: string;
+  prazo_pagamento?: string | null;
+  status_pagamento?: string;
+  data_pagamento?: string | null;
+  valor_pago?: number | null;
+  enviado_contabilidade_em?: string | null;
+  enviado_contabilidade_por?: string | null;
+  enviado_contabilidade_destinos?: string | null;
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -69,6 +77,13 @@ type SituacaoFerias =
   | { tipo: 'retornado'; label: string; cor: string }
   | { tipo: 'cancelado'; label: string; cor: string };
 
+type SituacaoPagamento =
+  | { tipo: 'pago'; label: string; cor: string }
+  | { tipo: 'enviado'; label: string; cor: string }
+  | { tipo: 'pendente'; dias: number; label: string; cor: string }
+  | { tipo: 'vencendo'; dias: number; label: string; cor: string }
+  | { tipo: 'vencido'; dias: number; label: string; cor: string };
+
 const computarSituacao = (a: FeriasAviso): SituacaoFerias => {
   if (a.status === 'cancelado') return { tipo: 'cancelado', label: 'Cancelado', cor: 'bg-muted text-muted-foreground' };
   const hoje = today();
@@ -90,6 +105,21 @@ const computarSituacao = (a: FeriasAviso): SituacaoFerias => {
   return { tipo: 'retornado', label: 'Retornado', cor: 'bg-success text-success-foreground' };
 };
 
+const computarPagamento = (a: FeriasAviso): SituacaoPagamento => {
+  const sp = a.status_pagamento || 'pendente';
+  if (sp === 'pago') return { tipo: 'pago', label: 'Pago', cor: 'bg-success text-success-foreground' };
+  const prazo = a.prazo_pagamento;
+  if (!prazo) {
+    if (sp === 'enviado') return { tipo: 'enviado', label: 'Enviado p/ contabilidade', cor: 'bg-primary text-primary-foreground' };
+    return { tipo: 'pendente', dias: 0, label: 'Pendente', cor: 'bg-warning text-warning-foreground' };
+  }
+  const d = daysBetween(today(), prazo);
+  if (d < 0) return { tipo: 'vencido', dias: d, label: `Pagamento VENCIDO há ${Math.abs(d)}d`, cor: 'bg-destructive text-destructive-foreground' };
+  if (d <= 3) return { tipo: 'vencendo', dias: d, label: `Pagar em ${d}d`, cor: 'bg-destructive/80 text-destructive-foreground' };
+  if (sp === 'enviado') return { tipo: 'enviado', label: `Enviado — pagar em ${d}d`, cor: 'bg-primary text-primary-foreground' };
+  return { tipo: 'pendente', dias: d, label: `Pendente — pagar em ${d}d`, cor: 'bg-warning text-warning-foreground' };
+};
+
 const AvisoFeriasPage: React.FC = () => {
   const { companies, employees, session } = useApp();
   const { isFilial, filialCompanyId } = useFilialFilter();
@@ -107,7 +137,7 @@ const AvisoFeriasPage: React.FC = () => {
   const [diasFerias, setDiasFerias] = useState(30);
   const [observacao, setObservacao] = useState('');
 
-  const [filterStatus, setFilterStatus] = useState<'todos' | 'proximas' | 'em_ferias' | 'retorno' | 'concluidos' | 'cancelados'>('todos');
+  const [filterStatus, setFilterStatus] = useState<'todos' | 'proximas' | 'em_ferias' | 'retorno' | 'concluidos' | 'cancelados' | 'pgto_pendente' | 'pgto_vencendo' | 'pgto_vencido'>('todos');
 
   // dialog detalhes
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -235,6 +265,8 @@ const AvisoFeriasPage: React.FC = () => {
           companyId: companySelecionada.id,
           empresaNome: companySelecionada.name,
           tipoDocumento: 'Aviso de Férias',
+          categoria: 'ferias',
+          competencia: gozoInicio.slice(0, 7),
           descricao: `Início ${formatDate(gozoInicio)} • Retorno ${formatDate(dataRetorno)} • ${diasFerias} dias`,
           arquivoUrl: url,
           geradoPorUserId: session.user.id,
@@ -310,8 +342,75 @@ const AvisoFeriasPage: React.FC = () => {
     fetchAvisos();
   };
 
+
+  const enviarParaContabilidade = async (a: FeriasAviso) => {
+    if (!session?.user) return;
+    // Buscar destinatários configurados
+    const { data: cfg } = await supabase
+      .from('config_emails_contabilidade' as any)
+      .select('*').limit(1).maybeSingle();
+    const c = (cfg as any) || {};
+    const to = [c.email_robson, c.email_marisa].filter(Boolean);
+    const cc = (c.emails_copia || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+    if (to.length === 0) {
+      toast.error('Configure os e-mails da contabilidade em Admin → E-mails Contabilidade');
+      return;
+    }
+
+    // Baixa o PDF localmente para o operador anexar manualmente
+    baixarAviso(a);
+
+    const subject = `Aviso de Férias - ${a.funcionario_nome} - ${a.empresa_nome}`;
+    const body =
+`Olá,
+
+Segue aviso de férias para conferência e providências de pagamento.
+
+Funcionário: ${a.funcionario_nome}
+CPF: ${a.funcionario_cpf}
+Empresa/Filial: ${a.empresa_nome}
+Cargo: ${a.funcionario_cargo}
+Período de férias: ${formatDate(a.periodo_gozo_inicio)} até ${formatDate(a.data_retorno)}
+Quantidade de dias: ${a.dias_ferias}
+Data limite para pagamento: ${a.prazo_pagamento ? formatDate(a.prazo_pagamento) : '—'}
+Status: ${a.status_pagamento || 'pendente'}
+
+(O PDF do aviso foi baixado automaticamente — arraste-o nesta janela do Outlook para anexar.)
+
+Atenciosamente,
+Topac RH PRO`;
+
+    openEmailClient({ to, cc, subject, body });
+
+    const destinos = [...to, ...cc].join(', ');
+    await supabase.from('ferias_avisos' as any).update({
+      status_pagamento: a.status_pagamento === 'pago' ? 'pago' : 'enviado',
+      enviado_contabilidade_em: new Date().toISOString(),
+      enviado_contabilidade_por: session.user.email || '',
+      enviado_contabilidade_destinos: destinos,
+    } as any).eq('id', a.id);
+
+    toast.success('Enviado para contabilidade — registrado no histórico');
+    fetchAvisos();
+  };
+
+  const marcarPago = async (a: FeriasAviso, valor?: number) => {
+    const { error } = await supabase.from('ferias_avisos' as any).update({
+      status_pagamento: 'pago',
+      data_pagamento: today(),
+      valor_pago: valor ?? null,
+    } as any).eq('id', a.id);
+    if (error) { toast.error('Erro: ' + error.message); return; }
+    toast.success('Pagamento confirmado');
+    fetchAvisos();
+  };
+
   // Listagens com situação calculada
-  const avisosCalc = useMemo(() => avisos.map(a => ({ ...a, situacao: computarSituacao(a) })), [avisos]);
+  const avisosCalc = useMemo(() => avisos.map(a => ({
+    ...a,
+    situacao: computarSituacao(a),
+    pagamento: computarPagamento(a),
+  })), [avisos]);
 
   const filtrados = useMemo(() => {
     let list = avisosCalc;
@@ -328,6 +427,9 @@ const AvisoFeriasPage: React.FC = () => {
     if (filterStatus === 'retorno') list = list.filter(a => a.situacao.tipo === 'em_ferias' && a.situacao.dias <= 7);
     if (filterStatus === 'concluidos') list = list.filter(a => a.situacao.tipo === 'retornado');
     if (filterStatus === 'cancelados') list = list.filter(a => a.situacao.tipo === 'cancelado');
+    if (filterStatus === 'pgto_pendente') list = list.filter(a => a.pagamento.tipo === 'pendente' || a.pagamento.tipo === 'enviado');
+    if (filterStatus === 'pgto_vencendo') list = list.filter(a => a.pagamento.tipo === 'vencendo');
+    if (filterStatus === 'pgto_vencido') list = list.filter(a => a.pagamento.tipo === 'vencido');
     return list;
   }, [avisosCalc, search, filterStatus]);
 
@@ -336,6 +438,9 @@ const AvisoFeriasPage: React.FC = () => {
     em_ferias: avisosCalc.filter(a => a.situacao.tipo === 'em_ferias' || a.situacao.tipo === 'ate_retorno').length,
     retornos: avisosCalc.filter(a => a.situacao.tipo === 'em_ferias' && a.situacao.dias <= 7).length,
     urgentes: avisosCalc.filter(a => a.situacao.tipo === 'ate_inicio' && a.situacao.dias <= 7).length,
+    pgtoPendente: avisosCalc.filter(a => a.pagamento.tipo === 'pendente' || a.pagamento.tipo === 'enviado').length,
+    pgtoVencendo: avisosCalc.filter(a => a.pagamento.tipo === 'vencendo').length,
+    pgtoVencido: avisosCalc.filter(a => a.pagamento.tipo === 'vencido').length,
   }), [avisosCalc]);
 
   const detail = detailId ? avisosCalc.find(a => a.id === detailId) : null;
@@ -391,6 +496,31 @@ const AvisoFeriasPage: React.FC = () => {
         </button>
       </div>
 
+      {/* Cards de pagamento */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <button onClick={() => setFilterStatus('pgto_pendente')}
+          className={`card-premium p-4 text-left transition ${filterStatus === 'pgto_pendente' ? 'ring-2 ring-warning' : ''}`}>
+          <div className="flex items-center gap-2 text-warning text-xs font-semibold uppercase">
+            <DollarSign className="w-4 h-4" /> Pagamento pendente
+          </div>
+          <p className="text-2xl font-bold mt-2">{cards.pgtoPendente}</p>
+        </button>
+        <button onClick={() => setFilterStatus('pgto_vencendo')}
+          className={`card-premium p-4 text-left transition border-l-4 border-destructive/70 ${filterStatus === 'pgto_vencendo' ? 'ring-2 ring-destructive' : ''}`}>
+          <div className="flex items-center gap-2 text-destructive text-xs font-semibold uppercase">
+            <AlertTriangle className="w-4 h-4" /> Pagamento vencendo (≤3d)
+          </div>
+          <p className="text-2xl font-bold mt-2">{cards.pgtoVencendo}</p>
+        </button>
+        <button onClick={() => setFilterStatus('pgto_vencido')}
+          className={`card-premium p-4 text-left transition border-l-4 border-destructive ${filterStatus === 'pgto_vencido' ? 'ring-2 ring-destructive' : ''}`}>
+          <div className="flex items-center gap-2 text-destructive text-xs font-semibold uppercase">
+            <AlertTriangle className="w-4 h-4" /> Pagamento VENCIDO
+          </div>
+          <p className="text-2xl font-bold mt-2">{cards.pgtoVencido}</p>
+        </button>
+      </div>
+
       <div className="card-premium p-4 flex flex-wrap gap-3 items-center">
         <Input placeholder="Buscar nome, CPF ou empresa..." value={search}
           onChange={e => setSearch(e.target.value)} className="flex-1 min-w-[200px]" />
@@ -402,6 +532,9 @@ const AvisoFeriasPage: React.FC = () => {
           <option value="retorno">Retornos próximos</option>
           <option value="concluidos">Concluídos</option>
           <option value="cancelados">Cancelados</option>
+          <option value="pgto_pendente">Pagamento pendente</option>
+          <option value="pgto_vencendo">Pagamento vencendo</option>
+          <option value="pgto_vencido">Pagamento vencido</option>
         </select>
       </div>
 
@@ -414,14 +547,16 @@ const AvisoFeriasPage: React.FC = () => {
               <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Início</th>
               <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Retorno</th>
               <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Dias</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Prazo Pgto</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Pagamento</th>
               <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Situação</th>
               <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Ações</th>
             </tr>
           </thead>
           <tbody>
-            {loading && (<tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Carregando...</td></tr>)}
+            {loading && (<tr><td colSpan={9} className="p-6 text-center text-muted-foreground">Carregando...</td></tr>)}
             {!loading && filtrados.length === 0 && (
-              <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Nenhum aviso de férias cadastrado.</td></tr>
+              <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">Nenhum aviso de férias cadastrado.</td></tr>
             )}
             {filtrados.map(a => (
               <tr key={a.id} className="border-b hover:bg-muted/20">
@@ -430,6 +565,15 @@ const AvisoFeriasPage: React.FC = () => {
                 <td className="px-3 py-2.5 text-xs">{formatDate(a.periodo_gozo_inicio)}</td>
                 <td className="px-3 py-2.5 text-xs">{formatDate(a.data_retorno)}</td>
                 <td className="px-3 py-2.5 text-xs">{a.dias_ferias}</td>
+                <td className="px-3 py-2.5 text-xs">{a.prazo_pagamento ? formatDate(a.prazo_pagamento) : '—'}</td>
+                <td className="px-3 py-2.5">
+                  <Badge className={`text-[10px] ${a.pagamento.cor}`}>{a.pagamento.label}</Badge>
+                  {a.enviado_contabilidade_em && (
+                    <div className="text-[10px] text-muted-foreground mt-1">
+                      Enviado em {new Date(a.enviado_contabilidade_em).toLocaleDateString('pt-BR')}
+                    </div>
+                  )}
+                </td>
                 <td className="px-3 py-2.5">
                   <Badge className={`text-[10px] ${a.situacao.cor}`}>{a.situacao.label}</Badge>
                   {a.assinado_pdf_url && <Badge variant="outline" className="text-[10px] ml-1 border-success text-success">Assinado</Badge>}
@@ -442,6 +586,14 @@ const AvisoFeriasPage: React.FC = () => {
                     <Button size="icon" variant="ghost" className="h-7 w-7" title="Baixar PDF" onClick={() => baixarAviso(a)}>
                       <Printer className="w-3.5 h-3.5" />
                     </Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-primary" title="Enviar para Contabilidade" onClick={() => enviarParaContabilidade(a)}>
+                      <Send className="w-3.5 h-3.5" />
+                    </Button>
+                    {a.pagamento.tipo !== 'pago' && (
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-success" title="Marcar como pago" onClick={() => marcarPago(a)}>
+                        <DollarSign className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
                     <Button size="icon" variant="ghost" className="h-7 w-7" title="Editar" onClick={() => abrirEdicao(a)}>
                       <FileText className="w-3.5 h-3.5" />
                     </Button>
@@ -574,6 +726,23 @@ const AvisoFeriasPage: React.FC = () => {
                   {formatDate(detail.periodo_gozo_inicio)} → {formatDate(detail.periodo_gozo_fim)}</div>
                 <div><span className="text-xs text-muted-foreground block">Retorno</span><strong>{formatDate(detail.data_retorno)}</strong></div>
                 <div><span className="text-xs text-muted-foreground block">Dias</span>{detail.dias_ferias}</div>
+                <div><span className="text-xs text-muted-foreground block">Prazo de Pagamento</span>
+                  <strong>{detail.prazo_pagamento ? formatDate(detail.prazo_pagamento) : '—'}</strong>
+                  <Badge className={`ml-2 text-[10px] ${detail.pagamento.cor}`}>{detail.pagamento.label}</Badge>
+                </div>
+                {detail.data_pagamento && (
+                  <div><span className="text-xs text-muted-foreground block">Pago em</span>{formatDate(detail.data_pagamento)}</div>
+                )}
+                {detail.enviado_contabilidade_em && (
+                  <div className="col-span-2 text-xs bg-primary/5 p-2 rounded border border-primary/20">
+                    <span className="text-muted-foreground">Enviado para contabilidade em </span>
+                    <strong>{new Date(detail.enviado_contabilidade_em).toLocaleString('pt-BR')}</strong>
+                    {detail.enviado_contabilidade_por && <> por <strong>{detail.enviado_contabilidade_por}</strong></>}
+                    {detail.enviado_contabilidade_destinos && (
+                      <div className="text-[10px] text-muted-foreground mt-1">Destinatários: {detail.enviado_contabilidade_destinos}</div>
+                    )}
+                  </div>
+                )}
               </div>
               {detail.observacao && (
                 <div>
@@ -586,6 +755,14 @@ const AvisoFeriasPage: React.FC = () => {
                 <Button size="sm" variant="outline" onClick={() => baixarAviso(detail)}>
                   <Printer className="w-3.5 h-3.5 mr-1" /> Baixar PDF
                 </Button>
+                <Button size="sm" className="gradient-primary text-primary-foreground" onClick={() => enviarParaContabilidade(detail)}>
+                  <Send className="w-3.5 h-3.5 mr-1" /> {detail.enviado_contabilidade_em ? 'Reenviar para Contabilidade' : 'Enviar para Contabilidade'}
+                </Button>
+                {detail.pagamento.tipo !== 'pago' && (
+                  <Button size="sm" variant="outline" className="border-success text-success" onClick={() => marcarPago(detail)}>
+                    <DollarSign className="w-3.5 h-3.5 mr-1" /> Marcar como pago
+                  </Button>
+                )}
                 {detail.aviso_pdf_url && (
                   <Button size="sm" variant="outline" asChild>
                     <a href={detail.aviso_pdf_url} target="_blank" rel="noreferrer"><Eye className="w-3.5 h-3.5 mr-1" /> Ver PDF original</a>
