@@ -260,7 +260,8 @@ const AppOperacionalPage: React.FC = () => {
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-bold text-base truncate">{t.apelido}</h3>
                         {statusBadge(t.ultimaAtividade?.status || t.status)}
-                        {t.link_bloqueado && <Badge variant="destructive">Bloqueado</Badge>}
+                        {t.link_status === 'revogado' && <Badge className="bg-rose-500/10 text-rose-700 border-rose-500/30">Revogado</Badge>}
+                        {t.link_status === 'bloqueado' && <Badge variant="destructive">Bloqueado</Badge>}
                       </div>
                       <p className="text-xs text-muted-foreground truncate">{t.funcionario?.nome}</p>
                       <p className="text-[11px] text-muted-foreground/70">{t.funcionario?.cargo}</p>
