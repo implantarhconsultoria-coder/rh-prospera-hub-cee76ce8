@@ -311,7 +311,39 @@ const RescisaoPage: React.FC = () => {
     } catch (e) { console.warn('autosave doc rescisao', e); }
   };
 
-  // Edição inline de uma rubrica numérica
+  const visualizar = (r: any) => setViewing(r);
+
+  const baixarPdf = async (r: any) => {
+    // Reusa o HTML do imprimir mas baixa como .html (compatível com qualquer navegador)
+    const snap = (r.snapshot_json && (r.snapshot_json as any).resultado) || null;
+    if (!snap) { toast.error('Sem snapshot da rescisão'); return; }
+    const html = buildRescisaoProHtml({
+      empresaNome: r.empresa_nome, empresaCnpj: r.empresa_cnpj,
+      funcionarioNome: r.funcionario_nome, cpf: r.cpf, cargo: r.cargo,
+      causa: (r.tipo_rescisao || 'sj_empregador') as CausaAfastamento,
+      avisoTrabalhado: r.aviso_previo === 'trabalhado',
+      remuneracaoMesAnterior: Number(r.remuneracao_mes_anterior || r.salario_base || 0),
+      dataAdmissao: r.data_admissao, dataAviso: r.data_aviso, dataAfastamento: r.data_desligamento,
+      observacoes: r.observacoes, resultado: snap,
+    });
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rescisao_${(r.funcionario_nome || 'func').replace(/\s+/g, '_')}_${r.data_desligamento || ''}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Download iniciado');
+  };
+
+  const excluir = async (r: any) => {
+    if (!confirm(`Excluir rescisão de ${r.funcionario_nome}? Essa ação será registrada.`)) return;
+    const { error } = await supabase.from('rescisoes').delete().eq('id', r.id);
+    if (error) return toast.error('Erro: ' + error.message);
+    await registrarAcao({ modulo: 'rh', entidade: 'rescisao', entidadeId: r.id, acao: 'excluiu', antes: { liquido: r.liquido_rescisorio } });
+    toast.success('Rescisão excluída');
+    fetchList();
+  };
   const RubricaInput: React.FC<{ k: RubricaKey; label: string }> = ({ k, label }) => (
     <div className="flex items-center justify-between gap-2 py-0.5">
       <span className="text-xs">{label}</span>
