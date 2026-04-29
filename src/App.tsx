@@ -182,6 +182,7 @@ const AuthGate = () => {
         <Route path="/admin/chamados" element={<DespacharChamadoPage />} />
         <Route path="/admin/app-operacional" element={<AppOperacionalPage />} />
         <Route path="/admin/app-operacional/:id" element={<TecnicoDetailPage />} />
+        <Route path="/admin/links-acesso-cpf" element={<LinksAcessoCpfPage />} />
         <Route path="/admin/configuracoes" element={<ConfiguracoesPage />} />
         {/* Faturamento */}
         <Route path="/admin/faturamento" element={<FaturamentoDashboardPage />} />
