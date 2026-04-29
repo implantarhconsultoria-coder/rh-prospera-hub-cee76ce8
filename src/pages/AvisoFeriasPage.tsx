@@ -496,6 +496,31 @@ Topac RH PRO`;
         </button>
       </div>
 
+      {/* Cards de pagamento */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <button onClick={() => setFilterStatus('pgto_pendente')}
+          className={`card-premium p-4 text-left transition ${filterStatus === 'pgto_pendente' ? 'ring-2 ring-warning' : ''}`}>
+          <div className="flex items-center gap-2 text-warning text-xs font-semibold uppercase">
+            <DollarSign className="w-4 h-4" /> Pagamento pendente
+          </div>
+          <p className="text-2xl font-bold mt-2">{cards.pgtoPendente}</p>
+        </button>
+        <button onClick={() => setFilterStatus('pgto_vencendo')}
+          className={`card-premium p-4 text-left transition border-l-4 border-destructive/70 ${filterStatus === 'pgto_vencendo' ? 'ring-2 ring-destructive' : ''}`}>
+          <div className="flex items-center gap-2 text-destructive text-xs font-semibold uppercase">
+            <AlertTriangle className="w-4 h-4" /> Pagamento vencendo (≤3d)
+          </div>
+          <p className="text-2xl font-bold mt-2">{cards.pgtoVencendo}</p>
+        </button>
+        <button onClick={() => setFilterStatus('pgto_vencido')}
+          className={`card-premium p-4 text-left transition border-l-4 border-destructive ${filterStatus === 'pgto_vencido' ? 'ring-2 ring-destructive' : ''}`}>
+          <div className="flex items-center gap-2 text-destructive text-xs font-semibold uppercase">
+            <AlertTriangle className="w-4 h-4" /> Pagamento VENCIDO
+          </div>
+          <p className="text-2xl font-bold mt-2">{cards.pgtoVencido}</p>
+        </button>
+      </div>
+
       <div className="card-premium p-4 flex flex-wrap gap-3 items-center">
         <Input placeholder="Buscar nome, CPF ou empresa..." value={search}
           onChange={e => setSearch(e.target.value)} className="flex-1 min-w-[200px]" />
@@ -507,6 +532,9 @@ Topac RH PRO`;
           <option value="retorno">Retornos próximos</option>
           <option value="concluidos">Concluídos</option>
           <option value="cancelados">Cancelados</option>
+          <option value="pgto_pendente">Pagamento pendente</option>
+          <option value="pgto_vencendo">Pagamento vencendo</option>
+          <option value="pgto_vencido">Pagamento vencido</option>
         </select>
       </div>
 
