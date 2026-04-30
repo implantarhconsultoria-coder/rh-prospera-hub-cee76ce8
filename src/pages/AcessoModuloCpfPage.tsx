@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Loader2, AlertTriangle, Wrench, DollarSign, FileText, Users, Package, Cog, Building2, MapPin } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const FN_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/acesso-cpf`;
 const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -46,6 +47,25 @@ const ERRO_LABEL: Record<string, string> = {
   revoked_link:                     'Acesso revogado. Solicite um novo link.',
   invalid_token:                    'Token de acesso inválido.',
   db_error:                         'Falha temporária ao consultar o banco. Tente novamente em instantes.',
+  internal:                         'Falha temporária ao consultar o banco. Tente novamente em instantes.',
+};
+
+type AcessoCpfResponse = {
+  ok?: boolean;
+  error?: string;
+  modulo?: string;
+  unidade?: string;
+  link_nome?: string;
+  tecnico_token?: string;
+  usuario?: {
+    funcionario_id: string;
+    cpf: string;
+    nome: string;
+    empresa?: string;
+    cargo?: string;
+    setor?: string;
+    company_id?: string;
+  };
 };
 
 const AcessoModuloCpfPage: React.FC = () => {
@@ -58,6 +78,36 @@ const AcessoModuloCpfPage: React.FC = () => {
 
   useEffect(() => { setErro(null); }, [slug]);
 
+  const validarViaBancoInterno = async (slugAtual: string, digits: string): Promise<AcessoCpfResponse> => {
+    const { data, error } = await supabase.rpc('validar_acesso_cpf_slug', {
+      p_slug: slugAtual,
+      p_cpf: digits,
+    });
+
+    if (error) {
+      return { ok: false, error: 'db_error' };
+    }
+
+    return (data as AcessoCpfResponse) || { ok: false, error: 'db_error' };
+  };
+
+  const validarViaFuncao = async (slugAtual: string, digits: string): Promise<AcessoCpfResponse> => {
+    const res = await fetch(FN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store',
+        apikey: ANON,
+        Authorization: `Bearer ${ANON}`,
+      },
+      cache: 'no-store',
+      body: JSON.stringify({ action: 'entrar', slug: slugAtual, cpf: digits }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    return { ...(data as AcessoCpfResponse), ok: res.ok && !!data?.ok };
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro(null);
@@ -68,19 +118,15 @@ const AcessoModuloCpfPage: React.FC = () => {
     }
     setLoading(true);
     try {
-      const res = await fetch(FN_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-store',
-          apikey: ANON,
-          Authorization: `Bearer ${ANON}`,
-        },
-        cache: 'no-store',
-        body: JSON.stringify({ action: 'entrar', slug, cpf: digits }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data?.ok) {
+      let data: AcessoCpfResponse;
+
+      try {
+        data = await validarViaFuncao(slug, digits);
+      } catch {
+        data = await validarViaBancoInterno(slug, digits);
+      }
+
+      if (!data?.ok) {
         const code = data?.error || 'db_error';
         setErro(ERRO_LABEL[code] || `Acesso negado (${code}).`);
         setLoading(false);
@@ -113,8 +159,8 @@ const AcessoModuloCpfPage: React.FC = () => {
         filial:       '/setor-cpf/filial',
       };
       navigate(destino[data.modulo] || `/setor-cpf/${data.modulo}`, { replace: true });
-    } catch (err) {
-      setErro('Falha ao conectar com o servidor. Verifique sua internet e tente novamente.');
+    } catch {
+      setErro(ERRO_LABEL.db_error);
       setLoading(false);
     }
   };
