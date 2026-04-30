@@ -5160,6 +5160,10 @@ export type Database = {
         Args: { p_cpf: string; p_token: string }
         Returns: Json
       }
+      validar_acesso_cpf_slug: {
+        Args: { p_cpf: string; p_slug: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role:
