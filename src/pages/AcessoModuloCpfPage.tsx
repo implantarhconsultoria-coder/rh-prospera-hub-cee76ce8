@@ -87,13 +87,13 @@ const AcessoModuloCpfPage: React.FC = () => {
         return;
       }
 
-      // Sessão isolada para módulos administrativos (financeiro/faturamento)
+      // Operacional vai pelo token do tecnico
       if (data.modulo === 'operacional' && data.tecnico_token) {
         navigate(`/m/${data.tecnico_token}`, { replace: true });
         return;
       }
 
-      // Para financeiro/faturamento: armazena sessão CPF e abre portal restrito
+      // Sessão isolada por CPF (válida para financeiro, faturamento, rh, almoxarifado, mecanicos, filial)
       const sessao = {
         modulo: data.modulo,
         unidade: data.unidade,
@@ -102,7 +102,17 @@ const AcessoModuloCpfPage: React.FC = () => {
         ts: Date.now(),
       };
       sessionStorage.setItem('cpf_session', JSON.stringify(sessao));
-      navigate(`/${data.modulo}-cpf`, { replace: true });
+
+      // Cada módulo tem seu portal CPF dedicado
+      const destino: Record<string, string> = {
+        financeiro:   '/financeiro-cpf',
+        faturamento:  '/faturamento-cpf',
+        rh:           '/setor-cpf/rh',
+        almoxarifado: '/setor-cpf/almoxarifado',
+        mecanicos:    '/setor-cpf/mecanicos',
+        filial:       '/setor-cpf/filial',
+      };
+      navigate(destino[data.modulo] || `/setor-cpf/${data.modulo}`, { replace: true });
     } catch (err) {
       setErro('Falha ao conectar com o servidor. Verifique sua internet e tente novamente.');
       setLoading(false);
