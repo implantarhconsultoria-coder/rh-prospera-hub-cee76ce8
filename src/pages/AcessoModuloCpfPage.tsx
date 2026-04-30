@@ -68,6 +68,14 @@ type AcessoCpfResponse = {
   };
 };
 
+type LinkAcessoPublico = {
+  slug: string;
+  modulo: string;
+  unidade: string;
+  nome: string;
+  status: string;
+};
+
 const AcessoModuloCpfPage: React.FC = () => {
   const { slug = '' } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -79,8 +87,22 @@ const AcessoModuloCpfPage: React.FC = () => {
   useEffect(() => { setErro(null); }, [slug]);
 
   const validarViaBancoInterno = async (slugAtual: string, digits: string): Promise<AcessoCpfResponse> => {
+    const { data: link, error: linkError } = await supabase
+      .from('links_acesso_publico')
+      .select('slug, modulo, unidade, nome, status')
+      .eq('slug', slugAtual)
+      .maybeSingle<LinkAcessoPublico>();
+
+    if (linkError || !link) {
+      return { ok: false, error: 'link_invalido' };
+    }
+
+    if (link.status !== 'ativo') {
+      return { ok: false, error: 'link_bloqueado' };
+    }
+
     const { data, error } = await supabase.rpc('validar_acesso_cpf_slug', {
-      p_slug: slugAtual,
+      p_slug: link.slug,
       p_cpf: digits,
     });
 
