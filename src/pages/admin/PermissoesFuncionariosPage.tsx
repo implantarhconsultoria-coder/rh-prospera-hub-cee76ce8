@@ -78,12 +78,19 @@ const PermissoesFuncionariosPage: React.FC = () => {
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
+    const qDigits = q.replace(/\D/g, '');
     return funcs.filter(f => {
       const mod = filtroModulo === 'todos' ? true : (permsByFunc[f.id] || []).some(p => p.modulo === filtroModulo);
-      const txt = !q || f.nome.toLowerCase().includes(q) || (f.cpf || '').replace(/\D/g, '').includes(q.replace(/\D/g, ''));
+      const cpfDigits = (f.cpf || '').replace(/\D/g, '');
+      const txt = !q
+        || f.nome.toLowerCase().includes(q)
+        || (f.cargo || '').toLowerCase().includes(q)
+        || (f.setor || '').toLowerCase().includes(q)
+        || (empresas[f.company_id] || '').toLowerCase().includes(q)
+        || (qDigits.length > 0 && cpfDigits.includes(qDigits));
       return mod && txt;
     });
-  }, [funcs, busca, filtroModulo, permsByFunc]);
+  }, [funcs, busca, filtroModulo, permsByFunc, empresas]);
 
   const adicionarPermissao = async () => {
     if (!funcAlvo || !novoModulo) return;
