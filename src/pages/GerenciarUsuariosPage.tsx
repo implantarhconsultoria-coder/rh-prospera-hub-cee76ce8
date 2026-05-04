@@ -254,6 +254,7 @@ const GerenciarUsuariosPage: React.FC = () => {
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Email</TableHead>
+                    <TableHead>CPF</TableHead>
                     <TableHead>Cadastro</TableHead>
                     <TableHead>Role / Perfil</TableHead>
                     <TableHead>Portal de Entrada</TableHead>
@@ -262,10 +263,36 @@ const GerenciarUsuariosPage: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map(user => (
+                  {filtered.map(user => {
+                    const draft = cpfDrafts[user.user_id];
+                    const cpfValue = draft !== undefined ? draft : (user.cpf || '');
+                    const dirty = draft !== undefined && cleanCpf(draft) !== (user.cpf_clean || '');
+                    return (
                     <TableRow key={user.user_id}>
                       <TableCell className="font-medium">{user.nome_completo || '—'}</TableCell>
                       <TableCell className="text-sm">{user.email}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={cpfValue}
+                            onChange={e => setCpfDrafts(prev => ({ ...prev, [user.user_id]: maskCpf(e.target.value) }))}
+                            placeholder="000.000.000-00"
+                            disabled={!isAdmin || savingCpf === user.user_id}
+                            className="h-8 w-40 text-sm"
+                          />
+                          {isAdmin && dirty && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 px-2 text-xs"
+                              disabled={savingCpf === user.user_id}
+                              onClick={() => handleSaveCpf(user.user_id)}
+                            >
+                              {savingCpf === user.user_id ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Salvar'}
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {new Date(user.created_at).toLocaleDateString('pt-BR')}
                       </TableCell>
