@@ -224,6 +224,9 @@ const AuthGate = () => {
         <Route path="/filial/aso" element={<ASOPage />} />
         <Route path="/filial/atestados" element={<AtestadosImportPage />} />
         <Route path="/filial/protocolo" element={<ProtocoloPage />} />
+        <Route path="/filial/epi" element={<EPIPage />} />
+        <Route path="/filial/uniformes" element={<UniformePage />} />
+        <Route path="/filial/historico" element={<HistoricoPage />} />
         <Route path="/filial/alertas" element={<FilialAlertasPage />} />
         <Route path="/filial/movimento-diario" element={<MovimentoDiarioPage />} />
         <Route path="/filial/apontamento" element={<FilialApontamentoPage />} />
