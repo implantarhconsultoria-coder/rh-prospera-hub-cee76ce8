@@ -129,6 +129,12 @@ const MecanicoAbastecimentoPage: React.FC = () => {
   const onFileSelected = async (file: File) => {
     setFotoBomba(file);
     setFotoUrl(URL.createObjectURL(file));
+    setStep('photo_painel');
+  };
+
+  const onFilePainelSelected = async (file: File) => {
+    setFotoPainel(file);
+    setFotoPainelUrl(URL.createObjectURL(file));
     setStep('fill');
   };
 
