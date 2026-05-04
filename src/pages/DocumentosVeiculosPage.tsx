@@ -491,6 +491,14 @@ const DocumentosVeiculosPage: React.FC = () => {
               const ov = overallStatus(a);
               return (
                 <tr key={a.id} className="border-b hover:bg-muted/20">
+                  <td className="px-3 py-2">
+                    <input
+                      type="checkbox"
+                      aria-label={`Selecionar ${a.descricao}`}
+                      checked={selectedIds.has(a.id)}
+                      onChange={() => toggleSelect(a.id)}
+                    />
+                  </td>
                   <td className="px-3 py-2 text-xs font-medium">
                     <div>{a.descricao}</div>
                     <div className="text-[10px] text-muted-foreground">{a.marca || ''} {a.ano_modelo || ''}</div>
