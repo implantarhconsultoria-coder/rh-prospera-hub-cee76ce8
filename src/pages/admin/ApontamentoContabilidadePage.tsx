@@ -433,36 +433,60 @@ const ApontamentoContabilidadePage: React.FC = () => {
     }
   };
 
-  const imprimir = () => window.print();
+  const enviarParaContabilidade = async () => {
+    if (!company) { toast.error('Selecione uma empresa'); return; }
+    if (items.length === 0) { toast.error('Sem itens para enviar'); return; }
 
-  const exportarExcel = () => {
-    const heLabel = isGO ? 'HE60' : 'HE50';
-    const headers = [
-      'Nome','CPF','Salario','Insalubridade',
-      'Tem Comissao','Base Comissao','Comissao %','Comissao Valor',
-      `${heLabel}-Horas`, `${heLabel}-Valor`,
-      'HE100-Horas','HE100-Valor',
-      'Assist.Medica','Faltas-Qtd','Desconto Falta','DSR-Qtd','Desconto DSR',
-      'Adiantamento','Total'
-    ];
-    const rows = items.map(r => [
-      r.nome, r.cpf,
-      r.salario, r.insalubridade,
-      r.tem_comissao ? 'Sim' : 'Não', r.comissao_base, r.comissao_percentual, r.comissao_valor,
-      isGO ? r.hora_extra_60_horas : r.hora_extra_50_horas,
-      isGO ? r.hora_extra_60 : r.hora_extra_50,
-      r.hora_extra_100_horas, r.hora_extra_100,
-      r.assistencia_medica, r.faltas_qtd, r.desconto_falta, r.dsr_qtd, r.desconto_dsr,
-      r.adiantamento, r.total,
-    ]);
-    const csv = [headers, ...rows].map(l => l.join(';')).join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `apontamento_${company?.name || ''}_${competencia}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const isGyn = /goi[âa]nia/i.test(company.name);
+    let para: string[] = [];
+    let cc: string[] = ['robson@topac.com.br'];
+
+    if (isGyn) {
+      para = ['gyn@topac.com.br', 'requisicao@incocontabilidade.com.br'];
+    } else {
+      const { data: cfg } = await supabase
+        .from('config_emails_contabilidade' as any)
+        .select('*')
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      const c = (cfg as any) || {};
+      if (c.email_marisa) para.push(c.email_marisa);
+      if (c.email_robson && !cc.includes(c.email_robson)) cc.push(c.email_robson);
+      if (c.emails_copia) {
+        c.emails_copia.split(/[,;]/).map((s: string) => s.trim()).filter(Boolean)
+          .forEach((e: string) => { if (!cc.includes(e)) cc.push(e); });
+      }
+      if (para.length === 0) {
+        toast.error('Configure os e-mails da contabilidade em Configurações → E-mails Contabilidade');
+        return;
+      }
+    }
+
+    // 1) gera e baixa o CSV automaticamente para anexar
+    exportarExcel();
+
+    // 2) registra no histórico
+    await registrarAcao({
+      modulo: 'contabilidade',
+      entidade: 'apontamento_contabilidade',
+      entidadeId: apontamentoId || undefined,
+      acao: 'enviou',
+      depois: { para, cc, total_geral: totalGeral, itens: items.length, competencia, empresa: company.name },
+      observacao: `Envio do apontamento ${formatCompetencia(competencia)} para contabilidade`,
+    });
+
+    // 3) abre o cliente de e-mail
+    const subject = encodeURIComponent(`Apontamento Contabilidade - ${company.name} - ${formatCompetencia(competencia)}`);
+    const body = encodeURIComponent(
+      `Prezados,\n\nSegue em anexo o apontamento da folha referente a ${formatCompetencia(competencia)} da empresa ${company.name}.\n\n` +
+      `Total geral: ${formatBRL(totalGeral)}\nQuantidade de funcionários: ${items.length}\n\n` +
+      `IMPORTANTE: o arquivo do apontamento foi baixado automaticamente em seu computador. Por favor, anexe-o a este e-mail antes de enviar.\n\n` +
+      `Atenciosamente,\nDepartamento Pessoal - TOPAC`
+    );
+    const mailto = `mailto:${para.join(',')}?cc=${cc.join(',')}&subject=${subject}&body=${body}`;
+    window.location.href = mailto;
+    toast.success('Arquivo baixado. Anexe ao e-mail antes de enviar.');
   };
 
   return (
@@ -483,11 +507,12 @@ const ApontamentoContabilidadePage: React.FC = () => {
             box-shadow: none !important; border: none !important;
             background: #fff !important; color: #000 !important;
           }
-          .apont-print table { width: 100% !important; table-layout: fixed; border-collapse: collapse; font-size: 8.5px; }
+          .apont-print table { width: 100% !important; table-layout: auto; border-collapse: collapse; font-size: 8px; }
           .apont-print th, .apont-print td {
-            padding: 3px !important; border: 1px solid #000 !important;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            padding: 2px 3px !important; border: 1px solid #000 !important;
+            white-space: normal !important; word-break: break-word; overflow: visible !important;
           }
+          .apont-print input { border: none !important; padding: 0 !important; font-size: 8px !important; background: transparent !important; width: auto !important; }
           .apont-print thead { display: table-header-group; }
           .apont-print tr { page-break-inside: avoid; }
           .no-print, aside, nav, header, .sidebar, .lovable-badge, [data-sonner-toaster] { display: none !important; }
