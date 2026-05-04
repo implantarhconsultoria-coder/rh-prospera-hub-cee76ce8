@@ -29,6 +29,7 @@ import FilialAlertasPage from "@/pages/filial/FilialAlertasPage";
 import MovimentoDiarioPage from "@/pages/filial/MovimentoDiarioPage";
 import FilialApontamentoPage from "@/pages/filial/FilialApontamentoPage";
 import FechamentosFiliaisPage from "@/pages/admin/FechamentosFiliaisPage";
+import ConferenciaFechamentoPage from "@/pages/admin/ConferenciaFechamentoPage";
 import MonitoramentoFiliaisPage from "@/pages/admin/MonitoramentoFiliaisPage";
 import EmpresasPage from "@/pages/EmpresasPage";
 import BaseMestraPage from "@/pages/BaseMestraPage";
@@ -164,6 +165,7 @@ const AuthGate = () => {
         <Route path="/admin/fechamento" element={<FechamentoPage />} />
         <Route path="/admin/fechamento-ponto" element={<FechamentoPontoPage />} />
         <Route path="/admin/fechamentos-filiais" element={<FechamentosFiliaisPage />} />
+        <Route path="/admin/fechamentos-filiais/:companyId/conferencia" element={<ConferenciaFechamentoPage />} />
         <Route path="/admin/relatorio" element={<RelatorioPage />} />
         <Route path="/admin/epi" element={<EPIPage />} />
         <Route path="/admin/uniformes" element={<UniformePage />} />
@@ -347,6 +349,8 @@ const App = () => (
               <Route path="/g" element={<AcessoCpfPage />} />
               {/* Links permanentes por módulo/unidade — acesso por CPF */}
               <Route path="/acesso/:slug" element={<AcessoModuloCpfPage />} />
+              {/* Alias curto para link único por região */}
+              <Route path="/r/:slug" element={<AcessoModuloCpfPage />} />
               {/* Portais isolados Financeiro/Faturamento por CPF */}
               <Route path="/financeiro-cpf" element={<FinanceiroCpfLayout />}>
                 <Route index element={<FinanceiroDashboardPage />} />

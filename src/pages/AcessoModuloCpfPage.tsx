@@ -48,6 +48,7 @@ const ERRO_LABEL: Record<string, string> = {
   cpf_nao_encontrado_funcionarios:  'CPF sem permissão cadastrada.',
   sem_permissao_modulo:             'CPF sem permissão para este módulo.',
   acesso_bloqueado:                 'Acesso bloqueado.',
+  acesso_bloqueado_admin:           'Seu acesso por CPF foi bloqueado pelo administrador.',
   funcionario_inativo:              'Acesso bloqueado.',
   funcionario_bloqueado:            'Acesso bloqueado.',
   funcionario_ferias:               'Acesso bloqueado.',
