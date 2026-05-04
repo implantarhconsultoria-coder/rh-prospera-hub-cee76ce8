@@ -456,6 +456,7 @@ Deno.serve(async (req) => {
         const litros = Number(p.litros) || 0;
         if (valor <= 0 || litros <= 0) return json({ error: "valor_litros_invalido" }, 400);
         if (!p.foto_bomba_base64) return json({ error: "foto_obrigatoria" }, 400);
+        if (!p.foto_painel_base64) return json({ error: "foto_painel_obrigatoria" }, 400);
         if (!p.vale_codigo) return json({ error: "vale_obrigatorio" }, 400);
 
         const { data: vale } = await sb()
