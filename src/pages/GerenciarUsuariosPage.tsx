@@ -21,9 +21,20 @@ interface UserWithRole {
   email: string;
   nome_completo: string;
   created_at: string;
+  cpf: string | null;
+  cpf_clean: string | null;
   role: AppRole | null;
   role_id: string | null;
 }
+
+const maskCpf = (v: string) => {
+  const d = (v || '').replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0,3)}.${d.slice(3)}`;
+  if (d.length <= 9) return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6)}`;
+  return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
+};
+const cleanCpf = (v: string) => (v || '').replace(/\D/g, '');
 
 const ROLE_LABELS: Record<AppRole, { label: string; color: string; portal: string }> = {
   admin: { label: 'Administrador', color: 'bg-red-500', portal: 'Central Administrativa' },
