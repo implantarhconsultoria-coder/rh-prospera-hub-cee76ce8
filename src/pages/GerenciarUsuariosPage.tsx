@@ -110,7 +110,38 @@ const GerenciarUsuariosPage: React.FC = () => {
     }
   };
 
-  const filtered = users.filter(u =>
+  const handleDelete = async (userId: string, nome: string) => {
+    if (!isAdmin) { toast.error('Apenas o Admin pode excluir usuários'); return; }
+    if (userId === session?.user?.id) { toast.error('Não é possível excluir o próprio usuário'); return; }
+    setDeleting(userId);
+    try {
+      // Auditoria
+      await supabase.from('acoes_log').insert({
+        modulo: 'usuarios',
+        entidade: 'profile',
+        entidade_id: userId,
+        acao: 'usuario_excluido',
+        funcionario_nome: nome,
+        empresa: '',
+        user_id: session?.user?.id,
+        user_email: session?.user?.email || '',
+        observacao: `Usuário ${nome} excluído pelo admin.`,
+      } as any);
+      // Remove roles primeiro (FK)
+      await supabase.from('user_roles').delete().eq('user_id', userId);
+      // Remove acessos por CPF associados, se houver
+      await supabase.from('funcionario_modulos').delete().eq('autorizado_por', userId);
+      // Remove o profile (mantém auth.users — só admin Supabase pode apagar)
+      const { error } = await supabase.from('profiles').delete().eq('user_id', userId);
+      if (error) throw error;
+      toast.success('Usuário excluído da plataforma');
+      await fetchUsers();
+    } catch (e: any) {
+      toast.error('Erro ao excluir: ' + (e?.message || ''));
+    } finally {
+      setDeleting(null);
+    }
+  };
     u.email.toLowerCase().includes(search.toLowerCase()) ||
     u.nome_completo.toLowerCase().includes(search.toLowerCase())
   );
