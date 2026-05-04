@@ -103,6 +103,15 @@ export const TecnicoAppProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     refresh();
   }, [refresh]);
 
+  // Heartbeat — mantém status="online" enquanto o app está aberto
+  useEffect(() => {
+    if (!token) return;
+    const id = setInterval(() => {
+      baseCall('heartbeat').catch(() => {/* noop */});
+    }, 60_000);
+    return () => clearInterval(id);
+  }, [token, baseCall]);
+
   const setVeiculoSelecionado = useCallback(
     (id: string) => {
       setVeiculoSelId(id);
