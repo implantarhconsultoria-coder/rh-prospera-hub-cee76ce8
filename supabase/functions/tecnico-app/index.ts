@@ -510,6 +510,7 @@ Deno.serve(async (req) => {
             latitude: p.latitude ?? null,
             longitude: p.longitude ?? null,
             foto_bomba_url: pub.publicUrl,
+            foto_painel_url: fotoPainelUrl,
             valor,
             litros,
             combustivel: String(p.combustivel || ""),
