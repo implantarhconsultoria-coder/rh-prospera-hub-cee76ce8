@@ -475,6 +475,20 @@ Deno.serve(async (req) => {
         if (up.error) return json({ error: "upload_foto", detalhe: up.error.message }, 500);
         const { data: pub } = sb().storage.from("abastecimento-fotos").getPublicUrl(path);
 
+        // Foto do painel (km/odômetro) — opcional mas obrigatória pelo app
+        let fotoPainelUrl = "";
+        if (p.foto_painel_base64) {
+          const b2 = String(p.foto_painel_base64).replace(/^data:image\/\w+;base64,/, "");
+          const bytes2 = Uint8Array.from(atob(b2), (c) => c.charCodeAt(0));
+          const path2 = `${tec.id}/${Date.now()}-painel.jpg`;
+          const up2 = await sb()
+            .storage.from("abastecimento-fotos")
+            .upload(path2, bytes2, { contentType: "image/jpeg", upsert: false });
+          if (up2.error) return json({ error: "upload_foto_painel", detalhe: up2.error.message }, 500);
+          const { data: pub2 } = sb().storage.from("abastecimento-fotos").getPublicUrl(path2);
+          fotoPainelUrl = pub2.publicUrl;
+        }
+
         const veicSel = resolveVeiculo(tec, p);
         const func = (tec as any).funcionarios || null;
         const now = new Date();
