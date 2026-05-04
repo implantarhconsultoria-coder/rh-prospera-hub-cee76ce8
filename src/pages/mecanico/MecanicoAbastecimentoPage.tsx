@@ -189,6 +189,8 @@ const MecanicoAbastecimentoPage: React.FC = () => {
     setVale(null);
     setFotoBomba(null);
     setFotoUrl('');
+    setFotoPainel(null);
+    setFotoPainelUrl('');
     setValor(''); setLitros(''); setKmAtual('');
     setPostoNome(''); setPostoCnpj('');
   };
