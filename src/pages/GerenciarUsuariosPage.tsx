@@ -21,9 +21,20 @@ interface UserWithRole {
   email: string;
   nome_completo: string;
   created_at: string;
+  cpf: string | null;
+  cpf_clean: string | null;
   role: AppRole | null;
   role_id: string | null;
 }
+
+const maskCpf = (v: string) => {
+  const d = (v || '').replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0,3)}.${d.slice(3)}`;
+  if (d.length <= 9) return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6)}`;
+  return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
+};
+const cleanCpf = (v: string) => (v || '').replace(/\D/g, '');
 
 const ROLE_LABELS: Record<AppRole, { label: string; color: string; portal: string }> = {
   admin: { label: 'Administrador', color: 'bg-red-500', portal: 'Central Administrativa' },
@@ -45,6 +56,8 @@ const GerenciarUsuariosPage: React.FC = () => {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  const [savingCpf, setSavingCpf] = useState<string | null>(null);
+  const [cpfDrafts, setCpfDrafts] = useState<Record<string, string>>({});
   const [deleting, setDeleting] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
@@ -52,7 +65,7 @@ const GerenciarUsuariosPage: React.FC = () => {
     setLoading(true);
     const { data: profiles, error: pErr } = await supabase
       .from('profiles')
-      .select('user_id, email, nome_completo, created_at')
+      .select('user_id, email, nome_completo, created_at, cpf, cpf_clean')
       .order('created_at', { ascending: false });
 
     if (pErr) {
@@ -65,13 +78,15 @@ const GerenciarUsuariosPage: React.FC = () => {
       .from('user_roles')
       .select('id, user_id, role');
 
-    const merged: UserWithRole[] = (profiles || []).map(p => {
+    const merged: UserWithRole[] = (profiles || []).map((p: any) => {
       const r = roles?.find(r => r.user_id === p.user_id);
       return {
         user_id: p.user_id,
         email: p.email,
         nome_completo: p.nome_completo,
         created_at: p.created_at,
+        cpf: p.cpf || null,
+        cpf_clean: p.cpf_clean || null,
         role: (r?.role as AppRole) || null,
         role_id: r?.id || null,
       };
@@ -143,10 +158,44 @@ const GerenciarUsuariosPage: React.FC = () => {
     }
   };
 
-  const filtered = users.filter(u =>
-    u.email.toLowerCase().includes(search.toLowerCase()) ||
-    u.nome_completo.toLowerCase().includes(search.toLowerCase())
-  );
+  const handleSaveCpf = async (userId: string) => {
+    if (!isAdmin) { toast.error('Apenas o Admin pode editar CPF'); return; }
+    const raw = cpfDrafts[userId] ?? '';
+    const clean = cleanCpf(raw);
+    if (clean && clean.length !== 11) { toast.error('CPF deve ter 11 dígitos'); return; }
+    setSavingCpf(userId);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ cpf: clean ? maskCpf(clean) : null } as any)
+        .eq('user_id', userId);
+      if (error) throw error;
+      toast.success(clean ? 'CPF salvo' : 'CPF removido');
+      setCpfDrafts(prev => { const n = { ...prev }; delete n[userId]; return n; });
+      await fetchUsers();
+    } catch (e: any) {
+      toast.error('Erro ao salvar CPF: ' + (e?.message || ''));
+    } finally {
+      setSavingCpf(null);
+    }
+  };
+
+  const q = search.trim().toLowerCase();
+  const qDigits = q.replace(/\D/g, '');
+  const filtered = users.filter(u => {
+    if (!q) return true;
+    const role = u.role ? ROLE_LABELS[u.role].label.toLowerCase() : '';
+    const portal = u.role ? ROLE_LABELS[u.role].portal.toLowerCase() : '';
+    if (
+      (u.email || '').toLowerCase().includes(q) ||
+      (u.nome_completo || '').toLowerCase().includes(q) ||
+      (u.cpf || '').toLowerCase().includes(q) ||
+      role.includes(q) ||
+      portal.includes(q)
+    ) return true;
+    if (qDigits && (u.cpf_clean || '').includes(qDigits)) return true;
+    return false;
+  });
 
   return (
     <div className="space-y-6">
@@ -180,10 +229,10 @@ const GerenciarUsuariosPage: React.FC = () => {
               <Users className="w-5 h-5" />
               Usuários Cadastrados ({users.length})
             </CardTitle>
-            <div className="relative w-64">
+            <div className="relative w-72">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nome ou email..."
+                placeholder="Buscar por nome, e-mail, CPF ou perfil..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="pl-9"
@@ -205,6 +254,7 @@ const GerenciarUsuariosPage: React.FC = () => {
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Email</TableHead>
+                    <TableHead>CPF</TableHead>
                     <TableHead>Cadastro</TableHead>
                     <TableHead>Role / Perfil</TableHead>
                     <TableHead>Portal de Entrada</TableHead>
@@ -213,10 +263,36 @@ const GerenciarUsuariosPage: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map(user => (
+                  {filtered.map(user => {
+                    const draft = cpfDrafts[user.user_id];
+                    const cpfValue = draft !== undefined ? draft : (user.cpf || '');
+                    const dirty = draft !== undefined && cleanCpf(draft) !== (user.cpf_clean || '');
+                    return (
                     <TableRow key={user.user_id}>
                       <TableCell className="font-medium">{user.nome_completo || '—'}</TableCell>
                       <TableCell className="text-sm">{user.email}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={cpfValue}
+                            onChange={e => setCpfDrafts(prev => ({ ...prev, [user.user_id]: maskCpf(e.target.value) }))}
+                            placeholder="000.000.000-00"
+                            disabled={!isAdmin || savingCpf === user.user_id}
+                            className="h-8 w-40 text-sm"
+                          />
+                          {isAdmin && dirty && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 px-2 text-xs"
+                              disabled={savingCpf === user.user_id}
+                              onClick={() => handleSaveCpf(user.user_id)}
+                            >
+                              {savingCpf === user.user_id ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Salvar'}
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {new Date(user.created_at).toLocaleDateString('pt-BR')}
                       </TableCell>
@@ -289,7 +365,8 @@ const GerenciarUsuariosPage: React.FC = () => {
                         </TableCell>
                       )}
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
