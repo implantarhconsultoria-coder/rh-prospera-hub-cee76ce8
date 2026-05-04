@@ -3302,6 +3302,48 @@ export type Database = {
           },
         ]
       }
+      lancamentos_historico: {
+        Row: {
+          campo: string
+          company_id: string | null
+          competencia: string | null
+          created_at: string
+          funcionario_id: string | null
+          id: string
+          lancamento_id: string | null
+          user_id: string | null
+          usuario_nome: string | null
+          valor_anterior: string | null
+          valor_novo: string | null
+        }
+        Insert: {
+          campo: string
+          company_id?: string | null
+          competencia?: string | null
+          created_at?: string
+          funcionario_id?: string | null
+          id?: string
+          lancamento_id?: string | null
+          user_id?: string | null
+          usuario_nome?: string | null
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Update: {
+          campo?: string
+          company_id?: string | null
+          competencia?: string | null
+          created_at?: string
+          funcionario_id?: string | null
+          id?: string
+          lancamento_id?: string | null
+          user_id?: string | null
+          usuario_nome?: string | null
+          valor_anterior?: string | null
+          valor_novo?: string | null
+        }
+        Relationships: []
+      }
       lancamentos_mensais: {
         Row: {
           adiantamento: number
