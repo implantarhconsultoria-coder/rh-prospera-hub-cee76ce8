@@ -638,6 +638,27 @@ const ApontamentoContabilidadePage: React.FC = () => {
           <p className="text-center text-muted-foreground p-6">Selecione uma empresa.</p>
         ) : (
           <table className="w-full text-[11px] border-collapse">
+            <colgroup>
+              <col style={{ width: '13%' }} />{/* Nome */}
+              <col style={{ width: '8%' }} />{/* CPF */}
+              <col style={{ width: '6%' }} />{/* Salário */}
+              <col style={{ width: '5%' }} />{/* Insalub */}
+              <col style={{ width: '3.5%' }} />{/* Tem com */}
+              <col style={{ width: '6%' }} />{/* Base com */}
+              <col style={{ width: '4%' }} />{/* Com % */}
+              <col style={{ width: '5.5%' }} />{/* Com Valor */}
+              <col style={{ width: '4%' }} />{/* HE h */}
+              <col style={{ width: '5%' }} />{/* HE valor */}
+              <col style={{ width: '4%' }} />{/* HE100 h */}
+              <col style={{ width: '5%' }} />{/* HE100 valor */}
+              <col style={{ width: '5%' }} />{/* Assist Med */}
+              <col style={{ width: '3.5%' }} />{/* Faltas */}
+              <col style={{ width: '5%' }} />{/* Desc Falta */}
+              <col style={{ width: '3.5%' }} />{/* DSR Qtd */}
+              <col style={{ width: '5%' }} />{/* Desc DSR */}
+              <col style={{ width: '6%' }} />{/* Adiantamento */}
+              <col style={{ width: '7%' }} />{/* Total */}
+            </colgroup>
             <thead>
               <tr className="bg-muted/50 border-b border-foreground">
                 <th className="px-2 py-2 text-left font-semibold border border-border">Nome</th>
