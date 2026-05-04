@@ -3,8 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Loader2, AlertTriangle, Wrench, DollarSign, FileText, Users, Package, Cog, Building2, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
-const FN_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/acesso-cpf`;
-const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 const formatCpf = (raw: string) => {
   const d = raw.replace(/\D/g, '').slice(0, 11);
