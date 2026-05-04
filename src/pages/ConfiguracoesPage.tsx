@@ -112,25 +112,32 @@ const ConfiguracoesPage: React.FC = () => {
           Distribua estes links aos times. Acesso por CPF — sem necessidade de senha. Sessão por dispositivo válida até 23:59.
           Domínio detectado automaticamente: <span className="font-mono">{origin}</span>
         </p>
-        <div className="space-y-2">
-          {links.map(l => {
-            const fullUrl = origin + l.path;
-            return (
-              <div key={l.path} className="flex items-center gap-2 p-3 border border-border rounded-lg hover:bg-muted/30">
-                <Badge className={`${l.color} text-white whitespace-nowrap`}>{l.tag}</Badge>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{l.name}</div>
-                  <div className="text-xs text-muted-foreground font-mono truncate">{fullUrl}</div>
-                </div>
-                <Button size="sm" variant="outline" onClick={() => copy(fullUrl, l.path)}>
-                  {copied === l.path ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => window.open(fullUrl, '_blank')}>
-                  Abrir
-                </Button>
+        <div className="space-y-5">
+          {grupos.map(g => (
+            <div key={g.titulo} className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Badge className={`${g.cor} text-white whitespace-nowrap`}>{g.titulo}</Badge>
+                <span className="text-[11px] text-muted-foreground">link único · acesso por CPF + permissão do Admin</span>
               </div>
-            );
-          })}
+              {g.links.map(l => {
+                const fullUrl = origin + l.path;
+                return (
+                  <div key={l.path} className="flex items-center gap-2 p-3 border border-border rounded-lg hover:bg-muted/30">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{l.name}</div>
+                      <div className="text-xs text-muted-foreground font-mono truncate">{fullUrl}</div>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => copy(fullUrl, l.path)}>
+                      {copied === l.path ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => window.open(fullUrl, '_blank')}>
+                      Abrir
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
         </div>
       </Card>
 
