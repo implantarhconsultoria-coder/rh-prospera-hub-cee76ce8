@@ -84,6 +84,21 @@ const AcessoModuloCpfPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
+  // Sessão por dispositivo válida até 23:59:59 do mesmo dia
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`cpf_device_session_${slug}`);
+      if (!raw) return;
+      const sess = JSON.parse(raw) as { expiresAt: number; redirect: string };
+      if (sess.expiresAt > Date.now() && sess.redirect) {
+        navigate(sess.redirect, { replace: true });
+      } else {
+        localStorage.removeItem(`cpf_device_session_${slug}`);
+      }
+    } catch { /* noop */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
+
   useEffect(() => { setErro(null); }, [slug]);
 
   const validarViaBancoInterno = async (slugAtual: string, digits: string): Promise<AcessoCpfResponse> => {
