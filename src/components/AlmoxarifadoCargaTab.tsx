@@ -84,7 +84,8 @@ const parseFuncionarioFromEmail = (texto: string, employees: { id: string; name:
 };
 
 const AlmoxarifadoCargaTab: React.FC = () => {
-  const { session, employees, companies, isAdmin } = useApp();
+  const { session, employees, companies, userRole } = useApp();
+  const isAdmin = userRole === 'admin';
   const userId = session?.user?.id;
 
   const [emailBruto, setEmailBruto] = useState('');
