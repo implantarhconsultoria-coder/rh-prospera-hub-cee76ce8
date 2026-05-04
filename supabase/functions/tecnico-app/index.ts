@@ -665,43 +665,47 @@ Deno.serve(async (req) => {
           (data || []).forEach((r) => out.push({ ...r, _kind: "ponto" }));
         }
         if (tipo === "todos" || tipo === "km") {
-          const { data } = await sb()
+          const q = sb()
             .from("registros_km")
             .select("id, km_valor, foto_url, data, hora, created_at")
             .eq("user_id", userId)
             .order("created_at", { ascending: false })
             .limit(limit);
+          const { data } = await applyMes(q);
           (data || []).forEach((r) => out.push({ ...r, _kind: "km" }));
         }
         if (tipo === "todos" || tipo === "chamado") {
-          const { data } = await sb()
+          const q = sb()
             .from("chamados")
             .select("id, cliente, local_servico, tipo_servico, status, created_at, concluido_em")
             .eq("colaborador_id", userId)
             .order("created_at", { ascending: false })
             .limit(limit);
+          const { data } = await applyMes(q);
           (data || []).forEach((r) => out.push({ ...r, _kind: "chamado" }));
         }
         if (tipo === "todos" || tipo === "abastecimento") {
-          const { data } = await sb()
+          const q = sb()
             .from("abastecimentos")
-            .select("id, valor, litros, placa, foto_bomba_url, data, hora, status, created_at")
+            .select("id, valor, litros, placa, foto_bomba_url, foto_painel_url, data, hora, status, created_at")
             .eq("tecnico_id", tec.id)
             .order("created_at", { ascending: false })
             .limit(limit);
+          const { data } = await applyMes(q);
           (data || []).forEach((r) => out.push({ ...r, _kind: "abastecimento" }));
         }
         if (tipo === "todos" || tipo === "galao") {
-          const { data } = await sb()
+          const q = sb()
             .from("combustivel_galoes")
             .select("id, tipo_combustivel, quantidade_litros, placa, foto_url, data, hora, observacao, created_at")
             .eq("tecnico_id", tec.id)
             .order("created_at", { ascending: false })
             .limit(limit);
+          const { data } = await applyMes(q);
           (data || []).forEach((r) => out.push({ ...r, _kind: "galao" }));
         }
         out.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        return json({ historico: out.slice(0, 60) });
+        return json({ historico: out.slice(0, dateFrom ? 500 : 60) });
       }
 
       default:
