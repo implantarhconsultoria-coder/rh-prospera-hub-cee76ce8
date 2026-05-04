@@ -5,9 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Users, Shield, Loader2, Search } from 'lucide-react';
+import { Users, Shield, Loader2, Search, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { useApp } from '@/context/AppContext';
 import type { AppRole } from '@/hooks/useUserRole';
 
 interface UserWithRole {
@@ -34,9 +40,12 @@ const ROLE_LABELS: Record<AppRole, { label: string; color: string; portal: strin
 const ALL_ROLES: AppRole[] = ['admin', 'filial_praia', 'filial_goiania', 'almoxarifado', 'tecnico_campo', 'operacional', 'faturamento', 'financeiro', 'usuario'];
 
 const GerenciarUsuariosPage: React.FC = () => {
+  const { userRole, session } = useApp();
+  const isAdmin = userRole === 'admin';
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
   const fetchUsers = async () => {
@@ -98,6 +107,39 @@ const GerenciarUsuariosPage: React.FC = () => {
       toast.error('Erro ao salvar role: ' + (err.message || ''));
     } finally {
       setSaving(null);
+    }
+  };
+
+  const handleDelete = async (userId: string, nome: string) => {
+    if (!isAdmin) { toast.error('Apenas o Admin pode excluir usuários'); return; }
+    if (userId === session?.user?.id) { toast.error('Não é possível excluir o próprio usuário'); return; }
+    setDeleting(userId);
+    try {
+      // Auditoria
+      await supabase.from('acoes_log').insert({
+        modulo: 'usuarios',
+        entidade: 'profile',
+        entidade_id: userId,
+        acao: 'usuario_excluido',
+        funcionario_nome: nome,
+        empresa: '',
+        user_id: session?.user?.id,
+        user_email: session?.user?.email || '',
+        observacao: `Usuário ${nome} excluído pelo admin.`,
+      } as any);
+      // Remove roles primeiro (FK)
+      await supabase.from('user_roles').delete().eq('user_id', userId);
+      // Remove acessos por CPF associados, se houver
+      await supabase.from('funcionario_modulos').delete().eq('autorizado_por', userId);
+      // Remove o profile (mantém auth.users — só admin Supabase pode apagar)
+      const { error } = await supabase.from('profiles').delete().eq('user_id', userId);
+      if (error) throw error;
+      toast.success('Usuário excluído da plataforma');
+      await fetchUsers();
+    } catch (e: any) {
+      toast.error('Erro ao excluir: ' + (e?.message || ''));
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -167,6 +209,7 @@ const GerenciarUsuariosPage: React.FC = () => {
                     <TableHead>Role / Perfil</TableHead>
                     <TableHead>Portal de Entrada</TableHead>
                     <TableHead>Alterar Role</TableHead>
+                    {isAdmin && <TableHead className="text-right">Excluir</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -210,6 +253,41 @@ const GerenciarUsuariosPage: React.FC = () => {
                           {saving === user.user_id && <Loader2 className="w-4 h-4 animate-spin" />}
                         </div>
                       </TableCell>
+                      {isAdmin && (
+                        <TableCell className="text-right">
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-destructive"
+                                disabled={deleting === user.user_id || user.user_id === session?.user?.id}
+                                title={user.user_id === session?.user?.id ? 'Não é possível excluir o próprio usuário' : 'Excluir usuário'}
+                              >
+                                {deleting === user.user_id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir este usuário?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {user.nome_completo || user.email} — esta ação não pode ser desfeita. Permissões e
+                                  acessos por CPF associados também serão removidos.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(user.user_id, user.nome_completo || user.email)}
+                                  className="bg-destructive hover:bg-destructive/90"
+                                >
+                                  Excluir
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>

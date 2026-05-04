@@ -307,8 +307,9 @@ const AppOperacionalPage: React.FC = () => {
               Links permanentes por Filial — acesso por CPF
             </h3>
             <p className="text-xs text-muted-foreground mb-3 max-w-2xl">
-              Cada link abre a tela de CPF da filial correta. Funcionário ativo daquela filial entra; CPF de outra filial, inativo, em férias ou bloqueado é recusado.
-              Sessão por dispositivo válida até 23:59. Links não expiram.
+              Cada link abre a tela de CPF da filial correta. Funcionário ativo daquela filial entra; CPF de outra filial,
+              inativo, em férias ou bloqueado é recusado. Sessão por dispositivo válida até 23:59. Os links não expiram e
+              funcionam tanto no preview quanto no domínio publicado <strong>implantarhprpro.com</strong>.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {[
@@ -318,9 +319,9 @@ const AppOperacionalPage: React.FC = () => {
               ].map(l => {
                 const url = `${window.location.origin}${l.path}`;
                 return (
-                  <div key={l.path} className={`rounded-xl p-3 bg-gradient-to-br ${l.cor} text-white shadow-lg`}>
+                  <div key={l.path} className={`rounded-xl p-4 bg-gradient-to-br ${l.cor} text-white shadow-lg`}>
                     <p className="text-[11px] uppercase tracking-wider opacity-80">Link Operacional</p>
-                    <p className="font-bold text-sm mb-2">{l.label}</p>
+                    <p className="font-bold text-base mb-2">{l.label}</p>
                     <code className="block text-[11px] bg-black/20 px-2 py-1 rounded mb-2 truncate" title={url}>{url}</code>
                     <div className="flex gap-2">
                       <Button size="sm" variant="secondary" className="h-7 text-[11px]" onClick={() => { navigator.clipboard.writeText(url); toast.success('Link copiado'); }}>
@@ -335,106 +336,9 @@ const AppOperacionalPage: React.FC = () => {
               })}
             </div>
           </Card>
-
-          <Card className="p-0 overflow-hidden">
-            <div className="p-4 border-b">
-              <h2 className="font-bold flex items-center gap-2"><Link2 className="w-4 h-4" />Links dos Aplicativos</h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                Cada técnico tem um link individual <strong>vitalício e permanente</strong> que abre o app direto com seus dados.
-                O link continua válido após publicação de novas versões; só deixa de funcionar se for bloqueado, revogado ou regenerado.
-              </p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50 border-b">
-                  <tr>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Técnico</th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Empresa/Filial</th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">CPF</th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Veículo</th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Tipo</th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Último acesso</th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Link</th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(t => {
-                    const url = t.access_token ? buildAppUrl(t.access_token) : '';
-                    return (
-                      <tr key={t.id} className="border-b hover:bg-muted/20">
-                        <td className="px-3 py-2 text-xs">
-                          <div className="font-medium">{t.apelido}</div>
-                          <div className="text-muted-foreground">{t.funcionario?.nome}</div>
-                        </td>
-                        <td className="px-3 py-2 text-xs">{t.funcionario?.companies?.nome || '—'}</td>
-                        <td className="px-3 py-2 text-xs">{t.funcionario?.cpf || '—'}</td>
-                        <td className="px-3 py-2 text-xs">{t.veiculo ? `${t.veiculo.placa}` : '—'}</td>
-                        <td className="px-3 py-2 text-xs"><Badge variant="outline">Link individual</Badge></td>
-                        <td className="px-3 py-2 text-xs">
-                          {t.link_status === 'revogado'
-                            ? <Badge className="bg-rose-500/10 text-rose-700 border-rose-500/30">Revogado</Badge>
-                            : t.link_status === 'bloqueado'
-                              ? <Badge variant="destructive">Bloqueado</Badge>
-                              : <Badge className="bg-green-500/10 text-green-700 border-green-500/30">Ativo</Badge>}
-                        </td>
-                        <td className="px-3 py-2 text-xs">
-                          {t.ultimo_acesso_em
-                            ? formatDistanceToNow(new Date(t.ultimo_acesso_em), { addSuffix: true, locale: ptBR })
-                            : t.ultimaAtividade
-                              ? formatDistanceToNow(new Date(t.ultimaAtividade.last_activity_at), { addSuffix: true, locale: ptBR })
-                              : '—'}
-                        </td>
-                        <td className="px-3 py-2 text-xs max-w-[260px]">
-                          <code className="block truncate text-[11px] bg-muted px-1.5 py-0.5 rounded" title={url}>{url || '—'}</code>
-                        </td>
-                        <td className="px-3 py-2">
-                          <div className="flex items-center gap-1 flex-wrap">
-                            <Button size="icon" variant="outline" className="h-7 w-7" title="Copiar link" onClick={() => copyLink(t.access_token)}>
-                              <Copy className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button size="icon" variant="outline" className="h-7 w-7" title="Abrir link" onClick={() => openLink(t.access_token)}>
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button size="icon" variant="outline" className="h-7 w-7" title="Regenerar link" onClick={() => regenerar(t)}>
-                              <RefreshCw className="w-3.5 h-3.5" />
-                            </Button>
-                            {t.link_status === 'revogado' ? (
-                              <Button size="icon" variant="outline" className="h-7 w-7 text-green-600" title="Reativar (regenerar link)" onClick={() => reativarRevogado(t)}>
-                                <Unlock className="w-3.5 h-3.5" />
-                              </Button>
-                            ) : t.link_status === 'bloqueado' ? (
-                              <Button size="icon" variant="outline" className="h-7 w-7 text-green-600" title="Reativar link" onClick={() => setBloqueio(t, false)}>
-                                <Unlock className="w-3.5 h-3.5" />
-                              </Button>
-                            ) : (
-                              <Button size="icon" variant="outline" className="h-7 w-7 text-amber-600" title="Bloquear link" onClick={() => setBloqueio(t, true)}>
-                                <Lock className="w-3.5 h-3.5" />
-                              </Button>
-                            )}
-                            {t.link_status !== 'revogado' && (
-                              <Button size="icon" variant="outline" className="h-7 w-7 text-rose-600" title="Revogar link" onClick={() => revogar(t)}>
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            )}
-                            <Button size="icon" variant="outline" className="h-7 w-7" title="Editar técnico" onClick={() => navigate(`/admin/app-operacional/${t.id}`)}>
-                              <Pencil className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" title="Excluir técnico" onClick={() => excluirTecnico(t)}>
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {!filtered.length && (
-                    <tr><td colSpan={9} className="text-center py-8 text-xs text-muted-foreground">Nenhum técnico cadastrado</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+          <Card className="p-4 bg-muted/30 text-xs text-muted-foreground">
+            Os QR/links individuais por técnico continuam válidos para quem já os tem, mas o uso recomendado é pelos
+            3 links acima — cada técnico entra com o próprio CPF.
           </Card>
         </TabsContent>
       </Tabs>
