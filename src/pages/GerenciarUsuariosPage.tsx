@@ -365,7 +365,8 @@ const GerenciarUsuariosPage: React.FC = () => {
                         </TableCell>
                       )}
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
