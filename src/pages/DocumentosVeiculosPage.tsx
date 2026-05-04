@@ -97,6 +97,46 @@ const DocumentosVeiculosPage: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Ativo>>({});
   const [docPanelId, setDocPanelId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    setBulkDeleting(true);
+    const alvos = ativos.filter(a => ids.includes(a.id));
+    const { error } = await supabase.from('ativos').delete().in('id', ids);
+    if (error) {
+      toast.error('Erro ao excluir: ' + error.message);
+      setBulkDeleting(false);
+      return;
+    }
+    try {
+      await supabase.from('acoes_log').insert(
+        alvos.map(a => ({
+          user_id: session?.user?.id || null,
+          modulo: 'documentos-veiculos',
+          acao: 'exclusao_lote',
+          descricao: `Excluído veículo ${a.descricao || ''} ${a.placa ? '(' + a.placa + ')' : ''}`.trim(),
+          referencia_id: a.id,
+        })) as any
+      );
+    } catch {}
+    toast.success(`${ids.length} veículo(s) excluído(s)`);
+    setSelectedIds(new Set());
+    setBulkDeleteOpen(false);
+    setBulkDeleting(false);
+    fetchAtivos();
+  };
 
   const fetchAtivos = async () => {
     const { data, error } = await supabase.from('ativos').select('*').eq('tipo', 'veiculo').order('created_at', { ascending: false });
