@@ -43,24 +43,26 @@ const SLUG_LABEL: Record<string, { titulo: string; subtitulo: string; icon: Reac
 
 const ERRO_LABEL: Record<string, string> = {
   cpf_invalido:                     'CPF inválido. Confira os 11 dígitos.',
-  cpf_nao_encontrado:               'CPF não encontrado. Procure o RH.',
-  cpf_nao_encontrado_funcionarios:  'CPF não encontrado. Procure o RH.',
-  funcionario_inativo:              'Acesso temporariamente bloqueado. Procure o RH.',
-  funcionario_bloqueado:            'Acesso temporariamente bloqueado. Procure o RH.',
-  funcionario_ferias:               'Funcionário em férias. Acesso bloqueado até o retorno.',
-  funcionario_desligado:            'Acesso encerrado (funcionário desligado).',
-  sem_permissao_modulo:             'CPF sem permissão para este setor. Procure o RH.',
-  modulo_bloqueado:                 'Acesso a este setor está bloqueado. Procure o RH.',
-  cpf_bloqueado:                    'Acesso temporariamente bloqueado. Procure o RH.',
-  unidade_incorreta:                'Este CPF pertence a outra unidade. Use o link da unidade correta.',
+  cpf_sem_permissao_cadastrada:     'CPF sem permissão cadastrada.',
+  cpf_nao_encontrado:               'CPF sem permissão cadastrada.',
+  cpf_nao_encontrado_funcionarios:  'CPF sem permissão cadastrada.',
+  sem_permissao_modulo:             'CPF sem permissão para este módulo.',
+  acesso_bloqueado:                 'Acesso bloqueado.',
+  funcionario_inativo:              'Acesso bloqueado.',
+  funcionario_bloqueado:            'Acesso bloqueado.',
+  funcionario_ferias:               'Acesso bloqueado.',
+  funcionario_desligado:            'Acesso bloqueado.',
+  modulo_bloqueado:                 'Acesso bloqueado.',
+  cpf_bloqueado:                    'Acesso bloqueado.',
+  unidade_incorreta:                'Este CPF pertence a outra unidade.',
   link_invalido:                    'Link inválido. Solicite o link correto ao RH.',
-  link_bloqueado:                   'Link temporariamente bloqueado. Procure o RH.',
-  tecnico_nao_encontrado:           'Este CPF ainda não está vinculado ao app operacional.',
-  blocked_link:                     'Acesso bloqueado pelo administrador.',
-  revoked_link:                     'Acesso revogado. Solicite um novo link.',
-  invalid_token:                    'Token de acesso inválido.',
-  db_error:                         'Falha temporária ao consultar o banco. Tente novamente em instantes.',
-  internal:                         'Falha temporária ao consultar o banco. Tente novamente em instantes.',
+  link_bloqueado:                   'Acesso bloqueado.',
+  tecnico_nao_encontrado:           'CPF sem permissão para este módulo.',
+  blocked_link:                     'Acesso bloqueado.',
+  revoked_link:                     'Acesso bloqueado.',
+  invalid_token:                    'Acesso bloqueado.',
+  db_error:                         'Falha temporária. Tente novamente em instantes.',
+  internal:                         'Falha temporária. Tente novamente em instantes.',
 };
 
 type AcessoCpfResponse = {
@@ -154,10 +156,17 @@ const AcessoModuloCpfPage: React.FC = () => {
       const fim = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
       const expiresAt = fim.getTime();
 
-      // Operacional vai para o portal canônico /operacional/:token
-      if ((data.area === 'operacional' || data.modulo === 'operacional') && data.tecnico_token) {
-        const dest = `/operacional/${data.tecnico_token}`;
+      // Operacional: token é dado complementar. Se faltar, cai no portal de mecânicos por CPF.
+      if (data.area === 'operacional' || data.modulo === 'operacional') {
+        const dest = data.tecnico_token
+          ? `/operacional/${data.tecnico_token}`
+          : `/setor-cpf/mecanicos${data.filial ? `?filial=${data.filial}` : ''}`;
         try {
+          sessionStorage.setItem('cpf_session', JSON.stringify({
+            modulo: data.modulo, area: data.area, filial: data.filial || null,
+            unidade: data.unidade, link_nome: data.link_nome, usuario: data.usuario,
+            ts: Date.now(), expiresAt,
+          }));
           localStorage.setItem(`cpf_device_session_${slug}`, JSON.stringify({ expiresAt, redirect: dest }));
         } catch { /* noop */ }
         navigate(dest, { replace: true });
