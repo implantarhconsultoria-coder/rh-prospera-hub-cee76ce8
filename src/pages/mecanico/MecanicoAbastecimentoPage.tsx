@@ -140,6 +140,7 @@ const MecanicoAbastecimentoPage: React.FC = () => {
 
   const finalizar = async () => {
     if (!vale || !fotoBomba) return;
+    if (!fotoPainel) { toast.error('Tire também a foto do painel do veículo'); return; }
     const v = Number(valor.replace(',', '.'));
     const l = Number(litros.replace(',', '.'));
     if (!v || !l) { toast.error('Informe valor e litros'); return; }
@@ -147,6 +148,7 @@ const MecanicoAbastecimentoPage: React.FC = () => {
     try {
       const geo = await getBrowserLocation();
       const foto64 = await blobToBase64(fotoBomba);
+      const fotoPainel64 = await blobToBase64(fotoPainel);
       const r: any = await call('registrar_abastecimento', {
         vale_codigo: vale.vale.codigo,
         valor: v,
@@ -158,6 +160,7 @@ const MecanicoAbastecimentoPage: React.FC = () => {
         latitude: geo.latitude,
         longitude: geo.longitude,
         foto_bomba_base64: foto64,
+        foto_painel_base64: fotoPainel64,
         preenchimento: 'manual',
       });
       setConfirm({
