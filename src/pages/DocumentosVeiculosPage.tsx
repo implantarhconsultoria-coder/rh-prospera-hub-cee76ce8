@@ -555,7 +555,7 @@ const DocumentosVeiculosPage: React.FC = () => {
                 </tr>
               );
             })}
-            {filtered.length === 0 && <tr><td colSpan={7} className="text-center py-8 text-muted-foreground text-sm">Nenhum documento encontrado</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={8} className="text-center py-8 text-muted-foreground text-sm">Nenhum documento encontrado</td></tr>}
           </tbody>
         </table>
         <div className="p-3 text-xs text-muted-foreground border-t">{filtered.length} veículo(s)</div>
