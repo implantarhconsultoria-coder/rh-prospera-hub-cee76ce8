@@ -67,6 +67,8 @@ type AcessoCpfResponse = {
   ok?: boolean;
   error?: string;
   modulo?: string;
+  area?: string;
+  filial?: string | null;
   unidade?: string;
   link_nome?: string;
   tecnico_token?: string;
