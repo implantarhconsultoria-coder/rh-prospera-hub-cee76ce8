@@ -285,7 +285,18 @@ const App = () => (
         <AppProvider>
           <BrowserRouter>
             <Routes>
-              {/* ========== APP MECÂNICO POR LINK EXCLUSIVO (sem login) ========== */}
+              {/* ========== PORTAL OPERACIONAL (canônico) — token único por CPF ========== */}
+              <Route path="/operacional/:token" element={<MecanicoLayout />}>
+                <Route index element={<MecanicoHomePage />} />
+                <Route path="ponto" element={<MecanicoPontoPage />} />
+                <Route path="chamados" element={<MecanicoChamadosPage />} />
+                <Route path="estoque" element={<MecanicoEstoquePage />} />
+                <Route path="km" element={<MecanicoKmPage />} />
+                <Route path="abastecimento" element={<MecanicoAbastecimentoPage />} />
+                <Route path="galoes" element={<MecanicoGaloesPage />} />
+                <Route path="historico" element={<MecanicoHistoricoPage />} />
+              </Route>
+              {/* APP MECÂNICO LEGADO — redirect para /operacional/:token (preserva QR antigos) */}
               <Route path="/m/:token" element={<MecanicoLayout />}>
                 <Route index element={<MecanicoHomePage />} />
                 <Route path="ponto" element={<MecanicoPontoPage />} />
