@@ -84,6 +84,21 @@ const AcessoModuloCpfPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
+  // Sessão por dispositivo válida até 23:59:59 do mesmo dia
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`cpf_device_session_${slug}`);
+      if (!raw) return;
+      const sess = JSON.parse(raw) as { expiresAt: number; redirect: string };
+      if (sess.expiresAt > Date.now() && sess.redirect) {
+        navigate(sess.redirect, { replace: true });
+      } else {
+        localStorage.removeItem(`cpf_device_session_${slug}`);
+      }
+    } catch { /* noop */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
+
   useEffect(() => { setErro(null); }, [slug]);
 
   const validarViaBancoInterno = async (slugAtual: string, digits: string): Promise<AcessoCpfResponse> => {
@@ -155,9 +170,18 @@ const AcessoModuloCpfPage: React.FC = () => {
         return;
       }
 
-      // Operacional vai pelo token do tecnico
+      // Sessão por dispositivo válida até 23:59:59 do mesmo dia
+      const now = new Date();
+      const fim = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      const expiresAt = fim.getTime();
+
+      // Operacional vai para o portal canônico /operacional/:token
       if (data.modulo === 'operacional' && data.tecnico_token) {
-        navigate(`/m/${data.tecnico_token}`, { replace: true });
+        const dest = `/operacional/${data.tecnico_token}`;
+        try {
+          localStorage.setItem(`cpf_device_session_${slug}`, JSON.stringify({ expiresAt, redirect: dest }));
+        } catch { /* noop */ }
+        navigate(dest, { replace: true });
         return;
       }
 
@@ -168,6 +192,7 @@ const AcessoModuloCpfPage: React.FC = () => {
         link_nome: data.link_nome,
         usuario: data.usuario,
         ts: Date.now(),
+        expiresAt,
       };
       sessionStorage.setItem('cpf_session', JSON.stringify(sessao));
 
@@ -180,7 +205,11 @@ const AcessoModuloCpfPage: React.FC = () => {
         mecanicos:    '/setor-cpf/mecanicos',
         filial:       '/setor-cpf/filial',
       };
-      navigate(destino[data.modulo] || `/setor-cpf/${data.modulo}`, { replace: true });
+      const dest = destino[data.modulo] || `/setor-cpf/${data.modulo}`;
+      try {
+        localStorage.setItem(`cpf_device_session_${slug}`, JSON.stringify({ expiresAt, redirect: dest }));
+      } catch { /* noop */ }
+      navigate(dest, { replace: true });
     } catch {
       setErro(ERRO_LABEL.db_error);
       setLoading(false);

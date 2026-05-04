@@ -116,7 +116,7 @@ const RoleRedirect = () => {
   if (userRoles.includes('admin')) return <Navigate to="/admin" replace />;
   if (userRoles.includes('faturamento')) return <Navigate to="/faturamento" replace />;
   if (userRoles.includes('financeiro')) return <Navigate to="/financeiro" replace />;
-  if (userRoles.includes('operacional')) return <Navigate to="/operacional" replace />;
+  if (userRoles.includes('operacional')) return <Navigate to="/operacional-dispatch" replace />;
   if (userRoles.includes('filial_praia') || userRoles.includes('filial_goiania')) return <Navigate to="/filial" replace />;
   if (userRoles.includes('almoxarifado')) return <Navigate to="/filial" replace />;
   if (userRoles.includes('tecnico_campo')) return <Navigate to="/campo" replace />;
@@ -240,8 +240,9 @@ const AuthGate = () => {
       </Route>
 
       {/* ========== OPERACIONAL PORTAL ========== */}
+      {/* ========== OPERACIONAL DISPATCH (uso interno admin/operacional desktop) ========== */}
       <Route element={<OperacionalLayout />}>
-        <Route path="/operacional" element={<DespacharChamadoPage />} />
+        <Route path="/operacional-dispatch" element={<DespacharChamadoPage />} />
       </Route>
 
       {/* ========== FATURAMENTO PORTAL (acesso teste FAT) ========== */}
@@ -285,7 +286,18 @@ const App = () => (
         <AppProvider>
           <BrowserRouter>
             <Routes>
-              {/* ========== APP MECÂNICO POR LINK EXCLUSIVO (sem login) ========== */}
+              {/* ========== PORTAL OPERACIONAL (canônico) — token único por CPF ========== */}
+              <Route path="/operacional/:token" element={<MecanicoLayout />}>
+                <Route index element={<MecanicoHomePage />} />
+                <Route path="ponto" element={<MecanicoPontoPage />} />
+                <Route path="chamados" element={<MecanicoChamadosPage />} />
+                <Route path="estoque" element={<MecanicoEstoquePage />} />
+                <Route path="km" element={<MecanicoKmPage />} />
+                <Route path="abastecimento" element={<MecanicoAbastecimentoPage />} />
+                <Route path="galoes" element={<MecanicoGaloesPage />} />
+                <Route path="historico" element={<MecanicoHistoricoPage />} />
+              </Route>
+              {/* APP MECÂNICO LEGADO — redirect para /operacional/:token (preserva QR antigos) */}
               <Route path="/m/:token" element={<MecanicoLayout />}>
                 <Route index element={<MecanicoHomePage />} />
                 <Route path="ponto" element={<MecanicoPontoPage />} />
