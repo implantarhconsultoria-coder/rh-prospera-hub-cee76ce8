@@ -229,10 +229,10 @@ const GerenciarUsuariosPage: React.FC = () => {
               <Users className="w-5 h-5" />
               Usuários Cadastrados ({users.length})
             </CardTitle>
-            <div className="relative w-64">
+            <div className="relative w-72">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nome ou email..."
+                placeholder="Buscar por nome, e-mail, CPF ou perfil..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="pl-9"
