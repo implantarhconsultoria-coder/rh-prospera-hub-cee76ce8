@@ -3104,6 +3104,7 @@ export type Database = {
       funcionarios: {
         Row: {
           acesso_atualizado_em: string | null
+          acesso_cpf_liberado: boolean
           acesso_motivo: string | null
           acesso_status: string
           agencia: string
@@ -3146,6 +3147,7 @@ export type Database = {
         }
         Insert: {
           acesso_atualizado_em?: string | null
+          acesso_cpf_liberado?: boolean
           acesso_motivo?: string | null
           acesso_status?: string
           agencia?: string
@@ -3188,6 +3190,7 @@ export type Database = {
         }
         Update: {
           acesso_atualizado_em?: string | null
+          acesso_cpf_liberado?: boolean
           acesso_motivo?: string | null
           acesso_status?: string
           agencia?: string
@@ -5258,6 +5261,7 @@ export type Database = {
         Args: { p_cpf: string; p_modulo: string }
         Returns: {
           acesso_atualizado_em: string | null
+          acesso_cpf_liberado: boolean
           acesso_motivo: string | null
           acesso_status: string
           agencia: string
@@ -5307,6 +5311,10 @@ export type Database = {
       }
       calc_inss: { Args: { p_base: number }; Returns: number }
       calc_irrf: { Args: { p_base: number }; Returns: number }
+      fechamento_filial_breakdown: {
+        Args: { p_company_id: string; p_competencia: string }
+        Returns: Json
+      }
       fechamento_filial_executar: {
         Args: {
           p_company_id: string
