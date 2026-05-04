@@ -412,6 +412,130 @@ Topac RH PRO`;
     pagamento: computarPagamento(a),
   })), [avisos]);
 
+  // === Funcionários ativos com cálculo automático de período aquisitivo/vencimento ===
+  type FuncFerias = {
+    emp: typeof empsList[number];
+    empresaNome: string;
+    aquisitivoIni: string;
+    aquisitivoFim: string;
+    limiteConcessao: string; // 11 meses após fim aquisitivo
+    diasParaLimite: number;
+    statusFerias: 'ok' | 'proximas' | 'urgente' | 'vencendo' | 'vencido';
+    label: string;
+    cor: string;
+    temAvisoAtivo: boolean;
+  };
+
+  const funcionariosFerias: FuncFerias[] = useMemo(() => {
+    const hoje = today();
+    const list: FuncFerias[] = empsList.map(emp => {
+      const co = companies.find(c => c.id === emp.companyId);
+      const empresaNome = co?.name || '';
+      const adm = emp.dataAdmissao;
+      let aquisitivoIni = '';
+      let aquisitivoFim = '';
+      let limiteConcessao = '';
+      let diasParaLimite = 99999;
+      if (adm) {
+        // calcula período aquisitivo corrente: encontra o ciclo de 12 meses cujo fim seja >= hoje (ou o último completado)
+        const admDate = new Date(adm + 'T12:00:00');
+        const hojeDate = new Date(hoje + 'T12:00:00');
+        const yearsSinceAdm = (hojeDate.getTime() - admDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+        // ciclo já completado mais recente
+        const ciclo = Math.max(0, Math.floor(yearsSinceAdm) - 1);
+        const ini = new Date(admDate);
+        ini.setFullYear(ini.getFullYear() + ciclo);
+        const fim = new Date(ini);
+        fim.setFullYear(fim.getFullYear() + 1);
+        aquisitivoIni = ini.toISOString().slice(0, 10);
+        aquisitivoFim = fim.toISOString().slice(0, 10);
+        // CLT: gozo até 11 meses após o fim do aquisitivo (12 meses concessivo - 1 mês mínimo de gozo)
+        const limite = new Date(fim);
+        limite.setMonth(limite.getMonth() + 11);
+        limiteConcessao = limite.toISOString().slice(0, 10);
+        diasParaLimite = daysBetween(hoje, limiteConcessao);
+      }
+      let statusFerias: FuncFerias['statusFerias'] = 'ok';
+      let label = 'Sem urgência';
+      let cor = 'bg-muted text-muted-foreground';
+      if (adm) {
+        if (diasParaLimite < 0) { statusFerias = 'vencido'; label = `VENCIDO há ${Math.abs(diasParaLimite)}d`; cor = 'bg-destructive text-destructive-foreground'; }
+        else if (diasParaLimite <= 30) { statusFerias = 'vencendo'; label = `Vence em ${diasParaLimite}d`; cor = 'bg-destructive/80 text-destructive-foreground'; }
+        else if (diasParaLimite <= 60) { statusFerias = 'urgente'; label = `Conceder em ${diasParaLimite}d`; cor = 'bg-warning text-warning-foreground'; }
+        else if (diasParaLimite <= 120) { statusFerias = 'proximas'; label = `Conceder em ${diasParaLimite}d`; cor = 'bg-primary text-primary-foreground'; }
+        else { label = `Conceder em ${diasParaLimite}d`; }
+      } else {
+        label = 'Sem data de admissão';
+      }
+      const temAvisoAtivo = avisos.some(a =>
+        a.funcionario_id === emp.id &&
+        a.status !== 'cancelado' &&
+        daysBetween(today(), a.data_retorno) >= 0
+      );
+      return { emp, empresaNome, aquisitivoIni, aquisitivoFim, limiteConcessao, diasParaLimite, statusFerias, label, cor, temAvisoAtivo };
+    });
+    // ordena por urgência
+    list.sort((a, b) => a.diasParaLimite - b.diasParaLimite);
+    return list;
+  }, [empsList, companies, avisos]);
+
+  const [funcSearch, setFuncSearch] = useState('');
+  const [funcFilter, setFuncFilter] = useState<'todos' | 'urgentes' | 'sem_aviso'>('urgentes');
+
+  const funcionariosFiltrados = useMemo(() => {
+    let list = funcionariosFerias;
+    if (funcSearch) {
+      const q = funcSearch.toLowerCase();
+      list = list.filter(f =>
+        f.emp.name.toLowerCase().includes(q) ||
+        (f.emp.cpf || '').includes(q) ||
+        f.empresaNome.toLowerCase().includes(q)
+      );
+    }
+    if (funcFilter === 'urgentes') list = list.filter(f => ['vencido', 'vencendo', 'urgente', 'proximas'].includes(f.statusFerias));
+    if (funcFilter === 'sem_aviso') list = list.filter(f => !f.temAvisoAtivo);
+    return list;
+  }, [funcionariosFerias, funcSearch, funcFilter]);
+
+  const gerarAvisoDireto = (f: FuncFerias) => {
+    setEditingId(null);
+    setEmpId(f.emp.id);
+    setPaIni(f.aquisitivoIni);
+    setPaFim(f.aquisitivoFim);
+    // sugere início no próximo dia útil (hoje + 35d se não vencido, ou amanhã se vencido)
+    const sugestaoIni = f.statusFerias === 'vencido' ? addDays(today(), 1) : addDays(today(), 35);
+    // não pode passar do limite de concessão
+    const inicioFinal = f.limiteConcessao && daysBetween(sugestaoIni, f.limiteConcessao) < 30
+      ? addDays(f.limiteConcessao, -30)
+      : sugestaoIni;
+    setGozoInicio(inicioFinal);
+    setDiasFerias(30);
+    setObservacao('');
+    setOpenForm(true);
+  };
+
+  const imprimirAvisoFuncionario = (f: FuncFerias) => {
+    const co = companies.find(c => c.id === f.emp.companyId);
+    if (!co) { toast.error('Empresa do funcionário não encontrada'); return; }
+    const inicio = f.statusFerias === 'vencido' ? addDays(today(), 1) : addDays(today(), 35);
+    const retorno = addDays(inicio, 30);
+    const pdf = gerarAvisoFeriasPdf({
+      empresa: co.name,
+      cnpj: co.cnpj,
+      nome: f.emp.name,
+      cpf: f.emp.cpf,
+      rg: f.emp.rg,
+      matricula: f.emp.registro,
+      funcao: f.emp.cargo,
+      dataAdmissao: f.emp.dataAdmissao,
+      inicioFerias: inicio,
+      retornoFerias: retorno,
+      diasFerias: 30,
+    });
+    downloadPdf(pdf.blob, pdf.fileName);
+    toast.success('Aviso (rascunho) gerado — para arquivar no histórico use "Gerar Aviso".');
+  };
+
   const filtrados = useMemo(() => {
     let list = avisosCalc;
     if (search) {
