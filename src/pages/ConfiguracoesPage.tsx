@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Award, Link2, Copy, Check, Clock, Save } from 'lucide-react';
+import { Building2, Link2, Copy, Check, Clock, Save, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -22,10 +22,11 @@ const ConfiguracoesPage: React.FC = () => {
 
   const links = [
     { name: 'Plataforma Administrativa', path: '/admin', tag: 'Admin', color: 'bg-red-500' },
-    { name: 'Portal das Filiais (Praia Grande / Goiânia)', path: '/filial', tag: 'Filial', color: 'bg-blue-500' },
-    { name: 'Portal Operacional / Campo (acesso por CPF)', path: '/operacional', tag: 'Operacional', color: 'bg-teal-500' },
-    { name: 'Portal de Faturamento', path: '/faturamento', tag: 'Faturamento', color: 'bg-indigo-500' },
-    { name: 'Portal Financeiro', path: '/financeiro', tag: 'Financeiro', color: 'bg-cyan-600' },
+    { name: 'Portal Operacional — São Paulo / Matriz', path: '/operacional/sp', tag: 'Operacional SP', color: 'bg-blue-500' },
+    { name: 'Portal Operacional — Praia Grande', path: '/operacional/praia-grande', tag: 'Operacional PG', color: 'bg-cyan-500' },
+    { name: 'Portal Operacional — Goiânia', path: '/operacional/goiania', tag: 'Operacional GO', color: 'bg-emerald-500' },
+    { name: 'Portal Financeiro (acesso por CPF)', path: '/acesso/financeiro', tag: 'Financeiro', color: 'bg-cyan-600' },
+    { name: 'Portal Faturamento (acesso por CPF)', path: '/acesso/faturamento', tag: 'Faturamento', color: 'bg-indigo-500' },
   ];
 
   const copy = async (txt: string, key: string) => {
@@ -61,21 +62,21 @@ const ConfiguracoesPage: React.FC = () => {
         <h1 className="text-2xl font-bold font-display text-foreground">Configurações da Plataforma</h1>
       </div>
 
-      {/* Links dos portais */}
       <Card className="p-6 space-y-4">
         <div className="flex items-center gap-2">
           <Link2 className="w-5 h-5 text-primary" />
           <h2 className="text-lg font-bold font-display">Links de acesso aos portais</h2>
         </div>
         <p className="text-xs text-muted-foreground">
-          Use estes links para distribuir aos times. O domínio base é detectado automaticamente: <span className="font-mono">{origin}</span>
+          Distribua estes links aos times. Acesso por CPF — sem necessidade de senha. Sessão por dispositivo válida até 23:59.
+          Domínio detectado automaticamente: <span className="font-mono">{origin}</span>
         </p>
         <div className="space-y-2">
           {links.map(l => {
             const fullUrl = origin + l.path;
             return (
               <div key={l.path} className="flex items-center gap-2 p-3 border border-border rounded-lg hover:bg-muted/30">
-                <Badge className={`${l.color} text-white`}>{l.tag}</Badge>
+                <Badge className={`${l.color} text-white whitespace-nowrap`}>{l.tag}</Badge>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{l.name}</div>
                   <div className="text-xs text-muted-foreground font-mono truncate">{fullUrl}</div>
@@ -83,18 +84,15 @@ const ConfiguracoesPage: React.FC = () => {
                 <Button size="sm" variant="outline" onClick={() => copy(fullUrl, l.path)}>
                   {copied === l.path ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                 </Button>
+                <Button size="sm" variant="outline" onClick={() => window.open(fullUrl, '_blank')}>
+                  Abrir
+                </Button>
               </div>
             );
           })}
         </div>
-        <div className="bg-muted/40 border border-border rounded-lg p-3 text-xs space-y-1">
-          <p className="text-muted-foreground">
-            Os portais Faturamento e Financeiro também estão disponíveis para os usuários habilitados após o login normal.
-          </p>
-        </div>
       </Card>
 
-      {/* Bloqueio de horário */}
       {horario && (
         <Card className="p-6 space-y-4">
           <div className="flex items-center gap-2">
@@ -103,7 +101,7 @@ const ConfiguracoesPage: React.FC = () => {
             <Badge variant={horario.enabled ? 'default' : 'secondary'}>{horario.enabled ? 'Ativo' : 'Desligado'}</Badge>
           </div>
           <p className="text-xs text-muted-foreground">
-            Quando ativo, restringe o login dos usuários (exceto administradores) ao intervalo definido. Recomendado deixar desligado até validar.
+            Quando ativo, restringe o login dos usuários (exceto administradores) ao intervalo definido.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div className="md:col-span-1 flex items-center gap-2">
@@ -133,7 +131,6 @@ const ConfiguracoesPage: React.FC = () => {
         </Card>
       )}
 
-      {/* Sobre */}
       <Card className="p-6 space-y-4">
         <div className="flex items-center gap-2">
           <Award className="w-5 h-5 text-primary" />

@@ -63,7 +63,6 @@ const adminItems: MenuItem[] = [
   { label: 'Permissões por Funcionário', icon: Shield, path: '/admin/permissoes-funcionarios' },
   { label: 'E-mails Contabilidade', icon: Mail, path: '/admin/emails-contabilidade' },
   { label: 'Monitoramento', icon: Monitor, path: '/admin/monitoramento' },
-  { label: 'Monitoramento das Filiais', icon: Monitor, path: '/admin/monitoramento-filiais' },
   { label: 'Configurações', icon: Settings, path: '/admin/configuracoes' },
 ];
 
