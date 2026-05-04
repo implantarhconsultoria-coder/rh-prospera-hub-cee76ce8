@@ -240,8 +240,9 @@ const AuthGate = () => {
       </Route>
 
       {/* ========== OPERACIONAL PORTAL ========== */}
+      {/* ========== OPERACIONAL DISPATCH (uso interno admin/operacional desktop) ========== */}
       <Route element={<OperacionalLayout />}>
-        <Route path="/operacional" element={<DespacharChamadoPage />} />
+        <Route path="/operacional-dispatch" element={<DespacharChamadoPage />} />
       </Route>
 
       {/* ========== FATURAMENTO PORTAL (acesso teste FAT) ========== */}
