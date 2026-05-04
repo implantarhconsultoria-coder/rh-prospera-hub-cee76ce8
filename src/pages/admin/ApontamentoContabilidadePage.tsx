@@ -588,6 +588,10 @@ const ApontamentoContabilidadePage: React.FC = () => {
         </button>
         <button onClick={imprimir} className="btn-secondary inline-flex items-center gap-2"><Printer className="w-4 h-4" /> Imprimir / PDF</button>
         <button onClick={exportarExcel} className="btn-secondary inline-flex items-center gap-2"><FileText className="w-4 h-4" /> Exportar CSV</button>
+        <button onClick={enviarParaContabilidade} disabled={!company || items.length === 0}
+          className="btn-primary inline-flex items-center gap-2">
+          <Send className="w-4 h-4" /> Enviar para Contabilidade
+        </button>
       </div>
 
       <div className="card-premium p-5 apont-print">
