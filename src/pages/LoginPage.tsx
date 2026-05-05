@@ -59,6 +59,7 @@ const LoginPage: React.FC = () => {
           </div>
         </form>
       </motion.div>
+      <FooterSobre />
     </div>
   );
 };
