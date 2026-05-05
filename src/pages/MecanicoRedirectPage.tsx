@@ -15,6 +15,7 @@ interface TecnicoOpt {
   id: string;
   apelido: string;
   access_token: string | null;
+  link_status: string | null;
   funcionarios?: { nome: string } | null;
 }
 
@@ -30,25 +31,25 @@ const MecanicoRedirectPage: React.FC = () => {
   useEffect(() => {
     if (!session?.user?.id || roleLoading) return;
     (async () => {
-      // 1) Tenta achar token vinculado ao usuário
-      const { data } = await supabase
+      // 1) Tenta achar token vinculado ao usuário (qualquer link_status, exceto bloqueado)
+      const { data: vinculos } = await supabase
         .from('tecnicos_campo')
-        .select('access_token')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-      const tk = (data as any)?.access_token || null;
+        .select('access_token, link_status')
+        .eq('user_id', session.user.id);
+      const vinculo = (vinculos || []).find((v: any) => v.access_token && v.link_status !== 'bloqueado')
+        || (vinculos || []).find((v: any) => v.access_token);
+      const tk = (vinculo as any)?.access_token || null;
       if (tk) {
         setToken(tk);
         return;
       }
       setToken(null);
-      // 2) Se admin/operacional, carrega lista de mecânicos para escolher
+      // 2) Se admin/operacional, carrega TODOS os mecânicos com token (independe do status)
       if (isAdmin || isOperacional) {
         const { data: list } = await supabase
           .from('tecnicos_campo')
-          .select('id, apelido, access_token, funcionarios(nome)')
+          .select('id, apelido, access_token, link_status, funcionarios(nome)')
           .not('access_token', 'is', null)
-          .eq('link_status', 'ativo')
           .order('apelido');
         setOpts((list as any) || []);
       }
@@ -93,25 +94,33 @@ const MecanicoRedirectPage: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              {opts.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => t.access_token && navigate(`/m/${t.access_token}`)}
-                  disabled={!t.access_token}
-                  className="w-full bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl p-4 flex items-center gap-3 transition-colors disabled:opacity-40"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center font-bold text-sm">
-                    {(t.apelido || t.funcionarios?.nome || '?').slice(0, 2).toUpperCase()}
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="font-semibold text-sm">{t.apelido || t.funcionarios?.nome}</p>
-                    {t.funcionarios?.nome && t.apelido !== t.funcionarios.nome && (
-                      <p className="text-[11px] text-white/50">{t.funcionarios.nome}</p>
+              {opts.map((t) => {
+                const inativo = t.link_status && t.link_status !== 'ativo';
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => t.access_token && navigate(`/m/${t.access_token}`)}
+                    disabled={!t.access_token}
+                    className="w-full bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl p-4 flex items-center gap-3 transition-colors disabled:opacity-40"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center font-bold text-sm">
+                      {(t.apelido || t.funcionarios?.nome || '?').slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-semibold text-sm">{t.apelido || t.funcionarios?.nome || '(sem apelido)'}</p>
+                      {t.funcionarios?.nome && t.apelido !== t.funcionarios.nome && (
+                        <p className="text-[11px] text-white/50">{t.funcionarios.nome}</p>
+                      )}
+                    </div>
+                    {inativo && (
+                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 uppercase font-bold tracking-wider">
+                        {t.link_status}
+                      </span>
                     )}
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-white/40" />
-                </button>
-              ))}
+                    <ChevronRight className="w-4 h-4 text-white/40" />
+                  </button>
+                );
+              })}
             </div>
           )}
 
