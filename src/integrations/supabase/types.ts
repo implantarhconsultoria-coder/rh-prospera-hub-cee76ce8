@@ -185,6 +185,39 @@ export type Database = {
           },
         ]
       }
+      acesso_cpf_simples_log: {
+        Row: {
+          cpf: string
+          created_at: string
+          funcionario_id: string | null
+          id: string
+          modulo: string | null
+          motivo: string | null
+          resultado: string
+          unidade: string
+        }
+        Insert: {
+          cpf: string
+          created_at?: string
+          funcionario_id?: string | null
+          id?: string
+          modulo?: string | null
+          motivo?: string | null
+          resultado: string
+          unidade: string
+        }
+        Update: {
+          cpf?: string
+          created_at?: string
+          funcionario_id?: string | null
+          id?: string
+          modulo?: string | null
+          motivo?: string | null
+          resultado?: string
+          unidade?: string
+        }
+        Relationships: []
+      }
       acesso_excepcional: {
         Row: {
           aprovado_em: string | null
@@ -3824,6 +3857,48 @@ export type Database = {
           },
         ]
       }
+      permissoes_acesso: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          funcionario_id: string
+          id: string
+          modulo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          funcionario_id: string
+          id?: string
+          modulo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          funcionario_id?: string
+          id?: string
+          modulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permissoes_acesso_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "funcionarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "permissoes_acesso_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "vw_funcionario_permissoes"
+            referencedColumns: ["funcionario_id"]
+          },
+        ]
+      }
       postos: {
         Row: {
           ativo: boolean
@@ -5308,6 +5383,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      acesso_cpf_simples: {
+        Args: { p_cpf: string; p_unidade: string }
+        Returns: Json
       }
       calc_inss: { Args: { p_base: number }; Returns: number }
       calc_irrf: { Args: { p_base: number }; Returns: number }
