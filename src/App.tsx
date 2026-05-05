@@ -264,6 +264,10 @@ const App = () => (
               <Route path="/abastecimento/:codigo" element={<ErrorBoundary><AbastecimentoPublicoPage /></ErrorBoundary>} />
               <Route path="/abastecer/:codigo" element={<ErrorBoundary><AbastecimentoPublicoPage /></ErrorBoundary>} />
 
+              {/* Atalhos amigáveis para módulos */}
+              <Route path="/mecanico" element={<Navigate to="/campo" replace />} />
+              <Route path="/mecanicos" element={<Navigate to="/campo" replace />} />
+
               {/* Rotas legadas — todas redirecionam pro login */}
               <Route path="/sp" element={<Navigate to="/" replace />} />
               <Route path="/pg" element={<Navigate to="/" replace />} />

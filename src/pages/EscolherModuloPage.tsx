@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { Loader2, Building2, DollarSign, FileText, LogOut, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import FooterSobre from '@/components/FooterSobre';
 
 type AppRole = 'admin' | 'filial_praia' | 'filial_goiania' | 'financeiro' | 'faturamento' | 'tecnico_campo';
 
@@ -72,6 +73,7 @@ const EscolherModuloPage: React.FC = () => {
         <div className="mt-6 text-center">
           <Button variant="ghost" size="sm" onClick={logout}><LogOut className="w-4 h-4 mr-1" /> Sair</Button>
         </div>
+        <div className="mt-4 border-t pt-2"><FooterSobre /></div>
       </div>
     </div>
   );
