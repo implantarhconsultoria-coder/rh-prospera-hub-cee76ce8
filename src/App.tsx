@@ -129,6 +129,7 @@ const AuthGate = () => {
         <Route path="/admin/compras" element={<ComprasPage />} />
         <Route path="/admin/emails-contabilidade" element={<EmailsContabilidadePage />} />
         <Route path="/admin/configuracoes" element={<ConfiguracoesPage />} />
+        <Route path="/admin/permissoes-acesso" element={<PermissoesAcessoPage />} />
       </Route>
 
       {/* Catch-all */}
