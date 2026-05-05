@@ -10,6 +10,16 @@ import { toast } from 'sonner';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
+import { Search } from 'lucide-react';
+
+interface FuncionarioSugestao {
+  id: string;
+  nome: string;
+  cpf: string | null;
+  cargo: string | null;
+  email: string | null;
+  empresa: string | null;
+}
 
 type AppRole = 'admin' | 'filial_praia' | 'filial_goiania' | 'financeiro' | 'faturamento' | 'tecnico_campo';
 
@@ -55,12 +65,52 @@ const PermissoesAcessoPage: React.FC = () => {
   const [novoNome, setNovoNome] = useState('');
   const [novaSenha, setNovaSenha] = useState(SENHA_PADRAO);
   const [novosRoles, setNovosRoles] = useState<AppRole[]>([]);
+  const [funcInfo, setFuncInfo] = useState<{ id?: string; cpf?: string; cargo?: string; empresa?: string } | null>(null);
+
+  // autocomplete funcionários
+  const [sugestoes, setSugestoes] = useState<FuncionarioSugestao[]>([]);
+  const [buscandoFunc, setBuscandoFunc] = useState(false);
+  const [showSugestoes, setShowSugestoes] = useState(false);
 
   // Modal pós-criação mostrando email + senha pra copiar
   const [criadoInfo, setCriadoInfo] = useState<{ email: string; senha: string } | null>(null);
 
   const [openSenha, setOpenSenha] = useState<UsuarioRow | null>(null);
   const [senhaNova, setSenhaNova] = useState('');
+
+  // Busca funcionários conforme digita o nome
+  useEffect(() => {
+    if (!openNovo) return;
+    const termo = novoNome.trim();
+    if (termo.length < 2) { setSugestoes([]); return; }
+    let cancel = false;
+    setBuscandoFunc(true);
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from('funcionarios')
+        .select('id, nome, cpf, cargo, email, empresas(nome)')
+        .ilike('nome', `%${termo}%`)
+        .eq('status', 'ativo')
+        .order('nome')
+        .limit(10);
+      if (cancel) return;
+      const mapped: FuncionarioSugestao[] = (data || []).map((f: any) => ({
+        id: f.id, nome: f.nome, cpf: f.cpf, cargo: f.cargo, email: f.email,
+        empresa: f.empresas?.nome || null,
+      }));
+      setSugestoes(mapped);
+      setBuscandoFunc(false);
+    }, 250);
+    return () => { cancel = true; clearTimeout(t); };
+  }, [novoNome, openNovo]);
+
+  const escolherFuncionario = (f: FuncionarioSugestao) => {
+    setNovoNome(f.nome);
+    if (f.email && !novoEmail) setNovoEmail(f.email);
+    setFuncInfo({ id: f.id, cpf: f.cpf || undefined, cargo: f.cargo || undefined, empresa: f.empresa || undefined });
+    setShowSugestoes(false);
+    setSugestoes([]);
+  };
 
   const carregar = async () => {
     setLoading(true);
@@ -119,7 +169,7 @@ const PermissoesAcessoPage: React.FC = () => {
       toast.success('Usuário criado');
       setCriadoInfo({ email: emailFinal, senha: senhaFinal });
       setOpenNovo(false);
-      setNovoEmail(''); setNovoNome(''); setNovaSenha(SENHA_PADRAO); setNovosRoles([]);
+      setNovoEmail(''); setNovoNome(''); setNovaSenha(SENHA_PADRAO); setNovosRoles([]); setFuncInfo(null);
       carregar();
     } catch (e) {
       toast.error('Erro: ' + (e as Error).message);
@@ -261,9 +311,46 @@ const PermissoesAcessoPage: React.FC = () => {
         <DialogContent>
           <DialogHeader><DialogTitle>Novo usuário</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div>
+            <div className="relative">
               <Label>Nome completo</Label>
-              <Input value={novoNome} onChange={e => setNovoNome(e.target.value)} placeholder="Ex: Paula Silva" />
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 w-4 h-4 text-muted-foreground" />
+                <Input
+                  className="pl-8"
+                  value={novoNome}
+                  onChange={e => { setNovoNome(e.target.value); setShowSugestoes(true); setFuncInfo(null); }}
+                  onFocus={() => setShowSugestoes(true)}
+                  placeholder="Digite o nome do funcionário..."
+                  autoComplete="off"
+                />
+              </div>
+              {showSugestoes && novoNome.trim().length >= 2 && (
+                <div className="absolute z-50 left-0 right-0 mt-1 bg-popover border rounded-md shadow-lg max-h-64 overflow-auto">
+                  {buscandoFunc ? (
+                    <div className="p-3 text-xs text-muted-foreground flex items-center gap-2"><Loader2 className="w-3 h-3 animate-spin" /> Buscando...</div>
+                  ) : sugestoes.length === 0 ? (
+                    <div className="p-3 text-xs text-muted-foreground">Nenhum funcionário encontrado. Você pode digitar livremente.</div>
+                  ) : sugestoes.map(f => (
+                    <button
+                      key={f.id} type="button"
+                      onClick={() => escolherFuncionario(f)}
+                      className="w-full text-left px-3 py-2 hover:bg-muted/60 border-b last:border-0"
+                    >
+                      <div className="text-sm font-medium">{f.nome}</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {[f.cargo, f.empresa, f.cpf].filter(Boolean).join(' · ')}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {funcInfo && (
+                <div className="mt-2 p-2 rounded-md bg-muted/40 border text-[11px] space-y-0.5">
+                  <div><strong>Empresa:</strong> {funcInfo.empresa || '—'}</div>
+                  <div><strong>Cargo:</strong> {funcInfo.cargo || '—'}</div>
+                  <div><strong>CPF:</strong> {funcInfo.cpf || '—'} <span className="text-muted-foreground">(somente para vínculo, não usado no login)</span></div>
+                </div>
+              )}
             </div>
             <div>
               <Label>E-mail (pode ser fictício, ex: paula@topac.app)</Label>
