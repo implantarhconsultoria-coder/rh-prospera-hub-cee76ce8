@@ -7,8 +7,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppProvider, useApp } from "@/context/AppContext";
 import AppLayout from "@/components/AppLayout";
 import FilialLayout from "@/components/FilialLayout";
-import OperacionalLayout from "@/components/OperacionalLayout";
-import CampoLayout from "@/components/CampoLayout";
 import MecanicoLayout from "@/components/MecanicoLayout";
 import FaturamentoLayout from "@/components/FaturamentoLayout";
 import FinanceiroLayout from "@/components/FinanceiroLayout";
