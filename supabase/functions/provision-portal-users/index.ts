@@ -1,5 +1,6 @@
-// Provisiona usuários de teste FAT (faturamento) e FIN (financeiro).
-// Idempotente: pode ser chamada várias vezes; sempre garante e-mail/senha/role.
+// Provisiona usuários por e-mail/senha (idempotente).
+// Inclui: contas de teste FAT/FIN + 15 funcionários com seus respectivos módulos.
+// Para mecânicos, garante também o registro em tecnicos_campo com access_token.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -7,9 +8,63 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const USERS = [
-  { email: "fat@topac.local", senha: "TOPAC2026", role: "faturamento", nome: "Faturamento (Teste)" },
-  { email: "fin@topac.local", senha: "TOPAC2026", role: "financeiro", nome: "Financeiro (Teste)" },
+type Role =
+  | "admin"
+  | "filial_praia"
+  | "filial_goiania"
+  | "faturamento"
+  | "financeiro"
+  | "tecnico_campo";
+
+interface UserSpec {
+  email: string;
+  senha: string;
+  nome: string;
+  roles: Role[];
+  // se informado, vincula este auth.user ao funcionário e (para tecnico_campo) cria tecnicos_campo
+  funcionario_nome_match?: string[];
+}
+
+const SENHA = "TOPAC2026";
+
+const USERS: UserSpec[] = [
+  // Acessos de teste rápido (mantidos)
+  { email: "fat@topac.local", senha: SENHA, nome: "Faturamento (Teste)", roles: ["faturamento"] },
+  { email: "fin@topac.local", senha: SENHA, nome: "Financeiro (Teste)", roles: ["financeiro"] },
+
+  // 15 usuários reais
+  { email: "antonio.carlos@topac.app", senha: SENHA, nome: "Antonio Carlos Servilio",
+    roles: ["filial_praia", "faturamento"], funcionario_nome_match: ["ANTONIO CARLOS"] },
+  { email: "ilma@topac.app", senha: SENHA, nome: "Ilma Mendes de Mello",
+    roles: ["filial_goiania", "faturamento"], funcionario_nome_match: ["ILMA MENDES"] },
+  { email: "paula@topac.app", senha: SENHA, nome: "Paula Rubia Faquini Goncalves",
+    roles: ["financeiro", "faturamento"], funcionario_nome_match: ["PAULA RUBIA"] },
+  { email: "robson@topac.app", senha: SENHA, nome: "Robson Chafi Servilio",
+    roles: ["financeiro", "faturamento"], funcionario_nome_match: ["ROBSON CHAFI"] },
+  { email: "rafaela@topac.app", senha: SENHA, nome: "Rafaela Aparecida Del Nobile",
+    roles: ["faturamento"], funcionario_nome_match: ["RAFAELA"] },
+  { email: "kayky@topac.app", senha: SENHA, nome: "Kayky Chafi Servilio",
+    roles: ["faturamento"], funcionario_nome_match: ["KAYKY"] },
+  { email: "douglas@topac.app", senha: SENHA, nome: "Douglas Cesar Chiappetta",
+    roles: ["faturamento"], funcionario_nome_match: ["DOUGLAS"] },
+
+  // Mecânicos — App Mecânico (tecnico_campo)
+  { email: "diego@topac.app", senha: SENHA, nome: "Diego Martins Silva Santos",
+    roles: ["tecnico_campo"], funcionario_nome_match: ["DIEGO MARTINS"] },
+  { email: "tiago.moreira@topac.app", senha: SENHA, nome: "Tiago Moreira da Silva Ferreira",
+    roles: ["tecnico_campo"], funcionario_nome_match: ["TIAGO MOREIRA"] },
+  { email: "tiago.toledo@topac.app", senha: SENHA, nome: "Tiago Toledo Dias",
+    roles: ["tecnico_campo"], funcionario_nome_match: ["TIAGO TOLEDO"] },
+  { email: "jerri@topac.app", senha: SENHA, nome: "Jerri Silva Inocencio",
+    roles: ["tecnico_campo"], funcionario_nome_match: ["JERRI"] },
+  { email: "leandro@topac.app", senha: SENHA, nome: "Leandro Martins de Oliveira",
+    roles: ["tecnico_campo"], funcionario_nome_match: ["LEANDRO MARTINS"] },
+  { email: "rafael@topac.app", senha: SENHA, nome: "Rafael Olimpio",
+    roles: ["tecnico_campo"], funcionario_nome_match: ["RAFAEL OLIMPIO"] },
+  { email: "naciel@topac.app", senha: SENHA, nome: "Naciel Santos da Silva",
+    roles: ["tecnico_campo"], funcionario_nome_match: ["NACIEL"] },
+  { email: "vitor@topac.app", senha: SENHA, nome: "Edenilson Pereira Vitor",
+    roles: ["tecnico_campo"], funcionario_nome_match: ["EDENILSON", "VITOR"] },
 ];
 
 Deno.serve(async (req) => {
@@ -23,41 +78,106 @@ Deno.serve(async (req) => {
 
     const results: any[] = [];
 
-    for (const u of USERS) {
-      let userId: string | null = null;
-      const { data: created, error: cErr } = await supabase.auth.admin.createUser({
-        email: u.email,
-        password: u.senha,
-        email_confirm: true,
-        user_metadata: { nome_completo: u.nome, tipo: u.role },
-      });
+    // Cache de listUsers para evitar chamadas repetidas
+    const { data: existingList } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+    const existing = new Map<string, string>(); // email -> id
+    for (const u of existingList?.users || []) {
+      if (u.email) existing.set(u.email.toLowerCase(), u.id);
+    }
 
-      if (created?.user) {
-        userId = created.user.id;
-      } else {
-        // já existe — buscar e resetar senha
-        const { data: list } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-        const found = list?.users.find((x) => x.email === u.email);
-        if (found) {
-          userId = found.id;
-          await supabase.auth.admin.updateUserById(found.id, {
+    for (const u of USERS) {
+      try {
+        const emailLower = u.email.toLowerCase();
+        let userId = existing.get(emailLower) || null;
+
+        if (!userId) {
+          const { data: created, error: cErr } = await supabase.auth.admin.createUser({
+            email: u.email,
+            password: u.senha,
+            email_confirm: true,
+            user_metadata: { nome_completo: u.nome },
+          });
+          if (cErr || !created?.user) {
+            results.push({ email: u.email, ok: false, error: cErr?.message || "create_failed" });
+            continue;
+          }
+          userId = created.user.id;
+        } else {
+          // Reseta senha para garantir TOPAC2026 no primeiro acesso
+          await supabase.auth.admin.updateUserById(userId, {
             password: u.senha,
             email_confirm: true,
           });
         }
+
+        // Garante profile
+        await supabase.from("profiles").upsert(
+          { user_id: userId, nome_completo: u.nome, email: u.email },
+          { onConflict: "user_id" },
+        );
+
+        // Garante todas as roles
+        for (const role of u.roles) {
+          await supabase.from("user_roles").upsert(
+            { user_id: userId, role },
+            { onConflict: "user_id,role" },
+          );
+        }
+
+        // Vincula a funcionário (se houver match)
+        let funcionarioId: string | null = null;
+        if (u.funcionario_nome_match?.length) {
+          for (const m of u.funcionario_nome_match) {
+            const { data: f } = await supabase
+              .from("funcionarios")
+              .select("id, nome")
+              .ilike("nome", `%${m}%`)
+              .limit(1)
+              .maybeSingle();
+            if (f?.id) { funcionarioId = f.id; break; }
+          }
+          if (funcionarioId) {
+            // Atualiza email do funcionário (corrige caso esteja com e-mail errado, ex: Diego)
+            await supabase.from("funcionarios").update({ email: u.email }).eq("id", funcionarioId);
+          }
+        }
+
+        // Para mecânicos: garantir tecnicos_campo (com access_token)
+        if (u.roles.includes("tecnico_campo") && funcionarioId) {
+          const { data: tc } = await supabase
+            .from("tecnicos_campo")
+            .select("id, user_id, access_token")
+            .eq("funcionario_id", funcionarioId)
+            .maybeSingle();
+
+          if (!tc) {
+            // Cria registro com token
+            await supabase.rpc("gen_tecnico_access_token");
+            const { data: tokRes } = await supabase.rpc("gen_tecnico_access_token");
+            await supabase.from("tecnicos_campo").insert({
+              funcionario_id: funcionarioId,
+              user_id: userId,
+              apelido: u.nome,
+              status: "ativo",
+              access_token: tokRes as unknown as string,
+            });
+          } else {
+            const updates: any = { user_id: userId, status: "ativo" };
+            if (!tc.access_token) {
+              const { data: tokRes } = await supabase.rpc("gen_tecnico_access_token");
+              updates.access_token = tokRes;
+            }
+            await supabase.from("tecnicos_campo").update(updates).eq("id", tc.id);
+          }
+        }
+
+        results.push({
+          email: u.email, senha: u.senha, roles: u.roles,
+          user_id: userId, funcionario_id: funcionarioId, ok: true,
+        });
+      } catch (innerErr: any) {
+        results.push({ email: u.email, ok: false, error: innerErr?.message || String(innerErr) });
       }
-
-      if (!userId) {
-        results.push({ email: u.email, ok: false, error: cErr?.message || "no user id" });
-        continue;
-      }
-
-      // Garantir role
-      await supabase
-        .from("user_roles")
-        .upsert({ user_id: userId, role: u.role }, { onConflict: "user_id,role" });
-
-      results.push({ email: u.email, senha: u.senha, role: u.role, user_id: userId, ok: true });
     }
 
     return new Response(JSON.stringify({ ok: true, users: results }, null, 2), {
