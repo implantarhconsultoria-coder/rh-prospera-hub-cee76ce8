@@ -169,7 +169,7 @@ const PermissoesAcessoPage: React.FC = () => {
       toast.success('Usuário criado');
       setCriadoInfo({ email: emailFinal, senha: senhaFinal });
       setOpenNovo(false);
-      setNovoEmail(''); setNovoNome(''); setNovaSenha(SENHA_PADRAO); setNovosRoles([]);
+      setNovoEmail(''); setNovoNome(''); setNovaSenha(SENHA_PADRAO); setNovosRoles([]); setFuncInfo(null);
       carregar();
     } catch (e) {
       toast.error('Erro: ' + (e as Error).message);
