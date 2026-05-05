@@ -44,7 +44,7 @@ const FaturamentoDN4NovoPage: React.FC = () => {
   const [puxando, setPuxando] = useState(false);
 
   useEffect(() => {
-    supabase.from('clientes_dn4' as any).select('*').order('nome').then(({ data }) => setClientes((data as Cliente[]) || []));
+    supabase.from('clientes_dn4' as any).select('*').order('nome').then(({ data }) => setClientes(((data as unknown) as Cliente[]) || []));
   }, []);
 
   const valorTotal = useMemo(
