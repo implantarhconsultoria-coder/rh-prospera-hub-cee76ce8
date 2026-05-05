@@ -65,12 +65,52 @@ const PermissoesAcessoPage: React.FC = () => {
   const [novoNome, setNovoNome] = useState('');
   const [novaSenha, setNovaSenha] = useState(SENHA_PADRAO);
   const [novosRoles, setNovosRoles] = useState<AppRole[]>([]);
+  const [funcInfo, setFuncInfo] = useState<{ id?: string; cpf?: string; cargo?: string; empresa?: string } | null>(null);
+
+  // autocomplete funcionários
+  const [sugestoes, setSugestoes] = useState<FuncionarioSugestao[]>([]);
+  const [buscandoFunc, setBuscandoFunc] = useState(false);
+  const [showSugestoes, setShowSugestoes] = useState(false);
 
   // Modal pós-criação mostrando email + senha pra copiar
   const [criadoInfo, setCriadoInfo] = useState<{ email: string; senha: string } | null>(null);
 
   const [openSenha, setOpenSenha] = useState<UsuarioRow | null>(null);
   const [senhaNova, setSenhaNova] = useState('');
+
+  // Busca funcionários conforme digita o nome
+  useEffect(() => {
+    if (!openNovo) return;
+    const termo = novoNome.trim();
+    if (termo.length < 2) { setSugestoes([]); return; }
+    let cancel = false;
+    setBuscandoFunc(true);
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from('funcionarios')
+        .select('id, nome, cpf, cargo, email, empresas(nome)')
+        .ilike('nome', `%${termo}%`)
+        .eq('status', 'ativo')
+        .order('nome')
+        .limit(10);
+      if (cancel) return;
+      const mapped: FuncionarioSugestao[] = (data || []).map((f: any) => ({
+        id: f.id, nome: f.nome, cpf: f.cpf, cargo: f.cargo, email: f.email,
+        empresa: f.empresas?.nome || null,
+      }));
+      setSugestoes(mapped);
+      setBuscandoFunc(false);
+    }, 250);
+    return () => { cancel = true; clearTimeout(t); };
+  }, [novoNome, openNovo]);
+
+  const escolherFuncionario = (f: FuncionarioSugestao) => {
+    setNovoNome(f.nome);
+    if (f.email && !novoEmail) setNovoEmail(f.email);
+    setFuncInfo({ id: f.id, cpf: f.cpf || undefined, cargo: f.cargo || undefined, empresa: f.empresa || undefined });
+    setShowSugestoes(false);
+    setSugestoes([]);
+  };
 
   const carregar = async () => {
     setLoading(true);
