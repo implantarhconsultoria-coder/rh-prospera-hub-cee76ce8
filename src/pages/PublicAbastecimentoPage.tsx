@@ -25,7 +25,7 @@ interface DadosVale {
 }
 
 const uploadFoto = async (blob: Blob, prefixo: string): Promise<string> => {
-  const path = `publico/${prefixo}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+  const path = `qr/${prefixo}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
   const { error } = await supabase.storage
     .from('abastecimento-fotos')
     .upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false });
