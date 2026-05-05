@@ -48,15 +48,13 @@ Deno.serve(async (req) => {
     const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
     const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verifica usuário chamador
-    const userClient = createClient(SUPABASE_URL, ANON, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData?.user) return json({ error: "unauthorized" }, 401);
-
-    const callerId = userData.user.id;
     const admin = createClient(SUPABASE_URL, SERVICE);
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsErr } = await admin.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims?.sub) {
+      return json({ error: "unauthorized", detail: claimsErr?.message }, 401);
+    }
+    const callerId = claimsData.claims.sub as string;
 
     // Confirma role admin
     const { data: rolesRow } = await admin
