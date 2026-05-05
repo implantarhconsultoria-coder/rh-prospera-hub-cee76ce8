@@ -8,7 +8,7 @@ import {
   Stethoscope, UserCheck, Package, Monitor, Shield, ClipboardList,
   ChevronDown, ChevronRight, Receipt, RefreshCw, AlertTriangle, ClipboardCheck,
   ArrowDownCircle, ArrowUpCircle, Truck, Landmark, Activity, Layers, CheckSquare, DollarSign, Wrench, FileSearch, Wand2,
-  ShoppingCart,
+  ShoppingCart, Sparkles,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
