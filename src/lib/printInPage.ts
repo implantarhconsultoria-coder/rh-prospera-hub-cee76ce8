@@ -9,11 +9,13 @@ export const printInPage = (html: string, title = 'Documento') => {
   const iframe = document.createElement('iframe');
   iframe.id = '__lov_print_iframe__';
   iframe.style.position = 'fixed';
-  iframe.style.right = '0';
-  iframe.style.bottom = '0';
-  iframe.style.width = '0';
-  iframe.style.height = '0';
+  iframe.style.right = '-10000px';
+  iframe.style.bottom = '-10000px';
+  iframe.style.width = '210mm';
+  iframe.style.height = '297mm';
   iframe.style.border = '0';
+  iframe.style.opacity = '0';
+  iframe.style.pointerEvents = 'none';
   iframe.setAttribute('aria-hidden', 'true');
   document.body.appendChild(iframe);
 
@@ -49,28 +51,62 @@ export const printDocumentInPage = (fullHtml: string) => {
   const iframe = document.createElement('iframe');
   iframe.id = '__lov_print_iframe__';
   iframe.style.position = 'fixed';
-  iframe.style.right = '0';
-  iframe.style.bottom = '0';
-  iframe.style.width = '0';
-  iframe.style.height = '0';
+  iframe.style.right = '-10000px';
+  iframe.style.bottom = '-10000px';
+  iframe.style.width = '210mm';
+  iframe.style.height = '297mm';
   iframe.style.border = '0';
+  iframe.style.opacity = '0';
+  iframe.style.pointerEvents = 'none';
   iframe.setAttribute('aria-hidden', 'true');
   document.body.appendChild(iframe);
 
   const doc = iframe.contentDocument || iframe.contentWindow?.document;
   if (!doc) return;
+  let didPrint = false;
+
+  const trigger = async () => {
+    if (didPrint) return;
+    didPrint = true;
+    try {
+      const printDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (printDoc) {
+        const images = Array.from(printDoc.images || []);
+        await Promise.all(images.map((img) => {
+          if (img.complete) return Promise.resolve();
+          return new Promise<void>((resolve) => {
+            img.addEventListener('load', () => resolve(), { once: true });
+            img.addEventListener('error', () => resolve(), { once: true });
+          });
+        }));
+      }
+
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } catch (e) {
+            console.error('print failed', e);
+          }
+        });
+      });
+    } catch (e) {
+      console.error('print failed', e);
+    }
+
+    window.setTimeout(() => iframe.remove(), 60_000);
+  };
+
+  iframe.onload = () => {
+    void trigger();
+  };
+
   doc.open();
   doc.write(fullHtml);
   doc.close();
 
-  const trigger = () => {
-    try {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-    } catch (e) {
-      console.error('print failed', e);
-    }
-    window.setTimeout(() => iframe.remove(), 60_000);
-  };
-  window.setTimeout(trigger, 500);
+  window.setTimeout(() => {
+    void trigger();
+  }, 1200);
 };
