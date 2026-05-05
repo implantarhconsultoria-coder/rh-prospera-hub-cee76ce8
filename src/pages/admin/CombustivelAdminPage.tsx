@@ -287,7 +287,10 @@ const CombustivelAdminPage: React.FC = () => {
                   <td>{Number(a.litros).toFixed(2)}</td>
                   <td>{a.foto_bomba_url && <a href={a.foto_bomba_url} target="_blank" rel="noreferrer"><img src={a.foto_bomba_url} className="w-10 h-10 object-cover rounded" alt="bomba" /></a>}</td>
                   <td><span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full ${a.status === 'conferido' ? 'bg-emerald-500/15 text-emerald-700' : a.status === 'divergente' ? 'bg-rose-500/15 text-rose-700' : 'bg-amber-500/15 text-amber-700'}`}>{a.status}</span></td>
-                  <td><Button size="sm" variant="outline" onClick={() => { setOpenConf(a); setObs(a.observacao_conferencia || ''); }}>Conferir</Button></td>
+                  <td className="flex gap-1">
+                    <Button size="sm" variant="outline" onClick={() => { setOpenConf(a); setObs(a.observacao_conferencia || ''); }}>Conferir</Button>
+                    {isAdmin && <Button size="sm" variant="ghost" className="text-destructive" onClick={() => excluirAbast(a.id)} title="Excluir"><Trash2 className="w-4 h-4" /></Button>}
+                  </td>
                 </tr>
               ))}
               {filtered.length === 0 && <tr><td colSpan={10} className="py-6 text-center text-muted-foreground">Nenhum abastecimento</td></tr>}
