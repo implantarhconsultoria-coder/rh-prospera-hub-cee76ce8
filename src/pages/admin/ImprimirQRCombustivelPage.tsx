@@ -26,13 +26,6 @@ interface Vale {
 
 const PUBLIC_BASE = 'https://implantarhprpro.com/abastecimento';
 
-const escapeHtml = (value?: string | null) =>
-  (value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 
 const ImprimirQRCombustivelPage: React.FC = () => {
   const [vales, setVales] = useState<Vale[]>([]);
