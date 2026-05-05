@@ -167,11 +167,22 @@ const App = () => (
               <Route path="/sp" element={<AcessoCpfSimplesPage />} />
               <Route path="/pg" element={<AcessoCpfSimplesPage />} />
               <Route path="/go" element={<AcessoCpfSimplesPage />} />
+              <Route path="/portal/:modulo" element={<PortalCpfSimplesPage />} />
+
+              {/* App Mecânicos (acesso via token gerado pelo CPF) */}
+              <Route path="/operacional/:token" element={<MecanicoLayout />}>
+                <Route index element={<MecanicoHomePage />} />
+                <Route path="ponto" element={<MecanicoPontoPage />} />
+                <Route path="chamados" element={<MecanicoChamadosPage />} />
+                <Route path="estoque" element={<MecanicoEstoquePage />} />
+                <Route path="km" element={<MecanicoKmPage />} />
+                <Route path="abastecimento" element={<MecanicoAbastecimentoPage />} />
+                <Route path="historico" element={<MecanicoHistoricoPage />} />
+              </Route>
+
               <Route path="/g" element={<AcessoRemovidoPage />} />
               <Route path="/r/:slug" element={<AcessoRemovidoPage />} />
               <Route path="/acesso/:slug" element={<AcessoRemovidoPage />} />
-              <Route path="/operacional" element={<AcessoRemovidoPage />} />
-              <Route path="/operacional/*" element={<AcessoRemovidoPage />} />
               <Route path="/m/*" element={<AcessoRemovidoPage />} />
               <Route path="/financeiro" element={<AcessoRemovidoPage />} />
               <Route path="/financeiro/*" element={<AcessoRemovidoPage />} />
