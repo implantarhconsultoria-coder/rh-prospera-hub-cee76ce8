@@ -86,6 +86,7 @@ import MedicoesPage from "@/pages/faturamento/MedicoesPage";
 import ReajustesPage from "@/pages/faturamento/ReajustesPage";
 import PendenciasPage from "@/pages/faturamento/PendenciasPage";
 
+import AbastecimentoPublicoPage from "@/pages/AbastecimentoPublicoPage";
 import NotFound from "@/pages/NotFound";
 import { Loader2 } from "lucide-react";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -259,6 +260,10 @@ const App = () => (
               <Route path="/relatorio-vt-impressao" element={<ErrorBoundary><RelatorioVTImpressaoPage /></ErrorBoundary>} />
               <Route path="/relatorio-beneficio-individual" element={<ErrorBoundary><RelatorioBeneficioIndividualPage /></ErrorBoundary>} />
 
+              {/* Rota pública do QR de abastecimento — NÃO exige login */}
+              <Route path="/abastecimento/:codigo" element={<ErrorBoundary><AbastecimentoPublicoPage /></ErrorBoundary>} />
+              <Route path="/abastecer/:codigo" element={<ErrorBoundary><AbastecimentoPublicoPage /></ErrorBoundary>} />
+
               {/* Rotas legadas — todas redirecionam pro login */}
               <Route path="/sp" element={<Navigate to="/" replace />} />
               <Route path="/pg" element={<Navigate to="/" replace />} />
@@ -271,7 +276,7 @@ const App = () => (
               <Route path="/r/:slug" element={<Navigate to="/" replace />} />
               <Route path="/m/*" element={<Navigate to="/" replace />} />
               <Route path="/g" element={<Navigate to="/" replace />} />
-              <Route path="/abastecer/*" element={<Navigate to="/" replace />} />
+              
               <Route path="/admin/links-acesso-cpf" element={<Navigate to="/admin/permissoes-acesso" replace />} />
               <Route path="/admin/gerenciar-usuarios" element={<Navigate to="/admin/permissoes-acesso" replace />} />
               <Route path="/admin/permissoes-funcionarios" element={<Navigate to="/admin/permissoes-acesso" replace />} />
