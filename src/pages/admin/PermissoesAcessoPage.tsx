@@ -7,6 +7,7 @@ type Func = { id: string; nome: string; cpf: string | null; cargo: string | null
 type Perm = { funcionario_id: string; modulo: string; ativo: boolean };
 
 const MODULOS = [
+  { key: 'rh_filial',   label: 'RH da Filial' },
   { key: 'financeiro',  label: 'Financeiro' },
   { key: 'faturamento', label: 'Faturamento' },
   { key: 'mecanicos',   label: 'App Mecânicos' },
