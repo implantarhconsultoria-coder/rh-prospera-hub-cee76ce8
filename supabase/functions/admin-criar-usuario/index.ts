@@ -12,7 +12,8 @@ type AppRole =
   | "filial_praia"
   | "filial_goiania"
   | "financeiro"
-  | "faturamento";
+  | "faturamento"
+  | "tecnico_campo";
 
 const ALLOWED_ROLES: AppRole[] = [
   "admin",
@@ -20,6 +21,7 @@ const ALLOWED_ROLES: AppRole[] = [
   "filial_goiania",
   "financeiro",
   "faturamento",
+  "tecnico_campo",
 ];
 
 interface Body {
