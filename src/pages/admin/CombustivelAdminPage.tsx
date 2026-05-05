@@ -128,6 +128,14 @@ const CombustivelAdminPage: React.FC = () => {
 
     const { error } = await supabase.from('vales_combustivel').insert(rows as any);
     if (error) return toast.error(error.message);
+    // Salva o último posto usado para vir pré-preenchido na próxima geração
+    try {
+      localStorage.setItem('topac_ultimo_posto', JSON.stringify({
+        nome: novoVale.posto_nome,
+        cnpj: novoVale.posto_cnpj,
+        endereco: novoVale.posto_endereco,
+      }));
+    } catch { /* noop */ }
     toast.success(`${rows.length} autorização(ões) gerada(s)`);
     setOpenVale(false);
     setNovoVale({ ...novoVale, sequencial: '', quantidade: '1' });
