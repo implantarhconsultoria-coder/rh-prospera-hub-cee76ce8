@@ -199,6 +199,7 @@ const AuthGate = () => {
         <Route path="/admin/faturamento/medicoes" element={<MedicoesPage />} />
         <Route path="/admin/faturamento/reajustes" element={<ReajustesPage />} />
         <Route path="/admin/faturamento/pendencias" element={<PendenciasPage />} />
+        <Route path="/admin/faturamento/conferencia" element={<ConferenciaPage />} />
         {/* Faturamento DN4 Automatizado */}
         <Route path="/admin/faturamento/dn4" element={<FaturamentoDN4Layout />}>
           <Route index element={<FaturamentoDN4DashboardPage />} />
