@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertTriangle, CheckCircle2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAcessoExternoFiltro } from '@/hooks/useAcessoExternoFiltro';
 
 const SEV_COLORS: Record<string, string> = {
   baixa: 'bg-muted text-muted-foreground',
