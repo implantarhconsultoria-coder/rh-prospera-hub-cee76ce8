@@ -27,25 +27,55 @@ const MecanicoRedirectPage: React.FC = () => {
 
   const isAdmin = userRoles.includes('admin');
   const isOperacional = userRoles.includes('operacional');
+  const isTecnico = userRoles.includes('tecnico_campo');
 
   useEffect(() => {
     if (!session?.user?.id || roleLoading) return;
     (async () => {
-      // 1) Tenta achar token vinculado ao usuário (qualquer link_status, exceto bloqueado)
+      // 1) Vínculo direto por user_id (qualquer link_status, exceto bloqueado)
       const { data: vinculos } = await supabase
         .from('tecnicos_campo')
         .select('access_token, link_status')
         .eq('user_id', session.user.id);
-      const vinculo = (vinculos || []).find((v: any) => v.access_token && v.link_status !== 'bloqueado')
+      let vinculo = (vinculos || []).find((v: any) => v.access_token && v.link_status !== 'bloqueado')
         || (vinculos || []).find((v: any) => v.access_token);
-      const tk = (vinculo as any)?.access_token || null;
+      let tk: string | null = (vinculo as any)?.access_token || null;
+
+      // 2) Se não achou, tenta via email/CPF do profile -> funcionarios -> tecnicos_campo
+      if (!tk) {
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('email, cpf_clean')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        const email = (prof as any)?.email || session.user.email || null;
+        const cpf = (prof as any)?.cpf_clean || null;
+        if (email || cpf) {
+          let funcQ = supabase.from('funcionarios').select('id, email, cpf');
+          if (email && cpf) funcQ = funcQ.or(`email.eq.${email},cpf.eq.${cpf}`);
+          else if (email) funcQ = funcQ.eq('email', email);
+          else if (cpf) funcQ = funcQ.eq('cpf', cpf);
+          const { data: funcs } = await funcQ;
+          const funcIds = (funcs || []).map((f: any) => f.id);
+          if (funcIds.length) {
+            const { data: tcs } = await supabase
+              .from('tecnicos_campo')
+              .select('access_token, link_status')
+              .in('funcionario_id', funcIds)
+              .not('access_token', 'is', null);
+            const okTc = (tcs || []).find((v: any) => v.link_status !== 'bloqueado') || (tcs || [])[0];
+            tk = (okTc as any)?.access_token || null;
+          }
+        }
+      }
+
       if (tk) {
         setToken(tk);
         return;
       }
       setToken(null);
-      // 2) Se admin/operacional, carrega TODOS os mecânicos com token (independe do status)
-      if (isAdmin || isOperacional) {
+      // 3) Se admin/operacional/tecnico_campo sem vínculo, carrega seletor
+      if (isAdmin || isOperacional || isTecnico) {
         const { data: list } = await supabase
           .from('tecnicos_campo')
           .select('id, apelido, access_token, link_status, funcionarios(nome)')
@@ -54,7 +84,7 @@ const MecanicoRedirectPage: React.FC = () => {
         setOpts((list as any) || []);
       }
     })();
-  }, [session?.user?.id, roleLoading, isAdmin, isOperacional]);
+  }, [session?.user?.id, roleLoading, isAdmin, isOperacional, isTecnico]);
 
   if (loading || roleLoading || (isAuthenticated && token === undefined)) {
     return (
