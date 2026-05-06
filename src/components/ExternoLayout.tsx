@@ -114,6 +114,11 @@ const ExternoLayout: React.FC<ExternoLayoutProps> = ({ modulo, titulo, cor = 'bg
         <div className="p-3 border-t border-border space-y-2">
           <div className="text-xs text-muted-foreground truncate">{acesso?.nome}</div>
           <div className="text-[10px] text-muted-foreground truncate">{[acesso?.empresa, acesso?.filial].filter(Boolean).join(' · ')}</div>
+          {temMultiplosPortais && (
+            <Button size="sm" variant="secondary" className="w-full" onClick={trocarPortal}>
+              <Layers className="w-3 h-3 mr-1" /> Trocar portal
+            </Button>
+          )}
           <Button size="sm" variant="outline" className="w-full" onClick={sair}>
             <LogOut className="w-3 h-3 mr-1" /> Sair
           </Button>
