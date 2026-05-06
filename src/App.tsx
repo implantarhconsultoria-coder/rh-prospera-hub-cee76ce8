@@ -1,6 +1,14 @@
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useParams, useLocation } from "react-router-dom";
+
+// Alias legado: redireciona /mecanico-ext/:acessoId(/...) para /app-mecanico/:acessoId(/...)
+const MecanicoExtAlias = () => {
+  const { acessoId } = useParams<{ acessoId: string }>();
+  const location = useLocation();
+  const resto = location.pathname.replace(/^\/mecanico-ext\/[^/]+/, "");
+  return <Navigate to={`/app-mecanico/${acessoId}${resto}`} replace />;
+};
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
