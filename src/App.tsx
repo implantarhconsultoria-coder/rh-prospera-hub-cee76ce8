@@ -96,6 +96,78 @@ import AcessoExternoPage from "@/pages/AcessoExternoPage";
 import AcessosExternosPage from "@/pages/admin/AcessosExternosPage";
 import { Loader2 } from "lucide-react";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import ExternoLayout from "@/components/ExternoLayout";
+import {
+  Wallet, ArrowDownCircle, ArrowUpCircle, Building, Landmark, TrendingDown, AlertTriangle, Layers, GitMerge,
+  FileText, Users, FileSignature, Receipt, TrendingUp, ClipboardCheck,
+  UserCircle, Stethoscope, FileWarning, CalendarDays, FileCheck,
+  Package, Shirt, Shield,
+  Wrench, Headphones,
+  LayoutDashboard, Bell, Activity,
+  Home, Clock, ClipboardList, Boxes, Gauge, Fuel, Container, History,
+} from "lucide-react";
+
+const EXT_ITEMS_FINANCEIRO = [
+  { to: '', label: 'Dashboard', icon: Wallet, end: true },
+  { to: 'contas-receber', label: 'Contas a Receber', icon: ArrowDownCircle },
+  { to: 'contas-pagar', label: 'Contas a Pagar', icon: ArrowUpCircle },
+  { to: 'fornecedores', label: 'Fornecedores', icon: Building },
+  { to: 'bancos', label: 'Bancos', icon: Landmark },
+  { to: 'fluxo-caixa', label: 'Fluxo de Caixa', icon: TrendingDown },
+  { to: 'inadimplencia', label: 'Inadimplência', icon: AlertTriangle },
+  { to: 'centros-custo', label: 'Centros de Custo', icon: Layers },
+  { to: 'conciliacao', label: 'Conciliação', icon: GitMerge },
+];
+const EXT_ITEMS_FATURAMENTO = [
+  { to: '', label: 'Dashboard', icon: TrendingUp, end: true },
+  { to: 'clientes', label: 'Clientes', icon: Users },
+  { to: 'contratos', label: 'Contratos', icon: FileSignature },
+  { to: 'medicoes', label: 'Medições', icon: FileText },
+  { to: 'conferencia', label: 'Conferência', icon: ClipboardCheck },
+  { to: 'faturas', label: 'Faturas', icon: Receipt },
+  { to: 'reajustes', label: 'Reajustes', icon: TrendingUp },
+  { to: 'pendencias', label: 'Pendências', icon: AlertTriangle },
+];
+const EXT_ITEMS_RH = [
+  { to: '', label: 'Funcionários', icon: UserCircle, end: true },
+  { to: 'aso', label: 'ASO', icon: Stethoscope },
+  { to: 'atestados', label: 'Atestados', icon: FileWarning },
+  { to: 'aviso-ferias', label: 'Aviso de Férias', icon: CalendarDays },
+  { to: 'protocolo', label: 'Protocolo', icon: FileCheck },
+];
+const EXT_ITEMS_ALMOX = [
+  { to: '', label: 'Almoxarifado', icon: Package, end: true },
+  { to: 'epi', label: 'EPI', icon: Shield },
+  { to: 'uniformes', label: 'Uniformes', icon: Shirt },
+];
+const EXT_ITEMS_OP = [
+  { to: '', label: 'Chamados', icon: Headphones, end: true },
+  { to: 'tecnicos', label: 'Técnicos', icon: Wrench },
+];
+const EXT_ITEMS_FILIAL = [
+  { to: '', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: 'funcionarios', label: 'Funcionários', icon: UserCircle },
+  { to: 'aviso-ferias', label: 'Aviso de Férias', icon: CalendarDays },
+  { to: 'aso', label: 'ASO', icon: Stethoscope },
+  { to: 'atestados', label: 'Atestados', icon: FileWarning },
+  { to: 'protocolo', label: 'Protocolo', icon: FileCheck },
+  { to: 'alertas', label: 'Alertas', icon: Bell },
+  { to: 'movimento-diario', label: 'Movimento Diário', icon: Activity },
+  { to: 'fechamento', label: 'Fechamento', icon: ClipboardCheck },
+];
+const EXT_ITEMS_CAMPO = [
+  { to: '', label: 'Chamados', icon: Headphones, end: true },
+];
+const EXT_ITEMS_MEC = [
+  { to: '', label: 'Início', icon: Home, end: true },
+  { to: 'ponto', label: 'Ponto', icon: Clock },
+  { to: 'chamados', label: 'Chamados', icon: ClipboardList },
+  { to: 'estoque', label: 'Estoque', icon: Boxes },
+  { to: 'km', label: 'KM', icon: Gauge },
+  { to: 'abastecimento', label: 'Abastecimento', icon: Fuel },
+  { to: 'galoes', label: 'Galões', icon: Container },
+  { to: 'historico', label: 'Histórico', icon: History },
+];
 
 const queryClient = new QueryClient();
 
