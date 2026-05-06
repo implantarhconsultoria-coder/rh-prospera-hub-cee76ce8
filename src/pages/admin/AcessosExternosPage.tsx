@@ -126,7 +126,7 @@ export default function AcessosExternosPage() {
     if (error) { toast.error(error.message); return; }
     toast.success("Acesso criado");
     setOpen(false);
-    setForm({ nome: "", cpf: "", empresa: "", filial: "", funcao: "", perfil_acesso: "mecanico_externo" });
+    resetForm();
     carregar();
   };
 
