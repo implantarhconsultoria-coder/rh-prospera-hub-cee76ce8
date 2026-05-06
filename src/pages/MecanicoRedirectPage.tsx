@@ -74,17 +74,16 @@ const MecanicoRedirectPage: React.FC = () => {
         return;
       }
       setToken(null);
-      // 3) Se admin/operacional/tecnico_campo sem vínculo, carrega seletor
-      if (isAdmin || isOperacional || isTecnico) {
-        const { data: list } = await supabase
-          .from('tecnicos_campo')
-          .select('id, apelido, access_token, link_status, funcionarios(nome)')
-          .not('access_token', 'is', null)
-          .order('apelido');
-        setOpts((list as any) || []);
-      }
+      // 3) Sem vínculo direto: qualquer usuário autenticado vê o seletor
+      // (admin/operacional em modo teste; demais como acesso assistido).
+      const { data: list } = await supabase
+        .from('tecnicos_campo')
+        .select('id, apelido, access_token, link_status, funcionarios(nome)')
+        .not('access_token', 'is', null)
+        .order('apelido');
+      setOpts((list as any) || []);
     })();
-  }, [session?.user?.id, roleLoading, isAdmin, isOperacional, isTecnico]);
+  }, [session?.user?.id, roleLoading]);
 
   if (loading || roleLoading || (isAuthenticated && token === undefined)) {
     return (
@@ -103,9 +102,9 @@ const MecanicoRedirectPage: React.FC = () => {
     return <Navigate to={`/m/${token}`} replace />;
   }
 
-  // Admin/Operacional/Tecnico sem vínculo: modo seleção assistida
-  if (isAdmin || isOperacional || isTecnico) {
-    const badgeLabel = isAdmin ? 'Modo teste · Admin' : isOperacional ? 'Operacional' : 'Técnico de Campo';
+  // Sem vínculo direto: modo seleção (qualquer usuário autenticado)
+  {
+    const badgeLabel = isAdmin ? 'Modo teste · Admin' : isOperacional ? 'Operacional' : isTecnico ? 'Técnico de Campo' : 'Acesso assistido';
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white p-4">
         <div className="max-w-md mx-auto pt-8">
@@ -167,19 +166,6 @@ const MecanicoRedirectPage: React.FC = () => {
       </div>
     );
   }
-
-  // Outros usuários sem vínculo — mensagem limpa
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white p-6 text-center">
-      <div className="max-w-sm">
-        <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
-        <h1 className="text-xl font-bold mb-2">Acesso não liberado</h1>
-        <p className="text-sm text-white/70">
-          Solicite ao administrador a liberação do App Mecânico.
-        </p>
-      </div>
-    </div>
-  );
 };
 
 export default MecanicoRedirectPage;
