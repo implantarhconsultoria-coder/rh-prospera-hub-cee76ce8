@@ -177,7 +177,62 @@ export default function AcessosExternosPage() {
           <DialogContent>
             <DialogHeader><DialogTitle>Novo Acesso Externo</DialogTitle></DialogHeader>
             <div className="grid gap-3 py-2">
-              <div><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
+              <div>
+                <Label>Buscar funcionário cadastrado</Label>
+                <Popover open={funcOpen} onOpenChange={setFuncOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between font-normal"
+                    >
+                      <span className="flex items-center gap-2 truncate">
+                        <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+                        {funcionarioId ? (
+                          <span className="truncate">{form.nome}</span>
+                        ) : (
+                          <span className="text-muted-foreground">Digite o nome para buscar...</span>
+                        )}
+                      </span>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command
+                      filter={(value, search) => {
+                        if (!search) return 1;
+                        return value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
+                      }}
+                    >
+                      <CommandInput placeholder="Nome, CPF ou cargo..." />
+                      <CommandList>
+                        <CommandEmpty>Nenhum funcionário encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {funcionarios.map((f) => {
+                            const haystack = [f.nome, f.cpf, f.cargo, f.empresa_nome].filter(Boolean).join(" | ");
+                            return (
+                              <CommandItem key={f.id} value={haystack} onSelect={() => selecionarFuncionario(f)}>
+                                <Check className={cn("mr-2 h-4 w-4", funcionarioId === f.id ? "opacity-100" : "opacity-0")} />
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-medium">{f.nome}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {[f.cpf, f.cargo, f.empresa_nome].filter(Boolean).join(" · ")}
+                                  </span>
+                                </div>
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Selecione para preencher automaticamente, ou digite manualmente abaixo.
+                </p>
+              </div>
+              <div><Label>Nome *</Label><Input value={form.nome} onChange={(e) => { setForm({ ...form, nome: e.target.value }); setFuncionarioId(null); }} /></div>
               <div>
                 <Label>CPF * <span className="text-xs text-muted-foreground">(PIN = 4 últimos)</span></Label>
                 <Input value={form.cpf} onChange={(e) => setForm({ ...form, cpf: e.target.value })} placeholder="000.000.000-00" />
