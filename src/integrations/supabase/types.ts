@@ -2423,6 +2423,13 @@ export type Database = {
             referencedRelation: "faturas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fatura_itens_fatura_id_fkey"
+            columns: ["fatura_id"]
+            isOneToOne: false
+            referencedRelation: "vw_faturamento_conferencia"
+            referencedColumns: ["id"]
+          },
         ]
       }
       faturamento_dn4: {
@@ -2567,6 +2574,13 @@ export type Database = {
             referencedRelation: "faturas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "faturamento_historico_fatura_id_fkey"
+            columns: ["fatura_id"]
+            isOneToOne: false
+            referencedRelation: "vw_faturamento_conferencia"
+            referencedColumns: ["id"]
+          },
         ]
       }
       faturamento_pendencias: {
@@ -2629,6 +2643,13 @@ export type Database = {
             columns: ["fatura_id"]
             isOneToOne: false
             referencedRelation: "faturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "faturamento_pendencias_fatura_id_fkey"
+            columns: ["fatura_id"]
+            isOneToOne: false
+            referencedRelation: "vw_faturamento_conferencia"
             referencedColumns: ["id"]
           },
         ]
@@ -2737,6 +2758,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "medicoes"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "faturas_medicao_id_fkey"
+            columns: ["medicao_id"]
+            isOneToOne: false
+            referencedRelation: "vw_faturamento_conferencia"
+            referencedColumns: ["medicao_id"]
           },
         ]
       }
@@ -3264,6 +3292,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "impostos_fatura_id_fkey"
+            columns: ["fatura_id"]
+            isOneToOne: false
+            referencedRelation: "vw_faturamento_conferencia"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "impostos_titulo_pagar_id_fkey"
             columns: ["titulo_pagar_id"]
             isOneToOne: false
@@ -3483,6 +3518,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "medicoes"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medicao_itens_medicao_id_fkey"
+            columns: ["medicao_id"]
+            isOneToOne: false
+            referencedRelation: "vw_faturamento_conferencia"
+            referencedColumns: ["medicao_id"]
           },
         ]
       }
@@ -4901,6 +4943,13 @@ export type Database = {
             referencedRelation: "faturas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "titulos_receber_fatura_id_fkey"
+            columns: ["fatura_id"]
+            isOneToOne: false
+            referencedRelation: "vw_faturamento_conferencia"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_roles: {
@@ -5162,10 +5211,38 @@ export type Database = {
           },
         ]
       }
+      vw_faturamento_conferencia: {
+        Row: {
+          cliente_doc: string | null
+          cliente_nome: string | null
+          competencia: string | null
+          contrato_numero: string | null
+          data_emissao: string | null
+          data_vencimento: string | null
+          dia_vencimento: number | null
+          empresa_nome: string | null
+          id: string | null
+          medicao_id: string | null
+          numero: string | null
+          observacoes: string | null
+          periodo_fim: string | null
+          periodo_inicio: string | null
+          status: string | null
+          total: number | null
+          valor_pago: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calc_inss: { Args: { p_base: number }; Returns: number }
       calc_irrf: { Args: { p_base: number }; Returns: number }
+      dashboard_faturamento_kpis: { Args: never; Returns: Json }
+      faturamento_gerar_medicoes_mes: {
+        Args: { p_competencia?: string }
+        Returns: number
+      }
+      faturamento_marcar_vencidas: { Args: never; Returns: number }
       fechamento_filial_breakdown: {
         Args: { p_company_id: string; p_competencia: string }
         Returns: Json
@@ -5193,6 +5270,10 @@ export type Database = {
         Returns: Json
       }
       gen_tecnico_access_token: { Args: never; Returns: string }
+      gerar_proxima_medicao: {
+        Args: { p_competencia?: string; p_contrato_id: string }
+        Returns: string
+      }
       get_user_empresas: { Args: never; Returns: string[] }
       has_role: {
         Args: {
