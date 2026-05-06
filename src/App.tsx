@@ -92,6 +92,7 @@ import NotFound from "@/pages/NotFound";
 import PublicAbastecimentoPage from "@/pages/PublicAbastecimentoPage";
 import ImprimirQRCombustivelPage from "@/pages/admin/ImprimirQRCombustivelPage";
 import MecanicoRedirectPage from "@/pages/MecanicoRedirectPage";
+import MecanicoExtRedirect from "@/pages/MecanicoExtRedirect";
 import AcessoExternoPage from "@/pages/AcessoExternoPage";
 import AcessosExternosPage from "@/pages/admin/AcessosExternosPage";
 import { Loader2 } from "lucide-react";
@@ -368,12 +369,13 @@ const App = () => (
               {/* ========== ACESSO EXTERNO POR PIN (sem login) ========== */}
               <Route path="/acesso-mecanico" element={<ErrorBoundary><AcessoExternoPage /></ErrorBoundary>} />
               <Route path="/acesso-financeiro" element={<ErrorBoundary><AcessoExternoPage /></ErrorBoundary>} />
-              <Route path="/acesso-rh" element={<ErrorBoundary><AcessoExternoPage /></ErrorBoundary>} />
               <Route path="/acesso-almoxarifado" element={<ErrorBoundary><AcessoExternoPage /></ErrorBoundary>} />
               <Route path="/acesso-operacional" element={<ErrorBoundary><AcessoExternoPage /></ErrorBoundary>} />
               <Route path="/acesso-filial" element={<ErrorBoundary><AcessoExternoPage /></ErrorBoundary>} />
               <Route path="/acesso-campo" element={<ErrorBoundary><AcessoExternoPage /></ErrorBoundary>} />
               <Route path="/acesso-faturamento" element={<ErrorBoundary><AcessoExternoPage /></ErrorBoundary>} />
+              {/* RH externo desativado — filial cobre RH */}
+              <Route path="/acesso-rh" element={<Navigate to="/acesso-filial" replace />} />
 
               {/* ========== APP MECÂNICO POR LINK EXCLUSIVO (sem login) ========== */}
               <Route path="/m/:token" element={<MecanicoLayout />}>
@@ -413,15 +415,7 @@ const App = () => (
                 <Route path="pendencias" element={<PendenciasPage />} />
               </Route>
 
-              <Route path="/rh-ext/:acessoId" element={<ErrorBoundary><ExternoLayout modulo="rh" titulo="Portal RH" cor="bg-emerald-600" items={EXT_ITEMS_RH} /></ErrorBoundary>}>
-                <Route index element={<FuncionariosPage />} />
-                <Route path="funcionarios" element={<FuncionariosPage />} />
-                <Route path="funcionarios/:id" element={<EmployeeDetailPage />} />
-                <Route path="aso" element={<ASOPage />} />
-                <Route path="atestados" element={<AtestadosImportPage />} />
-                <Route path="aviso-ferias" element={<AvisoFeriasPage />} />
-                <Route path="protocolo" element={<ProtocoloPage />} />
-              </Route>
+              {/* RH externo removido — usar /acesso-filial */}
 
               <Route path="/almoxarifado-ext/:acessoId" element={<ErrorBoundary><ExternoLayout modulo="almoxarifado" titulo="Almoxarifado" cor="bg-orange-600" items={EXT_ITEMS_ALMOX} /></ErrorBoundary>}>
                 <Route index element={<AlmoxarifadoPage />} />
@@ -455,16 +449,8 @@ const App = () => (
                 <Route path="chamados" element={<DespacharChamadoPage />} />
               </Route>
 
-              <Route path="/mecanico-ext/:acessoId" element={<ErrorBoundary><ExternoLayout modulo="mecanico" titulo="App Mecânico" cor="bg-green-600" items={EXT_ITEMS_MEC} /></ErrorBoundary>}>
-                <Route index element={<MecanicoHomePage />} />
-                <Route path="ponto" element={<MecanicoPontoPage />} />
-                <Route path="chamados" element={<MecanicoChamadosPage />} />
-                <Route path="estoque" element={<MecanicoEstoquePage />} />
-                <Route path="km" element={<MecanicoKmPage />} />
-                <Route path="abastecimento" element={<MecanicoAbastecimentoPage />} />
-                <Route path="galoes" element={<MecanicoGaloesPage />} />
-                <Route path="historico" element={<MecanicoHistoricoPage />} />
-              </Route>
+              {/* App Mecânico externo via PIN: redireciona para /m/:token (com TecnicoAppProvider) */}
+              <Route path="/mecanico-ext/:acessoId" element={<ErrorBoundary><MecanicoExtRedirect /></ErrorBoundary>} />
               <Route path="/relatorio-impressao" element={<ErrorBoundary><RelatorioImpressaoPage /></ErrorBoundary>} />
               <Route path="/entrega-impressao" element={<ErrorBoundary><EntregaImpressaoPage /></ErrorBoundary>} />
               <Route path="/relatorio-vr-impressao" element={<ErrorBoundary><RelatorioVRImpressaoPage /></ErrorBoundary>} />

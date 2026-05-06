@@ -38,14 +38,13 @@ type Acesso = {
 };
 
 const PERFIS = [
-  { v: "mecanico_externo", l: "Mecânico Externo", modulo: "mecanico" },
-  { v: "tecnico_campo", l: "Técnico de Campo", modulo: "campo" },
-  { v: "operacional", l: "Operacional", modulo: "operacional" },
-  { v: "faturamento", l: "Faturamento", modulo: "faturamento" },
+  { v: "filial", l: "Filial (inclui RH)", modulo: "filial" },
   { v: "financeiro", l: "Financeiro", modulo: "financeiro" },
-  { v: "rh", l: "RH", modulo: "rh" },
+  { v: "faturamento", l: "Faturamento", modulo: "faturamento" },
   { v: "almoxarifado", l: "Almoxarifado", modulo: "almoxarifado" },
-  { v: "filial", l: "Filial", modulo: "filial" },
+  { v: "operacional", l: "Operacional", modulo: "operacional" },
+  { v: "tecnico_campo", l: "Técnico de Campo", modulo: "campo" },
+  { v: "mecanico_externo", l: "Mecânico Externo", modulo: "mecanico" },
 ];
 
 export default function AcessosExternosPage() {
@@ -173,8 +172,23 @@ export default function AcessosExternosPage() {
     toast.success("Link copiado: " + url);
   };
 
-  const testar = (a: Acesso) => {
-    window.open(`/acesso-${a.modulo}`, "_blank");
+  const testar = async (a: Acesso) => {
+    // Para mecânico, busca o link único e abre /m/:token
+    if (a.modulo === 'mecanico') {
+      window.open(`/acesso-mecanico`, '_blank');
+      return;
+    }
+    // Demais módulos: grava sessão deste acesso específico e abre o portal direto
+    const sess = {
+      id: a.id, nome: a.nome,
+      empresa: a.empresa || '', filial: a.filial || '', funcao: a.funcao || '',
+      perfil_acesso: a.perfil_acesso, modulo: a.modulo, ts: Date.now(),
+    };
+    // Abre rota com query para o ExternoLayout aceitar a sessão (validação no banco continua)
+    const url = `/${a.modulo}-ext/${a.id}`;
+    // Salva no localStorage da janela atual também não impacta — abrimos nova aba que validará no banco
+    localStorage.setItem('acesso_externo', JSON.stringify(sess));
+    window.open(url, '_blank');
   };
 
   return (
