@@ -27,25 +27,55 @@ const MecanicoRedirectPage: React.FC = () => {
 
   const isAdmin = userRoles.includes('admin');
   const isOperacional = userRoles.includes('operacional');
+  const isTecnico = userRoles.includes('tecnico_campo');
 
   useEffect(() => {
     if (!session?.user?.id || roleLoading) return;
     (async () => {
-      // 1) Tenta achar token vinculado ao usuário (qualquer link_status, exceto bloqueado)
+      // 1) Vínculo direto por user_id (qualquer link_status, exceto bloqueado)
       const { data: vinculos } = await supabase
         .from('tecnicos_campo')
         .select('access_token, link_status')
         .eq('user_id', session.user.id);
-      const vinculo = (vinculos || []).find((v: any) => v.access_token && v.link_status !== 'bloqueado')
+      let vinculo = (vinculos || []).find((v: any) => v.access_token && v.link_status !== 'bloqueado')
         || (vinculos || []).find((v: any) => v.access_token);
-      const tk = (vinculo as any)?.access_token || null;
+      let tk: string | null = (vinculo as any)?.access_token || null;
+
+      // 2) Se não achou, tenta via email/CPF do profile -> funcionarios -> tecnicos_campo
+      if (!tk) {
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('email, cpf_clean')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        const email = (prof as any)?.email || session.user.email || null;
+        const cpf = (prof as any)?.cpf_clean || null;
+        if (email || cpf) {
+          let funcQ = supabase.from('funcionarios').select('id, email, cpf');
+          if (email && cpf) funcQ = funcQ.or(`email.eq.${email},cpf.eq.${cpf}`);
+          else if (email) funcQ = funcQ.eq('email', email);
+          else if (cpf) funcQ = funcQ.eq('cpf', cpf);
+          const { data: funcs } = await funcQ;
+          const funcIds = (funcs || []).map((f: any) => f.id);
+          if (funcIds.length) {
+            const { data: tcs } = await supabase
+              .from('tecnicos_campo')
+              .select('access_token, link_status')
+              .in('funcionario_id', funcIds)
+              .not('access_token', 'is', null);
+            const okTc = (tcs || []).find((v: any) => v.link_status !== 'bloqueado') || (tcs || [])[0];
+            tk = (okTc as any)?.access_token || null;
+          }
+        }
+      }
+
       if (tk) {
         setToken(tk);
         return;
       }
       setToken(null);
-      // 2) Se admin/operacional, carrega TODOS os mecânicos com token (independe do status)
-      if (isAdmin || isOperacional) {
+      // 3) Se admin/operacional/tecnico_campo sem vínculo, carrega seletor
+      if (isAdmin || isOperacional || isTecnico) {
         const { data: list } = await supabase
           .from('tecnicos_campo')
           .select('id, apelido, access_token, link_status, funcionarios(nome)')
@@ -54,7 +84,7 @@ const MecanicoRedirectPage: React.FC = () => {
         setOpts((list as any) || []);
       }
     })();
-  }, [session?.user?.id, roleLoading, isAdmin, isOperacional]);
+  }, [session?.user?.id, roleLoading, isAdmin, isOperacional, isTecnico]);
 
   if (loading || roleLoading || (isAuthenticated && token === undefined)) {
     return (
@@ -73,14 +103,15 @@ const MecanicoRedirectPage: React.FC = () => {
     return <Navigate to={`/m/${token}`} replace />;
   }
 
-  // Admin/Operacional sem vínculo: modo seleção assistida
-  if (isAdmin || isOperacional) {
+  // Admin/Operacional/Tecnico sem vínculo: modo seleção assistida
+  if (isAdmin || isOperacional || isTecnico) {
+    const badgeLabel = isAdmin ? 'Modo teste · Admin' : isOperacional ? 'Operacional' : 'Técnico de Campo';
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white p-4">
         <div className="max-w-md mx-auto pt-8">
           <div className="text-center mb-6">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 text-[10px] font-bold uppercase tracking-wider mb-3">
-              <Wrench className="w-3 h-3" /> Modo teste · Admin
+              <Wrench className="w-3 h-3" /> {badgeLabel}
             </div>
             <h1 className="text-2xl font-bold">Selecione um mecânico</h1>
             <p className="text-sm text-white/60 mt-1">Você entrará no app no perfil escolhido.</p>
@@ -137,15 +168,14 @@ const MecanicoRedirectPage: React.FC = () => {
     );
   }
 
-  // Outros usuários sem vínculo
+  // Outros usuários sem vínculo — mensagem limpa
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white p-6 text-center">
       <div className="max-w-sm">
         <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
-        <h1 className="text-xl font-bold mb-2">Acesso de mecânico não habilitado</h1>
+        <h1 className="text-xl font-bold mb-2">Acesso não liberado</h1>
         <p className="text-sm text-white/70">
-          Seu usuário não está vinculado a um cadastro de mecânico. Solicite ao
-          administrador a liberação do App Mecânico.
+          Solicite ao administrador a liberação do App Mecânico.
         </p>
       </div>
     </div>
