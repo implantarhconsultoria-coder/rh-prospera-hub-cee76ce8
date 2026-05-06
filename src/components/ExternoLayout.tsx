@@ -82,7 +82,7 @@ const ExternoLayout: React.FC<ExternoLayoutProps> = ({ modulo, titulo, cor = 'bg
           <AlertCircle className="w-10 h-10 text-destructive mx-auto" />
           <h2 className="text-lg font-bold">Acesso não liberado</h2>
           <p className="text-sm text-muted-foreground">Acesso não liberado ou bloqueado pelo administrador.</p>
-          <Button onClick={() => nav(`/acesso-${modulo}`, { replace: true })} className="w-full">Voltar</Button>
+          <Button onClick={() => nav(`/acesso-filial`, { replace: true })} className="w-full">Voltar</Button>
         </div>
       </div>
     );
