@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Wallet, FileText, AlertTriangle, CheckCircle2, Clock, TrendingUp, Building2, Users, Package, RefreshCw } from 'lucide-react';
+import { Wallet, FileText, AlertTriangle, CheckCircle2, Clock, TrendingUp, Building2, Users, Package, RefreshCw, ClipboardCheck, UserX } from 'lucide-react';
 
 const fmtBRL = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const FaturamentoDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [kpis, setKpis] = useState<any>(null);
   const [stats, setStats] = useState({
     previsto: 0, emitido: 0, pago: 0, vencidos: 0, aVencer: 0,
     contratosAtivos: 0, clientesAtivos: 0, equipamentosFaturando: 0,
@@ -21,6 +22,10 @@ const FaturamentoDashboardPage: React.FC = () => {
     setLoading(true);
     const hoje = new Date().toISOString().slice(0, 10);
     const em30 = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+
+    // KPIs vivos via RPC (já marca faturas vencidas automaticamente)
+    const { data: kpiData } = await supabase.rpc('dashboard_faturamento_kpis' as any);
+    setKpis(kpiData || null);
 
     const [faturas, contratos, clientes, contratoEquip, pendencias, contratosReaj, empresas] = await Promise.all([
       supabase.from('faturas').select('total, status, data_vencimento, empresa_id, cliente_id'),
@@ -98,6 +103,42 @@ const FaturamentoDashboardPage: React.FC = () => {
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Atualizar
         </button>
       </div>
+
+      {kpis && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <button onClick={() => navigate('/admin/faturamento/conferencia')} className="card-premium p-4 text-left hover:bg-sidebar-accent/20 transition-colors">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Faturado em {kpis.competencia}</p>
+            <p className="text-lg font-bold font-display mt-1 text-primary">{fmtBRL(Number(kpis.total_faturado_mes || 0))}</p>
+          </button>
+          <button onClick={() => navigate('/admin/faturamento/medicoes')} className="card-premium p-4 text-left hover:bg-sidebar-accent/20 transition-colors">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Medições pendentes</p>
+                <p className="text-lg font-bold font-display mt-1">{kpis.medicoes_pendentes}</p>
+              </div>
+              <ClipboardCheck className="w-5 h-5 text-warning opacity-50" />
+            </div>
+          </button>
+          <button onClick={() => navigate('/admin/faturamento/conferencia')} className="card-premium p-4 text-left hover:bg-sidebar-accent/20 transition-colors">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Vencem em 7 dias</p>
+                <p className="text-lg font-bold font-display mt-1 text-warning">{kpis.cobrancas_a_vencer}</p>
+              </div>
+              <Clock className="w-5 h-5 text-warning opacity-50" />
+            </div>
+          </button>
+          <button onClick={() => navigate('/admin/faturamento/conferencia?status=vencida')} className="card-premium p-4 text-left hover:bg-sidebar-accent/20 transition-colors">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Clientes inadimplentes</p>
+                <p className="text-lg font-bold font-display mt-1 text-destructive">{kpis.clientes_inadimplentes}</p>
+              </div>
+              <UserX className="w-5 h-5 text-destructive opacity-50" />
+            </div>
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {cards.map((c, i) => (
