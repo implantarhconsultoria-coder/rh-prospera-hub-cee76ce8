@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { Receipt, Plus, X, Search, FileText, Send, Trash2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAcessoExternoFiltro } from '@/hooks/useAcessoExternoFiltro';
 
 const fmtBRL = (n: number) => Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const fmtDate = (d: string) => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '-';
