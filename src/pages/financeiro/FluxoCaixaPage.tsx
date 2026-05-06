@@ -16,6 +16,7 @@ interface Linha {
 }
 
 const FluxoCaixaPage: React.FC = () => {
+  const ext = useAcessoExternoFiltro();
   const [periodo, setPeriodo] = useState({
     inicio: new Date().toISOString().slice(0, 10),
     fim: new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10),
@@ -26,13 +27,18 @@ const FluxoCaixaPage: React.FC = () => {
 
   const carregar = async () => {
     setLoading(true);
+    const empIds = ext.isExterno ? (ext.empresaIds || []) : null;
+    const safeIds = empIds !== null ? (empIds.length ? empIds : ['00000000-0000-0000-0000-000000000000']) : null;
+    const applyEmp = (q: any) => safeIds ? q.in('empresa_id', safeIds) : q;
     const [tRec, tPag, recs, pags, cb] = await Promise.all([
-      supabase.from('titulos_receber').select('data_vencimento, saldo, status').gte('data_vencimento', periodo.inicio).lte('data_vencimento', periodo.fim),
-      supabase.from('titulos_pagar').select('data_vencimento, saldo, status').gte('data_vencimento', periodo.inicio).lte('data_vencimento', periodo.fim),
-      supabase.from('recebimentos').select('data, valor').gte('data', periodo.inicio).lte('data', periodo.fim),
-      supabase.from('pagamentos').select('data, valor').gte('data', periodo.inicio).lte('data', periodo.fim),
-      supabase.from('contas_bancarias').select('saldo_atual').eq('status', 'ativa'),
+      applyEmp(supabase.from('titulos_receber').select('data_vencimento, saldo, status, empresa_id').gte('data_vencimento', periodo.inicio).lte('data_vencimento', periodo.fim)),
+      applyEmp(supabase.from('titulos_pagar').select('data_vencimento, saldo, status, empresa_id').gte('data_vencimento', periodo.inicio).lte('data_vencimento', periodo.fim)),
+      supabase.from('recebimentos').select('data, valor, titulos_receber!inner(empresa_id)').gte('data', periodo.inicio).lte('data', periodo.fim),
+      supabase.from('pagamentos').select('data, valor, titulos_pagar!inner(empresa_id)').gte('data', periodo.inicio).lte('data', periodo.fim),
+      applyEmp(supabase.from('contas_bancarias').select('saldo_atual, empresa_id').eq('status', 'ativa')),
     ]);
+    const recsF = (recs.data || []).filter((r: any) => !safeIds || safeIds.includes(r.titulos_receber?.empresa_id));
+    const pagsF = (pags.data || []).filter((p: any) => !safeIds || safeIds.includes(p.titulos_pagar?.empresa_id));
 
     const saldo = (cb.data || []).reduce((s, c) => s + Number(c.saldo_atual || 0), 0);
     setSaldoInicial(saldo);
