@@ -38,14 +38,13 @@ type Acesso = {
 };
 
 const PERFIS = [
-  { v: "mecanico_externo", l: "Mecânico Externo", modulo: "mecanico" },
-  { v: "tecnico_campo", l: "Técnico de Campo", modulo: "campo" },
-  { v: "operacional", l: "Operacional", modulo: "operacional" },
-  { v: "faturamento", l: "Faturamento", modulo: "faturamento" },
+  { v: "filial", l: "Filial (inclui RH)", modulo: "filial" },
   { v: "financeiro", l: "Financeiro", modulo: "financeiro" },
-  { v: "rh", l: "RH", modulo: "rh" },
+  { v: "faturamento", l: "Faturamento", modulo: "faturamento" },
   { v: "almoxarifado", l: "Almoxarifado", modulo: "almoxarifado" },
-  { v: "filial", l: "Filial", modulo: "filial" },
+  { v: "operacional", l: "Operacional", modulo: "operacional" },
+  { v: "tecnico_campo", l: "Técnico de Campo", modulo: "campo" },
+  { v: "mecanico_externo", l: "Mecânico Externo", modulo: "mecanico" },
 ];
 
 export default function AcessosExternosPage() {
