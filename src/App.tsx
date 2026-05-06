@@ -430,7 +430,9 @@ const App = () => (
                 <Route path="chamados" element={<DespacharChamadoPage />} />
               </Route>
 
-              {/* App Mecânico antigo removido — /m/:token e /mecanico-ext/:acessoId desativados */}
+              {/* Alias legado: /mecanico-ext/:acessoId → /app-mecanico/:acessoId */}
+              <Route path="/mecanico-ext/:acessoId" element={<MecanicoExtAlias />} />
+              <Route path="/mecanico-ext/:acessoId/*" element={<MecanicoExtAlias />} />
 
               <Route path="/relatorio-impressao" element={<ErrorBoundary><RelatorioImpressaoPage /></ErrorBoundary>} />
               <Route path="/entrega-impressao" element={<ErrorBoundary><EntregaImpressaoPage /></ErrorBoundary>} />
