@@ -56,7 +56,8 @@ export default function AcessosExternosPage() {
   const [funcOpen, setFuncOpen] = useState(false);
   const [funcionarioId, setFuncionarioId] = useState<string | null>(null);
   const [form, setForm] = useState({
-    nome: "", cpf: "", empresa: "", filial: "", funcao: "", perfil_acesso: "mecanico_externo",
+    nome: "", cpf: "", empresa: "", filial: "", funcao: "",
+    perfis_acesso: ["mecanico_externo"] as string[],
   });
 
   const carregar = async () => {
@@ -101,31 +102,43 @@ export default function AcessosExternosPage() {
   };
 
   const resetForm = () => {
-    setForm({ nome: "", cpf: "", empresa: "", filial: "", funcao: "", perfil_acesso: "mecanico_externo" });
+    setForm({ nome: "", cpf: "", empresa: "", filial: "", funcao: "", perfis_acesso: ["mecanico_externo"] });
     setFuncionarioId(null);
   };
 
+  const togglePerfil = (v: string) => {
+    setForm((prev) => {
+      const has = prev.perfis_acesso.includes(v);
+      return { ...prev, perfis_acesso: has ? prev.perfis_acesso.filter((x) => x !== v) : [...prev.perfis_acesso, v] };
+    });
+  };
 
   const criar = async () => {
     if (!form.nome || !form.cpf) { toast.error("Nome e CPF obrigatórios"); return; }
     const cpfClean = form.cpf.replace(/\D/g, "");
     if (cpfClean.length < 4) { toast.error("CPF inválido"); return; }
-    const perfil = PERFIS.find((p) => p.v === form.perfil_acesso)!;
-    const { error } = await supabase.from("acessos_externos" as any).insert({
-      nome: form.nome,
-      cpf: form.cpf,
-      cpf_clean: cpfClean,
-      pin: cpfClean.slice(-4),
-      empresa: form.empresa || null,
-      filial: form.filial || null,
-      funcao: form.funcao || null,
-      perfil_acesso: form.perfil_acesso,
-      modulo: perfil.modulo,
-      status: "ativo",
-      acesso_liberado: true,
+    if (form.perfis_acesso.length === 0) { toast.error("Selecione ao menos um perfil"); return; }
+
+    const linhas = form.perfis_acesso.map((pv) => {
+      const perfil = PERFIS.find((p) => p.v === pv)!;
+      return {
+        nome: form.nome,
+        cpf: form.cpf,
+        cpf_clean: cpfClean,
+        pin: cpfClean.slice(-4),
+        empresa: form.empresa || null,
+        filial: form.filial || null,
+        funcao: form.funcao || null,
+        perfil_acesso: perfil.v,
+        modulo: perfil.modulo,
+        status: "ativo",
+        acesso_liberado: true,
+      };
     });
+
+    const { error } = await supabase.from("acessos_externos" as any).insert(linhas);
     if (error) { toast.error(error.message); return; }
-    toast.success("Acesso criado");
+    toast.success(`${linhas.length} acesso(s) criado(s)`);
     setOpen(false);
     resetForm();
     carregar();
@@ -247,13 +260,28 @@ export default function AcessosExternosPage() {
               </div>
               <div><Label>Função</Label><Input value={form.funcao} onChange={(e) => setForm({ ...form, funcao: e.target.value })} /></div>
               <div>
-                <Label>Perfil de Acesso *</Label>
-                <Select value={form.perfil_acesso} onValueChange={(v) => setForm({ ...form, perfil_acesso: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {PERFIS.map((p) => <SelectItem key={p.v} value={p.v}>{p.l}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Label>Perfis de Acesso * <span className="text-xs text-muted-foreground">(marque um ou vários)</span></Label>
+                <div className="grid grid-cols-2 gap-2 mt-2 p-3 border rounded-md max-h-48 overflow-y-auto">
+                  {PERFIS.map((p) => {
+                    const checked = form.perfis_acesso.includes(p.v);
+                    return (
+                      <label key={p.v} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-accent rounded px-2 py-1">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => togglePerfil(p.v)}
+                          className="h-4 w-4 rounded border-input"
+                        />
+                        <span>{p.l}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                {form.perfis_acesso.length > 0 && (
+                  <p className="text-xs text-primary mt-1">
+                    Será criado 1 acesso por perfil ({form.perfis_acesso.length} no total) — todos com o mesmo PIN.
+                  </p>
+                )}
               </div>
             </div>
             <DialogFooter>
