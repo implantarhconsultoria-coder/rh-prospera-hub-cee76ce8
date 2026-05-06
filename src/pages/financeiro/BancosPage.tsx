@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { Landmark, Plus, X, Eye, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAcessoExternoFiltro } from '@/hooks/useAcessoExternoFiltro';
 
 const fmtBRL = (n: number) => Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
