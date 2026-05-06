@@ -73,8 +73,8 @@ export default function AcessoExternoPage() {
       p_id: u.id,
       p_modulo: modulo,
     });
-    setLoading(false);
     if (error || !(data as any)?.ok) {
+      setLoading(false);
       toast.error("Não foi possível abrir o acesso.");
       return;
     }
@@ -83,6 +83,24 @@ export default function AcessoExternoPage() {
       "acesso_externo",
       JSON.stringify({ ...acesso, ts: Date.now() })
     );
+
+    // Mecânico/Campo/Operacional: usa link único por token do tecnico_campo
+    if (["mecanico", "campo", "operacional"].includes(modulo) && acesso.funcionario_id) {
+      const { data: tc } = await supabase
+        .from("tecnicos_campo")
+        .select("access_token, link_status")
+        .eq("funcionario_id", acesso.funcionario_id)
+        .eq("link_status", "ativo")
+        .maybeSingle();
+      setLoading(false);
+      if (tc?.access_token) {
+        navigate(`/m/${tc.access_token}`);
+        return;
+      }
+      toast.error("Mecânico sem link ativo. Procure o administrador.");
+      return;
+    }
+    setLoading(false);
     navigate(cfg.redirect(acesso.id));
   };
 
