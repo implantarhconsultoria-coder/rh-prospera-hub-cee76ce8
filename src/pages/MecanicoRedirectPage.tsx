@@ -74,17 +74,16 @@ const MecanicoRedirectPage: React.FC = () => {
         return;
       }
       setToken(null);
-      // 3) Se admin/operacional/tecnico_campo sem vínculo, carrega seletor
-      if (isAdmin || isOperacional || isTecnico) {
-        const { data: list } = await supabase
-          .from('tecnicos_campo')
-          .select('id, apelido, access_token, link_status, funcionarios(nome)')
-          .not('access_token', 'is', null)
-          .order('apelido');
-        setOpts((list as any) || []);
-      }
+      // 3) Sem vínculo direto: qualquer usuário autenticado vê o seletor
+      // (admin/operacional em modo teste; demais como acesso assistido).
+      const { data: list } = await supabase
+        .from('tecnicos_campo')
+        .select('id, apelido, access_token, link_status, funcionarios(nome)')
+        .not('access_token', 'is', null)
+        .order('apelido');
+      setOpts((list as any) || []);
     })();
-  }, [session?.user?.id, roleLoading, isAdmin, isOperacional, isTecnico]);
+  }, [session?.user?.id, roleLoading]);
 
   if (loading || roleLoading || (isAuthenticated && token === undefined)) {
     return (
