@@ -57,7 +57,7 @@ const FaturamentoDashboardPage: React.FC = () => {
       previsto, emitido, pago, vencidos, aVencer,
       contratosAtivos: (contratos.data || []).filter(c => c.status === 'ativo').length,
       clientesAtivos: (clientes.data || []).filter(c => c.status === 'ativo').length,
-      equipamentosFaturando: (contratoEquip.data || []).filter(e => e.status === 'ativo').length,
+      equipamentosFaturando: (contratoEquip.data || []).filter((e: any) => e.status === 'ativo' && (!safeIds || safeIds.includes(e.contratos?.empresa_id))).length,
       pendencias: pendencias.data?.length || 0,
       reajustesProximos: contratosReaj.data?.length || 0,
     });
