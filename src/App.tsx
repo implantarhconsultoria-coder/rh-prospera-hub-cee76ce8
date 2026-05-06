@@ -314,6 +314,85 @@ const App = () => (
                 <Route path="galoes" element={<MecanicoGaloesPage />} />
                 <Route path="historico" element={<MecanicoHistoricoPage />} />
               </Route>
+
+              {/* ========== ACESSO EXTERNO POR PIN — MÓDULOS (sem login) ========== */}
+              <Route path="/financeiro-ext/:acessoId" element={<ErrorBoundary><ExternoLayout modulo="financeiro" titulo="Portal Financeiro" cor="bg-cyan-600" items={EXT_ITEMS_FINANCEIRO} /></ErrorBoundary>}>
+                <Route index element={<FinanceiroDashboardPage />} />
+                <Route path="contas-receber" element={<ContasReceberPage />} />
+                <Route path="contas-pagar" element={<ContasPagarPage />} />
+                <Route path="fornecedores" element={<FornecedoresPage />} />
+                <Route path="bancos" element={<BancosPage />} />
+                <Route path="fluxo-caixa" element={<FluxoCaixaPage />} />
+                <Route path="inadimplencia" element={<InadimplenciaPage />} />
+                <Route path="centros-custo" element={<CentrosCustoPage />} />
+                <Route path="conciliacao" element={<ConciliacaoPage />} />
+              </Route>
+
+              <Route path="/faturamento-ext/:acessoId" element={<ErrorBoundary><ExternoLayout modulo="faturamento" titulo="Portal Faturamento" cor="bg-indigo-500" items={EXT_ITEMS_FATURAMENTO} /></ErrorBoundary>}>
+                <Route index element={<FaturamentoDashboardPage />} />
+                <Route path="clientes" element={<ClientesFatPage />} />
+                <Route path="clientes/:id" element={<ClienteDetailPage />} />
+                <Route path="contratos" element={<ContratosPage />} />
+                <Route path="contratos/:id" element={<ContratoDetailPage />} />
+                <Route path="medicoes" element={<MedicoesPage />} />
+                <Route path="conferencia" element={<ConferenciaPage />} />
+                <Route path="faturas" element={<FaturasPage />} />
+                <Route path="reajustes" element={<ReajustesPage />} />
+                <Route path="pendencias" element={<PendenciasPage />} />
+              </Route>
+
+              <Route path="/rh-ext/:acessoId" element={<ErrorBoundary><ExternoLayout modulo="rh" titulo="Portal RH" cor="bg-emerald-600" items={EXT_ITEMS_RH} /></ErrorBoundary>}>
+                <Route index element={<FuncionariosPage />} />
+                <Route path="funcionarios" element={<FuncionariosPage />} />
+                <Route path="funcionarios/:id" element={<EmployeeDetailPage />} />
+                <Route path="aso" element={<ASOPage />} />
+                <Route path="atestados" element={<AtestadosImportPage />} />
+                <Route path="aviso-ferias" element={<AvisoFeriasPage />} />
+                <Route path="protocolo" element={<ProtocoloPage />} />
+              </Route>
+
+              <Route path="/almoxarifado-ext/:acessoId" element={<ErrorBoundary><ExternoLayout modulo="almoxarifado" titulo="Almoxarifado" cor="bg-orange-600" items={EXT_ITEMS_ALMOX} /></ErrorBoundary>}>
+                <Route index element={<AlmoxarifadoPage />} />
+                <Route path="entregas" element={<AlmoxarifadoPage />} />
+                <Route path="epi" element={<EPIPage />} />
+                <Route path="uniformes" element={<UniformePage />} />
+              </Route>
+
+              <Route path="/operacional-ext/:acessoId" element={<ErrorBoundary><ExternoLayout modulo="operacional" titulo="Operacional" cor="bg-blue-600" items={EXT_ITEMS_OP} /></ErrorBoundary>}>
+                <Route index element={<DespacharChamadoPage />} />
+                <Route path="chamados" element={<DespacharChamadoPage />} />
+                <Route path="tecnicos" element={<AppOperacionalPage />} />
+                <Route path="tecnicos/:id" element={<TecnicoDetailPage />} />
+              </Route>
+
+              <Route path="/filial-ext/:acessoId" element={<ErrorBoundary><ExternoLayout modulo="filial" titulo="Portal Filial" cor="bg-purple-600" items={EXT_ITEMS_FILIAL} /></ErrorBoundary>}>
+                <Route index element={<FilialDashboardPage />} />
+                <Route path="funcionarios" element={<FuncionariosPage />} />
+                <Route path="funcionarios/:id" element={<EmployeeDetailPage />} />
+                <Route path="aviso-ferias" element={<AvisoFeriasPage />} />
+                <Route path="aso" element={<ASOPage />} />
+                <Route path="atestados" element={<AtestadosImportPage />} />
+                <Route path="protocolo" element={<ProtocoloPage />} />
+                <Route path="alertas" element={<FilialAlertasPage />} />
+                <Route path="movimento-diario" element={<MovimentoDiarioPage />} />
+                <Route path="fechamento" element={<FilialFechamentoPage />} />
+              </Route>
+
+              <Route path="/campo-ext/:acessoId" element={<ErrorBoundary><ExternoLayout modulo="campo" titulo="Campo" cor="bg-amber-600" items={EXT_ITEMS_CAMPO} /></ErrorBoundary>}>
+                <Route index element={<DespacharChamadoPage />} />
+                <Route path="chamados" element={<DespacharChamadoPage />} />
+              </Route>
+
+              <Route path="/mecanico-ext/:acessoId" element={<ErrorBoundary><ExternoLayout modulo="mecanico" titulo="App Mecânico" cor="bg-green-600" items={EXT_ITEMS_MEC} /></ErrorBoundary>}>
+                <Route index element={<MecanicoHomePage />} />
+                <Route path="ponto" element={<MecanicoPontoPage />} />
+                <Route path="chamados" element={<MecanicoChamadosPage />} />
+                <Route path="estoque" element={<MecanicoEstoquePage />} />
+                <Route path="km" element={<MecanicoKmPage />} />
+                <Route path="abastecimento" element={<MecanicoAbastecimentoPage />} />
+                <Route path="galoes" element={<MecanicoGaloesPage />} />
+                <Route path="historico" element={<MecanicoHistoricoPage />} />
+              </Route>
               <Route path="/relatorio-impressao" element={<ErrorBoundary><RelatorioImpressaoPage /></ErrorBoundary>} />
               <Route path="/entrega-impressao" element={<ErrorBoundary><EntregaImpressaoPage /></ErrorBoundary>} />
               <Route path="/relatorio-vr-impressao" element={<ErrorBoundary><RelatorioVRImpressaoPage /></ErrorBoundary>} />
