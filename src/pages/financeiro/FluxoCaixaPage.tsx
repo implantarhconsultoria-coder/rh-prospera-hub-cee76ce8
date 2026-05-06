@@ -65,7 +65,7 @@ const FluxoCaixaPage: React.FC = () => {
     setLoading(false);
   };
 
-  useEffect(() => { carregar(); }, []);
+  useEffect(() => { if (!ext.loading) carregar(); /* eslint-disable-next-line */ }, [ext.loading, ext.isExterno, JSON.stringify(ext.empresaIds)]);
 
   const totais = useMemo(() => ({
     ent_prev: linhas.reduce((s, l) => s + l.entradas_previstas, 0),
