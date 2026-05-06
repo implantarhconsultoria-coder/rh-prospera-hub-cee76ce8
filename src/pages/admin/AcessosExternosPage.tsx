@@ -260,13 +260,28 @@ export default function AcessosExternosPage() {
               </div>
               <div><Label>Função</Label><Input value={form.funcao} onChange={(e) => setForm({ ...form, funcao: e.target.value })} /></div>
               <div>
-                <Label>Perfil de Acesso *</Label>
-                <Select value={form.perfil_acesso} onValueChange={(v) => setForm({ ...form, perfil_acesso: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {PERFIS.map((p) => <SelectItem key={p.v} value={p.v}>{p.l}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Label>Perfis de Acesso * <span className="text-xs text-muted-foreground">(marque um ou vários)</span></Label>
+                <div className="grid grid-cols-2 gap-2 mt-2 p-3 border rounded-md max-h-48 overflow-y-auto">
+                  {PERFIS.map((p) => {
+                    const checked = form.perfis_acesso.includes(p.v);
+                    return (
+                      <label key={p.v} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-accent rounded px-2 py-1">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => togglePerfil(p.v)}
+                          className="h-4 w-4 rounded border-input"
+                        />
+                        <span>{p.l}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                {form.perfis_acesso.length > 0 && (
+                  <p className="text-xs text-primary mt-1">
+                    Será criado 1 acesso por perfil ({form.perfis_acesso.length} no total) — todos com o mesmo PIN.
+                  </p>
+                )}
               </div>
             </div>
             <DialogFooter>
