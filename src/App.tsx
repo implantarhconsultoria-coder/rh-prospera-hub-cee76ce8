@@ -368,12 +368,13 @@ const App = () => (
               {/* ========== ACESSO EXTERNO POR PIN (sem login) ========== */}
               <Route path="/acesso-mecanico" element={<ErrorBoundary><AcessoExternoPage /></ErrorBoundary>} />
               <Route path="/acesso-financeiro" element={<ErrorBoundary><AcessoExternoPage /></ErrorBoundary>} />
-              <Route path="/acesso-rh" element={<ErrorBoundary><AcessoExternoPage /></ErrorBoundary>} />
               <Route path="/acesso-almoxarifado" element={<ErrorBoundary><AcessoExternoPage /></ErrorBoundary>} />
               <Route path="/acesso-operacional" element={<ErrorBoundary><AcessoExternoPage /></ErrorBoundary>} />
               <Route path="/acesso-filial" element={<ErrorBoundary><AcessoExternoPage /></ErrorBoundary>} />
               <Route path="/acesso-campo" element={<ErrorBoundary><AcessoExternoPage /></ErrorBoundary>} />
               <Route path="/acesso-faturamento" element={<ErrorBoundary><AcessoExternoPage /></ErrorBoundary>} />
+              {/* RH externo desativado — filial cobre RH */}
+              <Route path="/acesso-rh" element={<Navigate to="/acesso-filial" replace />} />
 
               {/* ========== APP MECÂNICO POR LINK EXCLUSIVO (sem login) ========== */}
               <Route path="/m/:token" element={<MecanicoLayout />}>
