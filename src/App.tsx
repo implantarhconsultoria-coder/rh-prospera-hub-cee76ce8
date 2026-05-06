@@ -448,16 +448,8 @@ const App = () => (
                 <Route path="chamados" element={<DespacharChamadoPage />} />
               </Route>
 
-              <Route path="/mecanico-ext/:acessoId" element={<ErrorBoundary><ExternoLayout modulo="mecanico" titulo="App Mecânico" cor="bg-green-600" items={EXT_ITEMS_MEC} /></ErrorBoundary>}>
-                <Route index element={<MecanicoHomePage />} />
-                <Route path="ponto" element={<MecanicoPontoPage />} />
-                <Route path="chamados" element={<MecanicoChamadosPage />} />
-                <Route path="estoque" element={<MecanicoEstoquePage />} />
-                <Route path="km" element={<MecanicoKmPage />} />
-                <Route path="abastecimento" element={<MecanicoAbastecimentoPage />} />
-                <Route path="galoes" element={<MecanicoGaloesPage />} />
-                <Route path="historico" element={<MecanicoHistoricoPage />} />
-              </Route>
+              {/* App Mecânico externo via PIN: redireciona para /m/:token (com TecnicoAppProvider) */}
+              <Route path="/mecanico-ext/:acessoId" element={<ErrorBoundary><MecanicoExtRedirect /></ErrorBoundary>} />
               <Route path="/relatorio-impressao" element={<ErrorBoundary><RelatorioImpressaoPage /></ErrorBoundary>} />
               <Route path="/entrega-impressao" element={<ErrorBoundary><EntregaImpressaoPage /></ErrorBoundary>} />
               <Route path="/relatorio-vr-impressao" element={<ErrorBoundary><RelatorioVRImpressaoPage /></ErrorBoundary>} />
