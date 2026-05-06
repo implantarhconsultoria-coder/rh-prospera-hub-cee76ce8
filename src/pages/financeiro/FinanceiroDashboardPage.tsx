@@ -42,11 +42,13 @@ const FinanceiroDashboardPage: React.FC = () => {
 
     const aReceber = tr.filter(t => ['aberto', 'parcial', 'vencido'].includes(t.status)).reduce((s, t) => s + Number(t.saldo || 0), 0);
     const aReceberVencido = tr.filter(t => ['aberto', 'parcial'].includes(t.status) && t.data_vencimento < hoje || t.status === 'vencido').reduce((s, t) => s + Number(t.saldo || 0), 0);
-    const recebido30d = (recs.data || []).reduce((s, r) => s + Number(r.valor || 0), 0);
+    const recsFiltered = (recs.data || []).filter((r: any) => empIds === null || empIds.includes(r.titulos_receber?.empresa_id));
+    const pagsFiltered = (pags.data || []).filter((p: any) => empIds === null || empIds.includes(p.titulos_pagar?.empresa_id));
+    const recebido30d = recsFiltered.reduce((s, r: any) => s + Number(r.valor || 0), 0);
 
     const aPagar = tp.filter(t => ['aberto', 'parcial', 'vencido'].includes(t.status)).reduce((s, t) => s + Number(t.saldo || 0), 0);
     const aPagarVencido = tp.filter(t => ['aberto', 'parcial'].includes(t.status) && t.data_vencimento < hoje || t.status === 'vencido').reduce((s, t) => s + Number(t.saldo || 0), 0);
-    const pago30d = (pags.data || []).reduce((s, p) => s + Number(p.valor || 0), 0);
+    const pago30d = pagsFiltered.reduce((s, p: any) => s + Number(p.valor || 0), 0);
 
     const saldoBancos = (cb.data || []).reduce((s, c) => s + Number(c.saldo_atual || 0), 0);
     const saldoPrevisto = saldoBancos + aReceber - aPagar;
