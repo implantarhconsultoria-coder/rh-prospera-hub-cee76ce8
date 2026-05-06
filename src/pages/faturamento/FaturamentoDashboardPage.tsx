@@ -23,6 +23,10 @@ const FaturamentoDashboardPage: React.FC = () => {
     const hoje = new Date().toISOString().slice(0, 10);
     const em30 = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
 
+    // KPIs vivos via RPC (já marca faturas vencidas automaticamente)
+    const { data: kpiData } = await supabase.rpc('dashboard_faturamento_kpis' as any);
+    setKpis(kpiData || null);
+
     const [faturas, contratos, clientes, contratoEquip, pendencias, contratosReaj, empresas] = await Promise.all([
       supabase.from('faturas').select('total, status, data_vencimento, empresa_id, cliente_id'),
       supabase.from('contratos').select('id, status'),
