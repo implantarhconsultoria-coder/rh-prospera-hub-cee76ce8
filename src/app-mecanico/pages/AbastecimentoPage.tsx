@@ -37,9 +37,40 @@ export default function AbastecimentoPage() {
   const [km, setKm] = useState(""); const [obs, setObs] = useState("");
   const [enviando, setEnviando] = useState(false);
 
-  const validarQR = async (codigo: string) => {
+  /**
+   * Extrai o código do QR. O QR pode ser:
+   *  - apenas o código (TOPAC-ABAST-047)
+   *  - uma URL contendo o código (https://implantarhprpro.com/abastecimento/TOPAC-ABAST-047)
+   *  - URL com query string ou trailing slash
+   */
+  const extrairCodigo = (raw: string): string => {
+    const txt = (raw || "").trim();
+    if (!txt) return "";
+    // Se for URL, pega o último segmento útil
+    try {
+      if (/^https?:\/\//i.test(txt)) {
+        const u = new URL(txt);
+        const partes = u.pathname.split("/").filter(Boolean);
+        const last = partes[partes.length - 1] || "";
+        return decodeURIComponent(last);
+      }
+    } catch { /* ignore */ }
+    // Caso contrário, devolve o texto puro
+    return txt;
+  };
+
+  const validarQR = async (raw: string) => {
     setScannerOpen(false);
-    const { data } = await supabase.rpc("qr_abastecimento_dados" as any, { p_codigo: codigo });
+    const codigo = extrairCodigo(raw);
+    if (!codigo) {
+      toast.error("QR Code inválido.");
+      return;
+    }
+    const { data, error } = await supabase.rpc("qr_abastecimento_dados" as any, { p_codigo: codigo });
+    if (error) {
+      toast.error("Erro ao validar QR Code.");
+      return;
+    }
     const r = data as any;
     if (!r?.ok) {
       toast.error(r?.error === "qr_bloqueado" ? "QR Code bloqueado." : "QR Code não encontrado ou bloqueado.");
