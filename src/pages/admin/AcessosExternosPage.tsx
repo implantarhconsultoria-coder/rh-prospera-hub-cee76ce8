@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,19 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Copy, Lock, Unlock, ExternalLink, Trash2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Plus, Copy, Lock, Unlock, ExternalLink, Trash2, Search, Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+type Funcionario = {
+  id: string;
+  nome: string;
+  cpf: string;
+  cargo: string;
+  empresa_nome: string;
+};
 
 type Acesso = {
   id: string;
@@ -40,6 +51,9 @@ export default function AcessosExternosPage() {
   const [lista, setLista] = useState<Acesso[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
+  const [funcOpen, setFuncOpen] = useState(false);
+  const [funcionarioId, setFuncionarioId] = useState<string | null>(null);
   const [form, setForm] = useState({
     nome: "", cpf: "", empresa: "", filial: "", funcao: "", perfil_acesso: "mecanico_externo",
   });
@@ -55,7 +69,41 @@ export default function AcessosExternosPage() {
     setLoading(false);
   };
 
-  useEffect(() => { carregar(); }, []);
+  const carregarFuncionarios = async () => {
+    const { data } = await supabase
+      .from("funcionarios")
+      .select("id, nome, cpf, cargo, empresas(nome)")
+      .eq("status", "ativo")
+      .order("nome");
+    const lista: Funcionario[] = (data || []).map((f: any) => ({
+      id: f.id,
+      nome: f.nome,
+      cpf: f.cpf || "",
+      cargo: f.cargo || "",
+      empresa_nome: f.empresas?.nome || "",
+    }));
+    setFuncionarios(lista);
+  };
+
+  useEffect(() => { carregar(); carregarFuncionarios(); }, []);
+
+  const selecionarFuncionario = (f: Funcionario) => {
+    setFuncionarioId(f.id);
+    setForm((prev) => ({
+      ...prev,
+      nome: f.nome,
+      cpf: f.cpf || prev.cpf,
+      empresa: f.empresa_nome || prev.empresa,
+      funcao: f.cargo || prev.funcao,
+    }));
+    setFuncOpen(false);
+  };
+
+  const resetForm = () => {
+    setForm({ nome: "", cpf: "", empresa: "", filial: "", funcao: "", perfil_acesso: "mecanico_externo" });
+    setFuncionarioId(null);
+  };
+
 
   const criar = async () => {
     if (!form.nome || !form.cpf) { toast.error("Nome e CPF obrigatórios"); return; }
@@ -78,7 +126,7 @@ export default function AcessosExternosPage() {
     if (error) { toast.error(error.message); return; }
     toast.success("Acesso criado");
     setOpen(false);
-    setForm({ nome: "", cpf: "", empresa: "", filial: "", funcao: "", perfil_acesso: "mecanico_externo" });
+    resetForm();
     carregar();
   };
 
@@ -129,7 +177,62 @@ export default function AcessosExternosPage() {
           <DialogContent>
             <DialogHeader><DialogTitle>Novo Acesso Externo</DialogTitle></DialogHeader>
             <div className="grid gap-3 py-2">
-              <div><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
+              <div>
+                <Label>Buscar funcionário cadastrado</Label>
+                <Popover open={funcOpen} onOpenChange={setFuncOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between font-normal"
+                    >
+                      <span className="flex items-center gap-2 truncate">
+                        <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+                        {funcionarioId ? (
+                          <span className="truncate">{form.nome}</span>
+                        ) : (
+                          <span className="text-muted-foreground">Digite o nome para buscar...</span>
+                        )}
+                      </span>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command
+                      filter={(value, search) => {
+                        if (!search) return 1;
+                        return value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
+                      }}
+                    >
+                      <CommandInput placeholder="Nome, CPF ou cargo..." />
+                      <CommandList>
+                        <CommandEmpty>Nenhum funcionário encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {funcionarios.map((f) => {
+                            const haystack = [f.nome, f.cpf, f.cargo, f.empresa_nome].filter(Boolean).join(" | ");
+                            return (
+                              <CommandItem key={f.id} value={haystack} onSelect={() => selecionarFuncionario(f)}>
+                                <Check className={cn("mr-2 h-4 w-4", funcionarioId === f.id ? "opacity-100" : "opacity-0")} />
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-medium">{f.nome}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {[f.cpf, f.cargo, f.empresa_nome].filter(Boolean).join(" · ")}
+                                  </span>
+                                </div>
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Selecione para preencher automaticamente, ou digite manualmente abaixo.
+                </p>
+              </div>
+              <div><Label>Nome *</Label><Input value={form.nome} onChange={(e) => { setForm({ ...form, nome: e.target.value }); setFuncionarioId(null); }} /></div>
               <div>
                 <Label>CPF * <span className="text-xs text-muted-foreground">(PIN = 4 últimos)</span></Label>
                 <Input value={form.cpf} onChange={(e) => setForm({ ...form, cpf: e.target.value })} placeholder="000.000.000-00" />
