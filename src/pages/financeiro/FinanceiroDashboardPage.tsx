@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Wallet, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Clock, Building2, RefreshCw, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { useAcessoExternoFiltro } from '@/hooks/useAcessoExternoFiltro';
 
 const fmtBRL = (n: number) => Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
