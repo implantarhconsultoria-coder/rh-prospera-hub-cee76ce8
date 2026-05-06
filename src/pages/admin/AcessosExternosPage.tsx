@@ -102,31 +102,43 @@ export default function AcessosExternosPage() {
   };
 
   const resetForm = () => {
-    setForm({ nome: "", cpf: "", empresa: "", filial: "", funcao: "", perfil_acesso: "mecanico_externo" });
+    setForm({ nome: "", cpf: "", empresa: "", filial: "", funcao: "", perfis_acesso: ["mecanico_externo"] });
     setFuncionarioId(null);
   };
 
+  const togglePerfil = (v: string) => {
+    setForm((prev) => {
+      const has = prev.perfis_acesso.includes(v);
+      return { ...prev, perfis_acesso: has ? prev.perfis_acesso.filter((x) => x !== v) : [...prev.perfis_acesso, v] };
+    });
+  };
 
   const criar = async () => {
     if (!form.nome || !form.cpf) { toast.error("Nome e CPF obrigatórios"); return; }
     const cpfClean = form.cpf.replace(/\D/g, "");
     if (cpfClean.length < 4) { toast.error("CPF inválido"); return; }
-    const perfil = PERFIS.find((p) => p.v === form.perfil_acesso)!;
-    const { error } = await supabase.from("acessos_externos" as any).insert({
-      nome: form.nome,
-      cpf: form.cpf,
-      cpf_clean: cpfClean,
-      pin: cpfClean.slice(-4),
-      empresa: form.empresa || null,
-      filial: form.filial || null,
-      funcao: form.funcao || null,
-      perfil_acesso: form.perfil_acesso,
-      modulo: perfil.modulo,
-      status: "ativo",
-      acesso_liberado: true,
+    if (form.perfis_acesso.length === 0) { toast.error("Selecione ao menos um perfil"); return; }
+
+    const linhas = form.perfis_acesso.map((pv) => {
+      const perfil = PERFIS.find((p) => p.v === pv)!;
+      return {
+        nome: form.nome,
+        cpf: form.cpf,
+        cpf_clean: cpfClean,
+        pin: cpfClean.slice(-4),
+        empresa: form.empresa || null,
+        filial: form.filial || null,
+        funcao: form.funcao || null,
+        perfil_acesso: perfil.v,
+        modulo: perfil.modulo,
+        status: "ativo",
+        acesso_liberado: true,
+      };
     });
+
+    const { error } = await supabase.from("acessos_externos" as any).insert(linhas);
     if (error) { toast.error(error.message); return; }
-    toast.success("Acesso criado");
+    toast.success(`${linhas.length} acesso(s) criado(s)`);
     setOpen(false);
     resetForm();
     carregar();
