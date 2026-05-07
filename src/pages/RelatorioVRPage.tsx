@@ -24,6 +24,7 @@ const RelatorioVRPage: React.FC = () => {
   const [generated, setGenerated] = useState(false);
   const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(new Set());
   const [multiCompanies, setMultiCompanies] = useState<Set<string>>(new Set());
+  const [formato, setFormato] = useState<'vr' | 'ambos'>('vr');
 
   const diasUteis = getWorkingDays(competencia);
   const fechamento = getFechamento(selectedCompany, competencia);
@@ -63,8 +64,8 @@ const RelatorioVRPage: React.FC = () => {
     navigate(`/relatorio-vr-impressao?empresa=${selectedCompany}&competencia=${competencia}`);
   };
 
-  const goRecibos = (empresas: string[], funcionarios?: string[]) => {
-    const params = new URLSearchParams({ tipo: 'vr', competencia, empresas: empresas.join(',') });
+  const goRecibos = (empresas: string[], funcionarios?: string[], formatoOverride?: 'vr' | 'vt' | 'ambos') => {
+    const params = new URLSearchParams({ formato: formatoOverride || formato, competencia, empresas: empresas.join(',') });
     if (funcionarios && funcionarios.length) params.set('funcionarios', funcionarios.join(','));
     window.open(`/recibos-beneficio?${params.toString()}`, '_blank');
   };
