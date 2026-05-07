@@ -50,6 +50,7 @@ import RelatorioVRPage from "@/pages/RelatorioVRPage";
 import RelatorioVTPage from "@/pages/RelatorioVTPage";
 import RelatorioVRImpressaoPage from "@/pages/RelatorioVRImpressaoPage";
 import RelatorioVTImpressaoPage from "@/pages/RelatorioVTImpressaoPage";
+import RecibosBeneficioImpressaoPage from "@/pages/RecibosBeneficioImpressaoPage";
 import RelatorioBeneficioIndividualPage from "@/pages/RelatorioBeneficioIndividualPage";
 import HistoricoPage from "@/pages/HistoricoPage";
 import AtestadosImportPage from "@/pages/AtestadosImportPage";
