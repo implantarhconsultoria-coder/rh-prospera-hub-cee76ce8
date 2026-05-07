@@ -98,24 +98,40 @@ const RelatorioVTImpressaoPage: React.FC = () => {
 
   const consolidado = empresaIds.length > 1;
 
+  const { datas: feriadosDatas } = useFeriados(competencia);
+  const correcoes = useRecibosCorrecoes({ tipo: 'vt', competencia });
+
   useEffect(() => {
     empresaIds.forEach(id => getOrCreateEntries(id, competencia));
   }, [empresaIds.join(','), competencia]);
 
   const blocks: EmpresaBlock[] = useMemo(() => {
+    const diasUteis = getWorkingDays(competencia, feriadosDatas);
     return empresaIds
       .map(id => companies.find(c => c.id === id))
       .filter(Boolean)
       .map((company: any) => {
-        const diasUteis = getWorkingDays(competencia);
         const fech = getFechamento(company.id, competencia);
         const compEmps = employees.filter(e => e.companyId === company.id && e.status === 'ativo' && e.categoria === 'operacional' && e.vtAtivo);
         const compEntries = entries.filter(e => e.companyId === company.id && e.competencia === competencia);
-        const rows = buildVTReportRows(compEmps, compEntries, diasUteis);
+        const rawRows = buildVTReportRows(compEmps, compEntries, diasUteis);
+        const rows: BenefitReportRow[] = rawRows.map(r => {
+          const c = correcoes.findFor('vt', company.id, r.emp.id, competencia);
+          if (!c) return r;
+          return {
+            ...r,
+            valorDiario: Number(c.valor_diario_corrigido ?? r.valorDiario),
+            diasFinais: Number(c.dias_finais_corrigido ?? r.diasFinais),
+            valorTotal: Number(c.valor_total_corrigido ?? r.valorTotal),
+            corrigido: true,
+            correcaoMotivo: c.motivo,
+            correcaoObservacao: c.observacao,
+          };
+        });
         const total = sumBenefitRows(rows);
         return { company, diasUteis, dataFechamento: fech.dataFechamento || '', rows, total };
       });
-  }, [empresaIds, companies, employees, entries, competencia]);
+  }, [empresaIds, companies, employees, entries, competencia, feriadosDatas, correcoes]);
 
   const totalGeral = useMemo(() => blocks.reduce((s, b) => s + b.total, 0), [blocks]);
 
