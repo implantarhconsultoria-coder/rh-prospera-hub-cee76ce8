@@ -185,7 +185,7 @@ const RecibosBeneficioImpressaoPage: React.FC = () => {
                     <div className="text-right">
                       <p className="text-sm font-bold">{titulo}</p>
                       <p className="text-xs">Competência: {competenciaLabel}</p>
-                      <p className="text-xs">Emissão: {dataPagamento}</p>
+                      <p className="text-xs">Emissão: {dataEmissao}</p>
                     </div>
                   </div>
                 </div>
