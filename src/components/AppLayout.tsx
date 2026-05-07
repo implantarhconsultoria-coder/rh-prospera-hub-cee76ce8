@@ -38,6 +38,10 @@ const AppLayout: React.FC = () => {
     return <Navigate to={redirect} replace />;
   }
 
+  if (isMobile) {
+    return <ErrorBoundary><AdminMobileLayout /></ErrorBoundary>;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <AppSidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
