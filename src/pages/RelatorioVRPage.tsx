@@ -5,13 +5,19 @@ import { formatCurrency } from '@/lib/calculations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { UtensilsCrossed, FileText, User, Printer, Building2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { UtensilsCrossed, FileText, User, Printer, Building2, Pencil, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { buildVRReportRows, sumBenefitRows } from '@/lib/benefitReports';
+import { buildVRReportRows, sumBenefitRows, type BenefitReportRow } from '@/lib/benefitReports';
+import { useRecibosCorrecoes } from '@/hooks/useRecibosCorrecoes';
+import ReciboCorrecaoModal from '@/components/ReciboCorrecaoModal';
 
 const RelatorioVRPage: React.FC = () => {
-  const { companies, employees, entries, getOrCreateEntries, addBenefitReport, getFechamento } = useApp();
+  const { companies, employees, entries, getOrCreateEntries, addBenefitReport, getFechamento, userRoles } = useApp();
+  const isAdmin = userRoles?.includes('admin');
+  const correcoes = useRecibosCorrecoes({ tipo: 'vr', competencia: undefined });
+  const [editingRow, setEditingRow] = useState<BenefitReportRow | null>(null);
   const navigate = useNavigate();
   const [selectedCompany, setSelectedCompany] = useState('');
   const [competencia, setCompetencia] = useState(new Date().toISOString().slice(0, 7));
@@ -35,7 +41,20 @@ const RelatorioVRPage: React.FC = () => {
   const compEntries = entries.filter(e => e.companyId === selectedCompany && e.competencia === competencia);
   const company = companies.find(c => c.id === selectedCompany);
 
-  const rows = useMemo(() => buildVRReportRows(compEmps, compEntries, diasUteis), [compEmps, compEntries, diasUteis]);
+  const rawRows = useMemo(() => buildVRReportRows(compEmps, compEntries, diasUteis), [compEmps, compEntries, diasUteis]);
+  const rows = useMemo<BenefitReportRow[]>(() => rawRows.map(r => {
+    const c = correcoes.findFor('vr', selectedCompany, r.emp.id, competencia);
+    if (!c) return r;
+    return {
+      ...r,
+      valorDiario: Number(c.valor_diario_corrigido ?? r.valorDiario),
+      diasFinais: Number(c.dias_finais_corrigido ?? r.diasFinais),
+      valorTotal: Number(c.valor_total_corrigido ?? r.valorTotal),
+      corrigido: true,
+      correcaoMotivo: c.motivo,
+      correcaoObservacao: c.observacao,
+    };
+  }), [rawRows, correcoes, selectedCompany, competencia]);
   const totalFinal = useMemo(() => sumBenefitRows(rows), [rows]);
   const emissaoDate = getFirstBusinessDayOfNextMonth(competencia);
 
@@ -183,7 +202,19 @@ const RelatorioVRPage: React.FC = () => {
                   <td className="px-2 py-2">
                     <Checkbox checked={selectedEmployees.has(r.emp.id)} onCheckedChange={() => toggleEmp(r.emp.id)} />
                   </td>
-                  <td className="px-2 py-2 font-medium">{r.emp.name}</td>
+                  <td className="px-2 py-2 font-medium">
+                    <div className="flex items-center gap-2">
+                      <span>{r.emp.name}</span>
+                      {r.corrigido && (
+                        <Badge variant="secondary" className="text-[9px] gap-1" title={r.correcaoMotivo || ''}>
+                          <ShieldCheck className="w-3 h-3" /> Corrigido
+                        </Badge>
+                      )}
+                    </div>
+                    {r.corrigido && r.correcaoMotivo && (
+                      <p className="text-[10px] text-muted-foreground italic">{r.correcaoMotivo}</p>
+                    )}
+                  </td>
                   <td className="px-2 py-2 text-muted-foreground">{r.emp.cargo}</td>
                   <td className="px-2 py-2">{formatCurrency(r.valorDiario)}</td>
                   <td className="px-2 py-2 text-center">{r.diasPrevistos}</td>
@@ -195,6 +226,11 @@ const RelatorioVRPage: React.FC = () => {
                     <button onClick={() => handleReciboIndividual(r.emp.id)} title="Imprimir recibo individual" className="text-primary hover:text-primary/80">
                       <Printer className="w-3.5 h-3.5" />
                     </button>
+                    {isAdmin && (
+                      <button onClick={() => setEditingRow(r)} title="Corrigir recibo" className="text-amber-600 hover:text-amber-700">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                     <button onClick={() => navigate(`/relatorio-beneficio-individual?empresa=${selectedCompany}&competencia=${competencia}&funcionario=${r.emp.id}`)} title="Ficha individual" className="text-muted-foreground hover:text-foreground">
                       <User className="w-3.5 h-3.5" />
                     </button>
@@ -212,6 +248,20 @@ const RelatorioVRPage: React.FC = () => {
           </table>
         </div>
       )}
+
+      <ReciboCorrecaoModal
+        open={!!editingRow}
+        onOpenChange={(o) => !o && setEditingRow(null)}
+        tipo="vr"
+        companyId={selectedCompany}
+        companyName={company?.name || ''}
+        competencia={competencia}
+        row={editingRow}
+        existing={editingRow ? correcoes.findFor('vr', selectedCompany, editingRow.emp.id, competencia) : undefined}
+        defaultDataPagamento={emissaoDate}
+        onSave={correcoes.upsert}
+        onRemove={correcoes.remove}
+      />
     </div>
   );
 };

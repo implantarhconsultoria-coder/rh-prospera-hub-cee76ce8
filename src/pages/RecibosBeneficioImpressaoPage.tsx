@@ -5,6 +5,7 @@ import { useApp } from '@/context/AppContext';
 import { getWorkingDays, getFirstBusinessDayOfNextMonth } from '@/lib/workingDays';
 import { formatCurrency } from '@/lib/calculations';
 import { buildVRReportRows, buildVTReportRows, type BenefitReportRow } from '@/lib/benefitReports';
+import { useRecibosCorrecoes } from '@/hooks/useRecibosCorrecoes';
 
 const RecibosBeneficioImpressaoPage: React.FC = () => {
   const { companies, employees, entries, getOrCreateEntries, dataLoading, isAuthenticated, loading } = useApp();
@@ -25,6 +26,8 @@ const RecibosBeneficioImpressaoPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [empresasParam, competencia]);
 
+  const correcoes = useRecibosCorrecoes({ tipo, competencia });
+
   const grupos = useMemo(() => {
     return empresaIds.map((cid) => {
       const company = companies.find((c) => c.id === cid);
@@ -35,12 +38,25 @@ const RecibosBeneficioImpressaoPage: React.FC = () => {
       );
       if (funcionarioIds) compEmps = compEmps.filter((e) => funcionarioIds.includes(e.id));
       const compEntries = entries.filter((e) => e.companyId === cid && e.competencia === competencia);
-      const rows = tipo === 'vr'
+      const baseRows = tipo === 'vr'
         ? buildVRReportRows(compEmps, compEntries, diasUteis)
         : buildVTReportRows(compEmps, compEntries, diasUteis);
+      const rows: BenefitReportRow[] = baseRows.map(r => {
+        const c = correcoes.findFor(tipo, cid, r.emp.id, competencia);
+        if (!c) return r;
+        return {
+          ...r,
+          valorDiario: Number(c.valor_diario_corrigido ?? r.valorDiario),
+          diasFinais: Number(c.dias_finais_corrigido ?? r.diasFinais),
+          valorTotal: Number(c.valor_total_corrigido ?? r.valorTotal),
+          corrigido: true,
+          correcaoMotivo: c.motivo,
+          correcaoObservacao: c.observacao,
+        };
+      });
       return { company, rows };
     }).filter(Boolean) as { company: any; rows: BenefitReportRow[] }[];
-  }, [empresaIds, companies, employees, entries, competencia, diasUteis, tipo, funcionariosParam]);
+  }, [empresaIds, companies, employees, entries, competencia, diasUteis, tipo, funcionariosParam, correcoes]);
 
   const competenciaLabel = (() => {
     const [y, m] = competencia.split('-');
@@ -83,14 +99,21 @@ const RecibosBeneficioImpressaoPage: React.FC = () => {
       `}</style>
 
       <div className="bg-white text-black min-h-screen" style={{ fontFamily: "'Segoe UI', Arial, sans-serif" }}>
-        <div className="no-print flex items-center gap-3 px-8 py-3 bg-gray-100 border-b">
+        <div className="no-print flex flex-wrap items-center gap-3 px-8 py-3 bg-gray-100 border-b sticky top-0 z-10">
           <button onClick={() => window.history.back()} className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700">
             ← Voltar
           </button>
           <button onClick={() => window.print()} className="px-4 py-2 text-sm font-medium bg-gray-700 text-white rounded-lg hover:bg-gray-800">
             🖨 Imprimir / PDF
           </button>
-          <span className="text-sm text-gray-600">{recibos.length} recibo(s)</span>
+          <div className="text-sm text-gray-700 ml-2">
+            <strong>Pré-visualização:</strong> {recibos.length} recibo(s) — {recibos.length} página(s) ({tipo.toUpperCase()})
+            {recibos.some(r => r.row.corrigido) && (
+              <span className="ml-2 inline-flex items-center gap-1 text-amber-700 bg-amber-50 border border-amber-300 rounded px-2 py-0.5 text-xs">
+                ⚠ Inclui recibo(s) com correção administrativa
+              </span>
+            )}
+          </div>
         </div>
 
         <div id="recibos-print" className="max-w-[210mm] mx-auto">
@@ -110,7 +133,12 @@ const RecibosBeneficioImpressaoPage: React.FC = () => {
                   </div>
                 </div>
 
-                <h2 className="text-center text-lg font-bold mb-6 tracking-wide">{titulo}</h2>
+                <h2 className="text-center text-lg font-bold mb-2 tracking-wide">{titulo}</h2>
+                {row.corrigido && (
+                  <p className="text-center text-[11px] text-amber-700 border border-amber-400 bg-amber-50 rounded px-2 py-1 mb-4">
+                    Recibo ajustado conforme correção administrativa registrada.
+                  </p>
+                )}
 
                 <table className="w-full text-sm mb-6">
                   <tbody>
