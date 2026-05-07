@@ -19,6 +19,7 @@ const ExternoLayout: React.FC<ExternoLayoutProps> = ({ modulo, titulo, cor = 'bg
   const nav = useNavigate();
   const [estado, setEstado] = useState<'loading' | 'ok' | 'bloqueado' | 'invalido'>('loading');
   const [acesso, setAcesso] = useState<any>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     let cancelado = false;
