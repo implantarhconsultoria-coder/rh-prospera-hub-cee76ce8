@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import AppSidebar from '@/components/AppSidebar';
+import AdminMobileLayout from '@/components/AdminMobileLayout';
 import { useApp } from '@/context/AppContext';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 import AguardandoAcesso from '@/components/AguardandoAcesso';
@@ -12,6 +14,7 @@ import ModuleSwitcher from '@/components/ModuleSwitcher';
 const AppLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const { session, userRole, roleLoading } = useApp();
+  const isMobile = useIsMobile();
 
   useActivityTracker(session);
 
@@ -33,6 +36,10 @@ const AppLayout: React.FC = () => {
       : userRole === 'financeiro' ? '/financeiro'
       : '/';
     return <Navigate to={redirect} replace />;
+  }
+
+  if (isMobile) {
+    return <ErrorBoundary><AdminMobileLayout /></ErrorBoundary>;
   }
 
   return (
