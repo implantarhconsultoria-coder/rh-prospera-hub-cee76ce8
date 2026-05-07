@@ -342,7 +342,7 @@ const RelatorioVTPage: React.FC = () => {
         competencia={competencia}
         row={editingRow}
         existing={editingRow ? correcoes.findFor('vt', selectedCompany, editingRow.emp.id, competencia) : undefined}
-        defaultDataPagamento={emissaoDate}
+        defaultDataPagamento={pagamentoDate}
         onSave={correcoes.upsert}
         onRemove={correcoes.remove}
       />
