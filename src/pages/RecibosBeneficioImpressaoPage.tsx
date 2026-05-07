@@ -133,7 +133,12 @@ const RecibosBeneficioImpressaoPage: React.FC = () => {
                   </div>
                 </div>
 
-                <h2 className="text-center text-lg font-bold mb-6 tracking-wide">{titulo}</h2>
+                <h2 className="text-center text-lg font-bold mb-2 tracking-wide">{titulo}</h2>
+                {row.corrigido && (
+                  <p className="text-center text-[11px] text-amber-700 border border-amber-400 bg-amber-50 rounded px-2 py-1 mb-4">
+                    Recibo ajustado conforme correção administrativa registrada.
+                  </p>
+                )}
 
                 <table className="w-full text-sm mb-6">
                   <tbody>
