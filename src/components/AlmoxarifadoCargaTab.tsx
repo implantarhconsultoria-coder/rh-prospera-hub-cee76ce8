@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Truck, Plus, Trash2, Wand2, Loader2, Save, RefreshCw, FileText, Printer, Paperclip, Search } from 'lucide-react';
+import { Truck, Plus, Trash2, Wand2, Loader2, Save, RefreshCw, FileText, Printer, Paperclip, Search, Users, AlertTriangle, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import EmployeeCombobox from '@/components/EmployeeCombobox';
 import type { Employee } from '@/types/database';
