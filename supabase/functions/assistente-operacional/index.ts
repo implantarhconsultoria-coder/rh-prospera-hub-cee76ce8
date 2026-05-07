@@ -340,9 +340,12 @@ Deno.serve(async (req) => {
     );
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData } = await supabase.auth.getClaims(token);
-    const userId = claimsData?.claims?.sub;
-    if (!userId) return reply200("⚠️ Não consegui validar sua sessão.");
+    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+    const userId = userData?.user?.id;
+    if (!userId) {
+      console.error("auth.getUser falhou", userErr);
+      return reply200("⚠️ Não consegui validar sua sessão. Faça login novamente.");
+    }
 
     const { data: roleData } = await supabase
       .from("user_roles").select("role").eq("user_id", userId);
