@@ -210,6 +210,17 @@ const RecibosBeneficioImpressaoPage: React.FC = () => {
                   </div>
                 </div>
 
+                {feriados.length > 0 && (
+                  <div className="border border-gray-300 rounded p-2 mb-4" style={{ fontSize: '10px' }}>
+                    <p className="font-bold mb-1">Feriados descontados ({feriados.length}):</p>
+                    <ul className="list-disc pl-5">
+                      {feriados.map(f => (
+                        <li key={f.data}>{new Date(f.data + 'T00:00:00').toLocaleDateString('pt-BR')} — {f.nome}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 {(formato === 'vr' || isAmbos) && vr && renderBenefitTable('VALE REFEIÇÃO (VR)', vr)}
                 {(formato === 'vt' || isAmbos) && vt && renderBenefitTable('VALE TRANSPORTE (VT)', vt)}
 
