@@ -98,6 +98,7 @@ import NotFound from "@/pages/NotFound";
 import AcessoExternoPage from "@/pages/AcessoExternoPage";
 import PortaisPage from "@/pages/PortaisPage";
 import AcessosExternosPage from "@/pages/admin/AcessosExternosPage";
+import AssistentePage from "@/pages/admin/AssistentePage";
 import { Loader2 } from "lucide-react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ExternoLayout from "@/components/ExternoLayout";
