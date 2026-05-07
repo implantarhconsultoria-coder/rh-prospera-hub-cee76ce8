@@ -14,6 +14,7 @@ import ModuleSwitcher from '@/components/ModuleSwitcher';
 const AppLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const { session, userRole, roleLoading } = useApp();
+  const isMobile = useIsMobile();
 
   useActivityTracker(session);
 
