@@ -98,6 +98,7 @@ import NotFound from "@/pages/NotFound";
 import AcessoExternoPage from "@/pages/AcessoExternoPage";
 import PortaisPage from "@/pages/PortaisPage";
 import AcessosExternosPage from "@/pages/admin/AcessosExternosPage";
+import AssistentePage from "@/pages/admin/AssistentePage";
 import { Loader2 } from "lucide-react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ExternoLayout from "@/components/ExternoLayout";
@@ -255,6 +256,7 @@ const AuthGate = () => {
         <Route path="/admin/app-operacional/:id" element={<Navigate to="/admin/app-mecanico" replace />} />
         <Route path="/admin/configuracoes" element={<ConfiguracoesPage />} />
         <Route path="/admin/acessos-externos" element={<AcessosExternosPage />} />
+        <Route path="/admin/assistente" element={<AssistentePage />} />
         {/* Faturamento */}
         <Route path="/admin/faturamento" element={<FaturamentoDashboardPage />} />
         <Route path="/admin/faturamento/clientes" element={<ClientesFatPage />} />

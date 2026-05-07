@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import AppSidebar from '@/components/AppSidebar';
 import AdminMobileLayout from '@/components/AdminMobileLayout';
+import AssistenteFab from '@/components/assistente/AssistenteFab';
 import { useApp } from '@/context/AppContext';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -56,6 +57,7 @@ const AppLayout: React.FC = () => {
           <ErrorBoundary><Outlet /></ErrorBoundary>
         </div>
       </main>
+      <AssistenteFab />
     </div>
   );
 };
