@@ -256,6 +256,7 @@ const AuthGate = () => {
         <Route path="/admin/app-operacional/:id" element={<Navigate to="/admin/app-mecanico" replace />} />
         <Route path="/admin/configuracoes" element={<ConfiguracoesPage />} />
         <Route path="/admin/acessos-externos" element={<AcessosExternosPage />} />
+        <Route path="/admin/assistente" element={<AssistentePage />} />
         {/* Faturamento */}
         <Route path="/admin/faturamento" element={<FaturamentoDashboardPage />} />
         <Route path="/admin/faturamento/clientes" element={<ClientesFatPage />} />
