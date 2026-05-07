@@ -99,7 +99,17 @@ const EntregaImpressaoPage: React.FC = () => {
 
   return (
     <div className="bg-white text-black min-h-screen print:bg-white" style={{ fontFamily: "'Segoe UI', Arial, sans-serif" }}>
-      <div className="print:hidden flex items-center gap-3 px-8 py-3 bg-gray-100 border-b">
+      <style>{`
+        @page { size: A4; margin: 12mm; }
+        @media print {
+          html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
+          body * { visibility: hidden !important; }
+          #entrega-print, #entrega-print * { visibility: visible !important; }
+          #entrega-print { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
+          .no-print, .no-print * { display: none !important; }
+        }
+      `}</style>
+      <div className="no-print flex items-center gap-3 px-8 py-3 bg-gray-100 border-b">
         <button
           onClick={() => {
             if (window.history.length > 1) {
@@ -117,7 +127,7 @@ const EntregaImpressaoPage: React.FC = () => {
           🖨 Imprimir / PDF
         </button>
       </div>
-      <div className="max-w-[210mm] mx-auto px-8 py-6 print:px-6 print:py-4" style={{ fontSize: '11px' }}>
+      <div id="entrega-print" className="max-w-[210mm] mx-auto px-8 py-6 print:px-6 print:py-4" style={{ fontSize: '11px' }}>
         <div className="border-b-2 border-black pb-3 mb-4">
           <div className="flex justify-between items-start">
             <div>
