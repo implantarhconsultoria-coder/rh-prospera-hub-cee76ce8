@@ -537,6 +537,72 @@ const AlmoxarifadoCargaTab: React.FC = () => {
           </div>
         </div>
 
+        {/* Prévia agrupada por funcionário (multi) */}
+        {grupos.length > 0 && (
+          <div className="border-2 border-primary/40 rounded-lg p-4 space-y-3 bg-primary/5">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <Users className="w-4 h-4 text-primary" />
+                {grupos.length} funcionário(s) identificados
+              </h3>
+              <div className="flex gap-2">
+                <Button size="sm" variant="ghost" onClick={() => setGrupos([])}>Cancelar</Button>
+                <Button size="sm" variant="secondary" disabled={gerandoLote}
+                  onClick={() => gerarCargasSeparadas(false)}>
+                  {gerandoLote ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Save className="w-3.5 h-3.5 mr-1" />}
+                  Gerar cargas separadas
+                </Button>
+                <Button size="sm" disabled={gerandoLote}
+                  onClick={() => gerarCargasSeparadas(true)}>
+                  <Printer className="w-3.5 h-3.5 mr-1" /> Gerar e imprimir todas
+                </Button>
+              </div>
+            </div>
+            <div className="grid gap-2">
+              {grupos.map((g, idx) => {
+                const pendente = !g.funcionario;
+                return (
+                  <div key={idx} className={`rounded-lg p-3 border ${pendente ? 'border-warning bg-warning/10' : 'border-border bg-background'}`}>
+                    <div className="flex items-start justify-between gap-2 flex-wrap">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs uppercase text-muted-foreground">Detectado:</span>
+                          <span className="text-sm font-semibold">{g.nomeOriginal}</span>
+                          {pendente
+                            ? <Badge variant="outline" className="text-warning border-warning"><AlertTriangle className="w-3 h-3 mr-1" />Pendente</Badge>
+                            : <Badge className="bg-success text-success-foreground"><Check className="w-3 h-3 mr-1" />{g.funcionario!.name}</Badge>}
+                        </div>
+                        {pendente && (
+                          <div className="mt-2">
+                            <label className="text-[10px] uppercase text-muted-foreground">Selecionar funcionário</label>
+                            <select
+                              className="w-full border rounded-lg px-2 py-1.5 text-sm bg-background mt-0.5"
+                              value=""
+                              onChange={e => atualizarGrupoFuncionario(idx, e.target.value)}
+                            >
+                              <option value="">— escolher —</option>
+                              {(g.candidatos.length > 0 ? g.candidatos : employees).slice(0, 50).map(e => (
+                                <option key={e.id} value={e.id}>{e.name}{e.cpf ? ` — ${e.cpf}` : ''}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                        <ul className="mt-2 text-xs space-y-0.5">
+                          {g.itens.map((it, i) => (
+                            <li key={i}>• {it.quantidade}× {it.nome}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => removerGrupo(idx)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
         {/* Itens */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
