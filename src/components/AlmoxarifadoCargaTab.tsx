@@ -191,6 +191,10 @@ const AlmoxarifadoCargaTab: React.FC = () => {
   const [anexo, setAnexo] = useState<File | null>(null);
   const [salvando, setSalvando] = useState(false);
 
+  // múltiplos funcionários (prévia)
+  const [grupos, setGrupos] = useState<GrupoFunc[]>([]);
+  const [gerandoLote, setGerandoLote] = useState(false);
+
   // listagem
   const [cargas, setCargas] = useState<CargaRow[]>([]);
   const [loading, setLoading] = useState(false);
