@@ -32,7 +32,8 @@ const RelatorioVRPage: React.FC = () => {
 
   const [competenciaEmpresa, setCompetenciaEmpresa] = useState(new Date().toISOString().slice(0, 7));
 
-  const diasUteis = getWorkingDays(competencia);
+  const { datas: feriadosDatas } = useFeriados(competencia, selectedCompany);
+  const diasUteis = getWorkingDays(competencia, feriadosDatas);
   const fechamento = getFechamento(selectedCompany, competencia);
   const dataFechamento = fechamento.dataFechamento || '';
 
