@@ -56,6 +56,7 @@ const AppLayout: React.FC = () => {
           <ErrorBoundary><Outlet /></ErrorBoundary>
         </div>
       </main>
+      <AssistenteFab />
     </div>
   );
 };
