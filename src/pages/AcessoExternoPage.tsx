@@ -61,6 +61,31 @@ export default function AcessoExternoPage() {
       return;
     }
     setLoading(true);
+
+    // Em celular: se houver módulo mecânico liberado para esse PIN, vai direto pro App Mecânico.
+    if (isMobileDevice()) {
+      const { data: mecData } = await supabase.rpc("acesso_externo_validar_pin" as any, {
+        p_pin: pin, p_modulo: "mecanico",
+      });
+      const mecRes = mecData as any;
+      if (mecRes?.ok && Array.isArray(mecRes.usuarios) && mecRes.usuarios.length > 0) {
+        setLoading(false);
+        if (mecRes.count === 1) {
+          const u = mecRes.usuarios[0];
+          localStorage.setItem("app_mecanico_acesso_id", u.id);
+          navigate(`/app-mecanico/${u.id}`);
+        } else {
+          // múltiplos — manda para tela de PIN do mecânico para escolher
+          navigate("/acesso-mecanico");
+        }
+        return;
+      }
+      // Sem mecânico no celular: bloqueia
+      setLoading(false);
+      setErro("Este acesso está disponível apenas no computador. No celular, use o App Mecânico.");
+      return;
+    }
+
     const { data, error } = await supabase.rpc("acesso_externo_listar_portais" as any, {
       p_pin: pin,
     });
