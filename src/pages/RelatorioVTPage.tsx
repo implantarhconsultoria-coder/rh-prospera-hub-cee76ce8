@@ -15,6 +15,13 @@ import { buildVTReportRows, sumBenefitRows, type BenefitReportRow } from '@/lib/
 import { useRecibosCorrecoes } from '@/hooks/useRecibosCorrecoes';
 import ReciboCorrecaoModal from '@/components/ReciboCorrecaoModal';
 
+const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const competenciaPt = (c: string) => {
+  const [y, m] = (c || '').split('-');
+  const idx = Number(m) - 1;
+  return idx >= 0 && idx < 12 ? `${MESES_PT[idx]} / ${y}` : c;
+};
+
 const RelatorioVTPage: React.FC = () => {
   const { companies, employees, entries, getOrCreateEntries, addBenefitReport, getFechamento, userRoles } = useApp();
   const isAdmin = userRoles?.includes('admin');
