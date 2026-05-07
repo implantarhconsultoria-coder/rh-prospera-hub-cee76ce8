@@ -3,6 +3,7 @@ import { Loader2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { getWorkingDays, getFirstBusinessDayOfNextMonth } from '@/lib/workingDays';
+import { useFeriados } from '@/hooks/useFeriados';
 import { formatCurrency } from '@/lib/calculations';
 import { buildVRReportRows, buildVTReportRows, type BenefitReportRow } from '@/lib/benefitReports';
 import { useRecibosCorrecoes } from '@/hooks/useRecibosCorrecoes';
@@ -42,7 +43,8 @@ const RecibosBeneficioImpressaoPage: React.FC = () => {
   const empresaIds = empresasParam.split(',').map(s => s.trim()).filter(Boolean);
   const funcionarioIds = funcionariosParam ? funcionariosParam.split(',').map(s => s.trim()).filter(Boolean) : null;
 
-  const diasUteis = getWorkingDays(competencia);
+  const { feriados, datas: feriadosDatas } = useFeriados(competencia, empresaIds[0]);
+  const diasUteis = getWorkingDays(competencia, feriadosDatas);
   const dataEmissao = new Date().toLocaleDateString('pt-BR');
 
   useEffect(() => {
@@ -207,6 +209,17 @@ const RecibosBeneficioImpressaoPage: React.FC = () => {
                     <p><strong>Dias úteis:</strong> {diasUteis}</p>
                   </div>
                 </div>
+
+                {feriados.length > 0 && (
+                  <div className="border border-gray-300 rounded p-2 mb-4" style={{ fontSize: '10px' }}>
+                    <p className="font-bold mb-1">Feriados descontados ({feriados.length}):</p>
+                    <ul className="list-disc pl-5">
+                      {feriados.map(f => (
+                        <li key={f.data}>{new Date(f.data + 'T00:00:00').toLocaleDateString('pt-BR')} — {f.nome}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 {(formato === 'vr' || isAmbos) && vr && renderBenefitTable('VALE REFEIÇÃO (VR)', vr)}
                 {(formato === 'vt' || isAmbos) && vt && renderBenefitTable('VALE TRANSPORTE (VT)', vt)}
