@@ -43,7 +43,7 @@ const RecibosBeneficioImpressaoPage: React.FC = () => {
   const funcionarioIds = funcionariosParam ? funcionariosParam.split(',').map(s => s.trim()).filter(Boolean) : null;
 
   const diasUteis = getWorkingDays(competencia);
-  const dataPagamento = getFirstBusinessDayOfNextMonth(competencia);
+  const dataEmissao = new Date().toLocaleDateString('pt-BR');
 
   useEffect(() => {
     if (!dataLoading) empresaIds.forEach((cid) => getOrCreateEntries(cid, competencia));
