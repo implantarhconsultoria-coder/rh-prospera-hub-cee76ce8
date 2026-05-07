@@ -5,6 +5,7 @@ import { useApp } from '@/context/AppContext';
 import { getWorkingDays, getFirstBusinessDayOfNextMonth } from '@/lib/workingDays';
 import { formatCurrency } from '@/lib/calculations';
 import { buildVRReportRows, buildVTReportRows, type BenefitReportRow } from '@/lib/benefitReports';
+import { useRecibosCorrecoes } from '@/hooks/useRecibosCorrecoes';
 
 const RecibosBeneficioImpressaoPage: React.FC = () => {
   const { companies, employees, entries, getOrCreateEntries, dataLoading, isAuthenticated, loading } = useApp();
