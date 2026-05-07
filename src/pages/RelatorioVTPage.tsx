@@ -218,9 +218,9 @@ const RelatorioVTPage: React.FC = () => {
           <div className="flex flex-wrap justify-between gap-3">
             <div>
               <h2 className="font-bold text-foreground">{company.name}</h2>
-              <p className="text-xs text-muted-foreground">CNPJ: {company.cnpj} — Competência: {competencia} — Dias úteis: {diasUteis}</p>
+              <p className="text-xs text-muted-foreground">CNPJ: {company.cnpj} — Competência: {competenciaPt(competencia)} — Dias úteis: {diasUteis}</p>
               <p className="text-xs text-muted-foreground">
-                Emissão: {emissaoDate}
+                Emissão: {emissaoDate} — Pagamento previsto: {pagamentoDate}
                 {dataFechamento ? ` — Fechamento: ${new Date(dataFechamento).toLocaleDateString('pt-BR')}` : ''}
               </p>
             </div>
