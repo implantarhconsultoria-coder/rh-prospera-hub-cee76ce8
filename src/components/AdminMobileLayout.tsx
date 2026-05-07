@@ -11,6 +11,7 @@ import { useApp } from '@/context/AppContext';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import VoiceCommandFab from '@/components/admin-mobile/VoiceCommandFab';
+import AssistenteFab from '@/components/assistente/AssistenteFab';
 import GlobalSearch, { SearchModule } from '@/components/admin-mobile/GlobalSearch';
 
 type Item = { label: string; icon: React.ElementType; path: string; group: string; tint?: string };
