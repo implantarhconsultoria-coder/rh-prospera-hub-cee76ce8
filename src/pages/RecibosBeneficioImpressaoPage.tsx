@@ -26,6 +26,8 @@ const RecibosBeneficioImpressaoPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [empresasParam, competencia]);
 
+  const correcoes = useRecibosCorrecoes({ tipo, competencia });
+
   const grupos = useMemo(() => {
     return empresaIds.map((cid) => {
       const company = companies.find((c) => c.id === cid);
@@ -36,12 +38,25 @@ const RecibosBeneficioImpressaoPage: React.FC = () => {
       );
       if (funcionarioIds) compEmps = compEmps.filter((e) => funcionarioIds.includes(e.id));
       const compEntries = entries.filter((e) => e.companyId === cid && e.competencia === competencia);
-      const rows = tipo === 'vr'
+      const baseRows = tipo === 'vr'
         ? buildVRReportRows(compEmps, compEntries, diasUteis)
         : buildVTReportRows(compEmps, compEntries, diasUteis);
+      const rows: BenefitReportRow[] = baseRows.map(r => {
+        const c = correcoes.findFor(tipo, cid, r.emp.id, competencia);
+        if (!c) return r;
+        return {
+          ...r,
+          valorDiario: Number(c.valor_diario_corrigido ?? r.valorDiario),
+          diasFinais: Number(c.dias_finais_corrigido ?? r.diasFinais),
+          valorTotal: Number(c.valor_total_corrigido ?? r.valorTotal),
+          corrigido: true,
+          correcaoMotivo: c.motivo,
+          correcaoObservacao: c.observacao,
+        };
+      });
       return { company, rows };
     }).filter(Boolean) as { company: any; rows: BenefitReportRow[] }[];
-  }, [empresaIds, companies, employees, entries, competencia, diasUteis, tipo, funcionariosParam]);
+  }, [empresaIds, companies, employees, entries, competencia, diasUteis, tipo, funcionariosParam, correcoes]);
 
   const competenciaLabel = (() => {
     const [y, m] = competencia.split('-');
