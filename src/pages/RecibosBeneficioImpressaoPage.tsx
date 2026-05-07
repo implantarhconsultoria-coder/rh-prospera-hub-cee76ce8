@@ -43,7 +43,7 @@ const RecibosBeneficioImpressaoPage: React.FC = () => {
   const funcionarioIds = funcionariosParam ? funcionariosParam.split(',').map(s => s.trim()).filter(Boolean) : null;
 
   const diasUteis = getWorkingDays(competencia);
-  const dataPagamento = getFirstBusinessDayOfNextMonth(competencia);
+  const dataEmissao = new Date().toLocaleDateString('pt-BR');
 
   useEffect(() => {
     if (!dataLoading) empresaIds.forEach((cid) => getOrCreateEntries(cid, competencia));
@@ -185,7 +185,7 @@ const RecibosBeneficioImpressaoPage: React.FC = () => {
                     <div className="text-right">
                       <p className="text-sm font-bold">{titulo}</p>
                       <p className="text-xs">Competência: {competenciaLabel}</p>
-                      <p className="text-xs">Emissão: {dataPagamento}</p>
+                      <p className="text-xs">Emissão: {dataEmissao}</p>
                     </div>
                   </div>
                 </div>
@@ -217,7 +217,6 @@ const RecibosBeneficioImpressaoPage: React.FC = () => {
                     Assinatura do colaborador
                   </div>
                   <p className="text-center text-[10px] mt-1">{emp.name}</p>
-                  <p className="text-center text-[10px] mt-1">Data: ____/____/________</p>
                 </div>
               </div>
             );
