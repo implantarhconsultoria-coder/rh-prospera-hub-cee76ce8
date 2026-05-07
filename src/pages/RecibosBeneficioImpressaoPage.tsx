@@ -7,10 +7,31 @@ import { formatCurrency } from '@/lib/calculations';
 import { buildVRReportRows, buildVTReportRows, type BenefitReportRow } from '@/lib/benefitReports';
 import { useRecibosCorrecoes } from '@/hooks/useRecibosCorrecoes';
 
+type Formato = 'vr' | 'vt' | 'ambos';
+
+const competenciaPt = (competencia: string) => {
+  const [y, m] = competencia.split('-');
+  const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  return `${meses[Number(m) - 1]} / ${y}`;
+};
+
+const applyCorrecao = (r: BenefitReportRow, c: any | undefined): BenefitReportRow => {
+  if (!c) return r;
+  return {
+    ...r,
+    valorDiario: Number(c.valor_diario_corrigido ?? r.valorDiario),
+    diasFinais: Number(c.dias_finais_corrigido ?? r.diasFinais),
+    valorTotal: Number(c.valor_total_corrigido ?? r.valorTotal),
+    corrigido: true,
+    correcaoMotivo: c.motivo,
+    correcaoObservacao: c.observacao,
+  };
+};
+
 const RecibosBeneficioImpressaoPage: React.FC = () => {
-  const { companies, employees, entries, getOrCreateEntries, dataLoading, isAuthenticated, loading } = useApp();
+  const { companies, employees, entries, getOrCreateEntries, dataLoading, loading } = useApp();
   const [searchParams] = useSearchParams();
-  const tipo = (searchParams.get('tipo') || 'vr') as 'vr' | 'vt';
+  const formato = (searchParams.get('formato') || searchParams.get('tipo') || 'vr') as Formato;
   const competencia = searchParams.get('competencia') || new Date().toISOString().slice(0, 7);
   const empresasParam = searchParams.get('empresas') || '';
   const funcionariosParam = searchParams.get('funcionarios') || '';
@@ -22,57 +43,61 @@ const RecibosBeneficioImpressaoPage: React.FC = () => {
   const dataPagamento = getFirstBusinessDayOfNextMonth(competencia);
 
   useEffect(() => {
-    empresaIds.forEach((cid) => getOrCreateEntries(cid, competencia));
+    if (!dataLoading) empresaIds.forEach((cid) => getOrCreateEntries(cid, competencia));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [empresasParam, competencia]);
+  }, [empresasParam, competencia, dataLoading]);
 
-  const correcoes = useRecibosCorrecoes({ tipo, competencia });
+  const correcoesVR = useRecibosCorrecoes({ tipo: 'vr', competencia });
+  const correcoesVT = useRecibosCorrecoes({ tipo: 'vt', competencia });
 
-  const grupos = useMemo(() => {
-    return empresaIds.map((cid) => {
+  type ReciboItem = { company: any; emp: any; vr?: BenefitReportRow; vt?: BenefitReportRow };
+
+  const recibos: ReciboItem[] = useMemo(() => {
+    if (dataLoading || loading) return [];
+    const out: ReciboItem[] = [];
+    for (const cid of empresaIds) {
       const company = companies.find((c) => c.id === cid);
-      if (!company) return null;
-      const ativoFlag = tipo === 'vr' ? 'vrAtivo' : 'vtAtivo';
-      let compEmps = employees.filter(
-        (e) => e.companyId === cid && e.status === 'ativo' && e.categoria === 'operacional' && (e as any)[ativoFlag],
+      if (!company) continue;
+      const baseEmps = employees.filter(
+        (e) => e.companyId === cid && e.status === 'ativo' && e.categoria === 'operacional',
       );
-      if (funcionarioIds) compEmps = compEmps.filter((e) => funcionarioIds.includes(e.id));
       const compEntries = entries.filter((e) => e.companyId === cid && e.competencia === competencia);
-      const baseRows = tipo === 'vr'
-        ? buildVRReportRows(compEmps, compEntries, diasUteis)
-        : buildVTReportRows(compEmps, compEntries, diasUteis);
-      const rows: BenefitReportRow[] = baseRows.map(r => {
-        const c = correcoes.findFor(tipo, cid, r.emp.id, competencia);
-        if (!c) return r;
-        return {
-          ...r,
-          valorDiario: Number(c.valor_diario_corrigido ?? r.valorDiario),
-          diasFinais: Number(c.dias_finais_corrigido ?? r.diasFinais),
-          valorTotal: Number(c.valor_total_corrigido ?? r.valorTotal),
-          corrigido: true,
-          correcaoMotivo: c.motivo,
-          correcaoObservacao: c.observacao,
-        };
+
+      const vrEmps = baseEmps.filter((e: any) => e.vrAtivo);
+      const vtEmps = baseEmps.filter((e: any) => e.vtAtivo);
+
+      const vrRowsAll = buildVRReportRows(vrEmps, compEntries, diasUteis).map((r) =>
+        applyCorrecao(r, correcoesVR.findFor('vr', cid, r.emp.id, competencia)),
+      );
+      const vtRowsAll = buildVTReportRows(vtEmps, compEntries, diasUteis).map((r) =>
+        applyCorrecao(r, correcoesVT.findFor('vt', cid, r.emp.id, competencia)),
+      );
+
+      const empSet = new Set<string>();
+      if (formato === 'vr' || formato === 'ambos') vrRowsAll.forEach((r) => empSet.add(r.emp.id));
+      if (formato === 'vt' || formato === 'ambos') vtRowsAll.forEach((r) => empSet.add(r.emp.id));
+
+      const ids = funcionarioIds ? Array.from(empSet).filter((id) => funcionarioIds.includes(id)) : Array.from(empSet);
+
+      ids.forEach((id) => {
+        const emp = baseEmps.find((e) => e.id === id);
+        if (!emp) return;
+        const vr = vrRowsAll.find((r) => r.emp.id === id);
+        const vt = vtRowsAll.find((r) => r.emp.id === id);
+        if (formato === 'vr' && !vr) return;
+        if (formato === 'vt' && !vt) return;
+        if (formato === 'ambos' && !vr && !vt) return;
+        out.push({ company, emp, vr, vt });
       });
-      return { company, rows };
-    }).filter(Boolean) as { company: any; rows: BenefitReportRow[] }[];
-  }, [empresaIds, companies, employees, entries, competencia, diasUteis, tipo, funcionariosParam, correcoes]);
+    }
+    return out;
+  }, [empresaIds, companies, employees, entries, competencia, diasUteis, formato, funcionariosParam, correcoesVR, correcoesVT, dataLoading, loading]);
 
-  const competenciaLabel = (() => {
-    const [y, m] = competencia.split('-');
-    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-    return `${meses[Number(m) - 1]} / ${y}`;
-  })();
+  const competenciaLabel = competenciaPt(competencia);
 
-  const titulo = tipo === 'vr' ? 'RECIBO DE VALE-REFEIÇÃO' : 'RECIBO DE VALE-TRANSPORTE';
-  const beneficioNome = tipo === 'vr' ? 'Vale-Refeição' : 'Vale-Transporte';
-  const declaracao = `Declaro ter recebido da empresa acima identificada o valor referente ao ${beneficioNome} da competência informada.`;
-
-  const recibos = grupos.flatMap((g) => g.rows.map((r) => ({ company: g.company, row: r })));
-
-  if (loading || dataLoading || (isAuthenticated && companies.length === 0)) {
+  if (loading || dataLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-3 text-foreground">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
         <p className="text-sm text-muted-foreground">Carregando recibos…</p>
       </div>
@@ -80,13 +105,35 @@ const RecibosBeneficioImpressaoPage: React.FC = () => {
   }
 
   if (recibos.length === 0) {
-    return <div className="p-10 text-center">Nenhum funcionário encontrado para os parâmetros informados.</div>;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 p-10 text-center">
+        <p className="text-base font-medium">Nenhum recibo encontrado para a competência selecionada.</p>
+        <button onClick={() => window.history.back()} className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg">← Voltar</button>
+      </div>
+    );
   }
+
+  const formatoLabel = formato === 'vr' ? 'VR' : formato === 'vt' ? 'VT' : 'VR + VT';
+
+  const renderBloco = (label: string, row: BenefitReportRow, sigla: 'VR' | 'VT') => (
+    <table className="w-full text-sm mb-3 border border-black/40">
+      <tbody>
+        <tr className="bg-gray-100">
+          <td colSpan={2} className="px-2 py-1 font-bold text-xs uppercase">{label}</td>
+        </tr>
+        <tr><td className="px-2 py-1 font-semibold w-1/2">Dias previstos</td><td className="px-2 py-1">{row.diasPrevistos}</td></tr>
+        <tr><td className="px-2 py-1 font-semibold">Descontos / faltas</td><td className="px-2 py-1">{row.diasDescontados > 0 ? `${row.diasDescontados} — ${row.motivo}` : '—'}</td></tr>
+        <tr><td className="px-2 py-1 font-semibold">Dias considerados</td><td className="px-2 py-1">{row.diasFinais}</td></tr>
+        <tr><td className="px-2 py-1 font-semibold">Valor diário</td><td className="px-2 py-1">{formatCurrency(row.valorDiario)}</td></tr>
+        <tr className="bg-gray-50"><td className="px-2 py-1 font-bold">TOTAL {sigla}</td><td className="px-2 py-1 font-bold">{formatCurrency(row.valorTotal)}</td></tr>
+      </tbody>
+    </table>
+  );
 
   return (
     <>
       <style>{`
-        @page { size: A4; margin: 14mm; }
+        @page { size: A4; margin: 12mm; }
         @media print {
           html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
           body * { visibility: hidden !important; }
@@ -100,15 +147,11 @@ const RecibosBeneficioImpressaoPage: React.FC = () => {
 
       <div className="bg-white text-black min-h-screen" style={{ fontFamily: "'Segoe UI', Arial, sans-serif" }}>
         <div className="no-print flex flex-wrap items-center gap-3 px-8 py-3 bg-gray-100 border-b sticky top-0 z-10">
-          <button onClick={() => window.history.back()} className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            ← Voltar
-          </button>
-          <button onClick={() => window.print()} className="px-4 py-2 text-sm font-medium bg-gray-700 text-white rounded-lg hover:bg-gray-800">
-            🖨 Imprimir / PDF
-          </button>
+          <button onClick={() => window.history.back()} className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700">← Voltar</button>
+          <button onClick={() => window.print()} className="px-4 py-2 text-sm font-medium bg-gray-700 text-white rounded-lg hover:bg-gray-800">🖨 Imprimir / PDF</button>
           <div className="text-sm text-gray-700 ml-2">
-            <strong>Pré-visualização:</strong> {recibos.length} recibo(s) — {recibos.length} página(s) ({tipo.toUpperCase()})
-            {recibos.some(r => r.row.corrigido) && (
+            <strong>Pré-visualização:</strong> {recibos.length} recibo(s) — {recibos.length} página(s) ({formatoLabel})
+            {recibos.some((r) => r.vr?.corrigido || r.vt?.corrigido) && (
               <span className="ml-2 inline-flex items-center gap-1 text-amber-700 bg-amber-50 border border-amber-300 rounded px-2 py-0.5 text-xs">
                 ⚠ Inclui recibo(s) com correção administrativa
               </span>
@@ -117,81 +160,65 @@ const RecibosBeneficioImpressaoPage: React.FC = () => {
         </div>
 
         <div id="recibos-print" className="max-w-[210mm] mx-auto">
-          {recibos.map(({ company, row }, idx) => (
-            <div key={`${company.id}-${row.emp.id}-${idx}`} className="recibo-page px-10 py-8" style={{ minHeight: '270mm' }}>
-              <div className="border-2 border-black p-6">
-                <div className="border-b-2 border-black pb-3 mb-4">
-                  <div className="flex justify-between items-start">
+          {recibos.map(({ company, emp, vr, vt }, idx) => {
+            const isAmbos = formato === 'ambos';
+            const titulo = isAmbos
+              ? 'RECIBO DE BENEFÍCIOS — VR E VT'
+              : formato === 'vr' ? 'RECIBO DE VALE-REFEIÇÃO' : 'RECIBO DE VALE-TRANSPORTE';
+            const declaracao = isAmbos
+              ? 'Declaro ter recebido da empresa acima identificada os valores referentes aos benefícios de Vale-Refeição e Vale-Transporte da competência informada.'
+              : `Declaro ter recebido da empresa acima identificada o valor referente ao ${formato === 'vr' ? 'Vale-Refeição' : 'Vale-Transporte'} da competência informada.`;
+            const totalGeral = (vr?.valorTotal || 0) + (vt?.valorTotal || 0);
+            const corrigido = vr?.corrigido || vt?.corrigido;
+            return (
+              <div key={`${company.id}-${emp.id}-${idx}`} className="recibo-page px-8 py-6" style={{ minHeight: '270mm' }}>
+                <div className="border-2 border-black p-5">
+                  <div className="border-b-2 border-black pb-2 mb-3 flex justify-between items-start">
                     <div>
                       <h1 className="text-base font-bold uppercase">{company.name}</h1>
                       <p className="text-xs">CNPJ: {company.cnpj}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs">Competência: <strong>{competenciaLabel}</strong></p>
-                      <p className="text-xs">Pagamento: <strong>{dataPagamento}</strong></p>
+                    <div className="text-right text-xs">
+                      <p>Competência: <strong>{competenciaLabel}</strong></p>
+                      <p>Pagamento: <strong>{dataPagamento}</strong></p>
                     </div>
                   </div>
-                </div>
 
-                <h2 className="text-center text-lg font-bold mb-2 tracking-wide">{titulo}</h2>
-                {row.corrigido && (
-                  <p className="text-center text-[11px] text-amber-700 border border-amber-400 bg-amber-50 rounded px-2 py-1 mb-4">
-                    Recibo ajustado conforme correção administrativa registrada.
-                  </p>
-                )}
+                  <h2 className="text-center text-base font-bold mb-2 tracking-wide">{titulo}</h2>
+                  {corrigido && (
+                    <p className="text-center text-[11px] text-amber-700 border border-amber-400 bg-amber-50 rounded px-2 py-1 mb-3">
+                      Recibo ajustado conforme correção administrativa registrada.
+                    </p>
+                  )}
 
-                <table className="w-full text-sm mb-6">
-                  <tbody>
-                    <tr>
-                      <td className="py-1 pr-4 font-semibold w-1/3">Funcionário:</td>
-                      <td className="py-1">{row.emp.name}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1 pr-4 font-semibold">Função:</td>
-                      <td className="py-1">{row.emp.cargo}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1 pr-4 font-semibold">Competência:</td>
-                      <td className="py-1">{competenciaLabel}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1 pr-4 font-semibold">Dias previstos:</td>
-                      <td className="py-1">{row.diasPrevistos}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1 pr-4 font-semibold">Descontos / faltas:</td>
-                      <td className="py-1">{row.diasDescontados > 0 ? `${row.diasDescontados} dia(s) — ${row.motivo}` : '—'}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1 pr-4 font-semibold">Dias considerados:</td>
-                      <td className="py-1">{row.diasFinais}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1 pr-4 font-semibold">Valor diário ({tipo.toUpperCase()}):</td>
-                      <td className="py-1">{formatCurrency(row.valorDiario)}</td>
-                    </tr>
-                    <tr className="border-t-2 border-black">
-                      <td className="py-2 pr-4 font-bold text-base">VALOR TOTAL RECEBIDO:</td>
-                      <td className="py-2 font-bold text-base">{formatCurrency(row.valorTotal)}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1 pr-4 font-semibold">Data do pagamento:</td>
-                      <td className="py-1">{dataPagamento}</td>
-                    </tr>
-                  </tbody>
-                </table>
+                  <table className="w-full text-sm mb-3">
+                    <tbody>
+                      <tr><td className="py-1 pr-4 font-semibold w-1/3">Funcionário:</td><td className="py-1">{emp.name}</td></tr>
+                      <tr><td className="py-1 pr-4 font-semibold">Função:</td><td className="py-1">{emp.cargo}</td></tr>
+                      <tr><td className="py-1 pr-4 font-semibold">Competência:</td><td className="py-1">{competenciaLabel}</td></tr>
+                    </tbody>
+                  </table>
 
-                <p className="text-sm text-justify mb-12 leading-relaxed">{declaracao}</p>
+                  {(formato === 'vr' || isAmbos) && vr && renderBloco('Vale-Refeição', vr, 'VR')}
+                  {(formato === 'vt' || isAmbos) && vt && renderBloco('Vale-Transporte', vt, 'VT')}
 
-                <div className="mt-16">
-                  <div className="border-t border-black w-3/4 mx-auto pt-1 text-center text-xs">
-                    Assinatura do colaborador
+                  {isAmbos && (
+                    <div className="text-right text-base font-bold border-t-2 border-black pt-2 mb-3">
+                      TOTAL GERAL: {formatCurrency(totalGeral)}
+                    </div>
+                  )}
+
+                  <p className="text-sm text-justify mb-10 leading-relaxed">{declaracao}</p>
+
+                  <div className="mt-12">
+                    <div className="border-t border-black w-3/4 mx-auto pt-1 text-center text-xs">Assinatura do colaborador</div>
+                    <p className="text-center text-xs mt-1">Nome: {emp.name}</p>
+                    <p className="text-center text-xs mt-1">Data: ____/____/________</p>
                   </div>
-                  <p className="text-center text-xs mt-1">{row.emp.name}</p>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </>
