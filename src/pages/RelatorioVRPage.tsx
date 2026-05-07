@@ -71,7 +71,8 @@ const RelatorioVRPage: React.FC = () => {
     };
   }), [rawRows, correcoes, selectedCompany, competencia]);
   const totalFinal = useMemo(() => sumBenefitRows(rows), [rows]);
-  const emissaoDate = getFirstBusinessDayOfNextMonth(competencia);
+  const emissaoDate = new Date().toLocaleDateString('pt-BR');
+  const pagamentoDate = getFirstBusinessDayOfNextMonth(competencia);
 
   const handlePrintRelatorio = () => {
     addBenefitReport({ type: 'vr', companyId: selectedCompany, competencia });
