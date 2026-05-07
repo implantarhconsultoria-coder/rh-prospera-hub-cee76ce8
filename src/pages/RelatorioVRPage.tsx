@@ -323,7 +323,7 @@ const RelatorioVRPage: React.FC = () => {
         competencia={competencia}
         row={editingRow}
         existing={editingRow ? correcoes.findFor('vr', selectedCompany, editingRow.emp.id, competencia) : undefined}
-        defaultDataPagamento={emissaoDate}
+        defaultDataPagamento={pagamentoDate}
         onSave={correcoes.upsert}
         onRemove={correcoes.remove}
       />
