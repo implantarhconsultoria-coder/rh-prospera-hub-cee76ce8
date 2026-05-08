@@ -14,11 +14,11 @@ import { Html5Qrcode } from "html5-qrcode";
 
 type Step = "scan" | "vale" | "bomba" | "painel" | "form" | "ok";
 
-interface Vale {
-  id: string; codigo: string; placa: string;
-  posto_nome: string; mecanico_nome: string;
-  empresa: string; filial: string;
+interface Posto {
+  id: string; codigo: string; nome: string;
+  cnpj: string | null; endereco: string | null; telefone: string | null;
 }
+interface MecInfo { nome: string; empresa: string; filial: string; }
 
 export default function AbastecimentoPage() {
   const { mecanico } = useMecanicoApp();
