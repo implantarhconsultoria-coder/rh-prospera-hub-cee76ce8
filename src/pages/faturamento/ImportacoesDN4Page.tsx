@@ -19,7 +19,7 @@ const STATUS_LABEL: Record<string, string> = {
   concluida: 'Concluída',
   pdf_sem_texto: 'PDF sem texto legível',
   tipo_nao_identificado: 'Tipo não identificado',
-  sem_registros: 'Pendente de conferência',
+  sem_registros: 'Sem registros válidos',
   erro: 'Erro técnico',
 };
 
