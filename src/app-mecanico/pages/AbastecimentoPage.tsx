@@ -363,7 +363,7 @@ export default function AbastecimentoPage() {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase.rpc("app_mecanico_validar_qr_posto" as never, {
+    const { data, error } = await supabase.rpc("app_mecanico_validar_qr_posto" as any, {
       p_acesso_id: mecanico.acesso_id,
       p_codigo: cod.trim(),
     });
@@ -445,7 +445,7 @@ export default function AbastecimentoPage() {
     }
     setLoading(true);
     const { latitude, longitude } = await getBrowserLocation();
-    const { data, error } = await supabase.rpc("app_mecanico_registrar_abastecimento_posto" as never, {
+    const { data, error } = await supabase.rpc("app_mecanico_registrar_abastecimento_posto" as any, {
       p_acesso_id: mecanico.acesso_id,
       p_posto_codigo: posto.codigo,
       p_valor: Number(valor),
