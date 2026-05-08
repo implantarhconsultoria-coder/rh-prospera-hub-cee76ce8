@@ -71,6 +71,7 @@ import MecPontoPage from "@/app-mecanico/pages/PontoPage";
 import MecChamadosPage from "@/app-mecanico/pages/ChamadosPage";
 import MecVeiculoPage from "@/app-mecanico/pages/VeiculoPage";
 import MecHistoricoPage from "@/app-mecanico/pages/HistoricoPage";
+import MecAbastecimentoPage from "@/app-mecanico/pages/AbastecimentoPage";
 import DespacharChamadoPage from "@/pages/campo/DespacharChamadoPage";
 import FaturamentoDashboardPage from "@/pages/faturamento/FaturamentoDashboardPage";
 import ClientesFatPage from "@/pages/faturamento/ClientesFatPage";
@@ -367,6 +368,7 @@ const App = () => (
                 <Route path="chamados" element={<MecChamadosPage />} />
                 <Route path="veiculo" element={<MecVeiculoPage />} />
                 <Route path="historico" element={<MecHistoricoPage />} />
+                <Route path="abastecimento" element={<MecAbastecimentoPage />} />
               </Route>
 
               {/* ========== ACESSO EXTERNO POR PIN — MÓDULOS (sem login) ========== */}
