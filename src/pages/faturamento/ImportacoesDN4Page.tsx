@@ -108,6 +108,13 @@ const ImportacoesDN4Page: React.FC = () => {
             </Button>
           </label>
           <Button variant="outline" size="icon" onClick={carregar}><RefreshCw className={loading ? 'w-4 h-4 animate-spin' : 'w-4 h-4'} /></Button>
+          <Button variant="outline" onClick={async () => {
+            const ok = window.confirm('Mesclar registros duplicados nas tabelas oficiais? Clientes sem CPF/CNPJ com mesmo nome+cidade+UF e representantes com mesmo nome+CPF serão unificados, mantendo o registro mais completo.');
+            if (!ok) return;
+            const { data, error } = await supabase.rpc('dn4_limpar_duplicados_oficial' as any);
+            if (error) toast.error(error.message);
+            else toast.success(`Duplicados mesclados: ${(data as any)?.clientes_mesclados || 0} clientes, ${(data as any)?.representantes_mesclados || 0} representantes`);
+          }}><Sparkles className="w-4 h-4 mr-1" /> Limpar duplicados</Button>
         </div>
       </div>
 
