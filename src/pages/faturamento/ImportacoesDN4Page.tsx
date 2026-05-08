@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Upload, FileText, CheckCircle2, XCircle, AlertTriangle, RefreshCw, Trash2, Loader2 } from 'lucide-react';
+import { Upload, FileText, CheckCircle2, XCircle, AlertTriangle, RefreshCw, Trash2, Loader2, Copy, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
