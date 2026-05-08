@@ -287,32 +287,35 @@ export default function AbastecimentoPage() {
 
     setScanLoading(true);
 
+    // Dispara getUserMedia IMEDIATAMENTE dentro do gesto do usuário
+    // para garantir que o popup nativo de permissão apareça no Android/iOS.
+    let stream: MediaStream | null = null;
+    let mode: CameraMode = "environment";
     try {
       await stopScanner();
+      const result = await requestCameraStream();
+      stream = result.stream;
+      mode = result.mode;
+    } catch (error) {
+      setScanFeedback(await resolveCameraError(error));
+      setScanLoading(false);
+      return;
+    }
 
-      const hasCamera = await QrScanner.hasCamera();
-      if (!hasCamera) {
-        setScanFeedback({
-          title: "Nenhuma câmera foi encontrada neste aparelho.",
-          detail: "Use a galeria ou digite o código do QR manualmente.",
-          reason: "no-camera",
-        });
-        return;
-      }
-
-      const { stream, mode } = await requestCameraStream();
-      stream.getTracks().forEach((track) => track.stop());
-
-      await new Promise((resolve) => setTimeout(resolve, 80));
+    try {
       const video = videoRef.current;
       if (!video) {
+        stream.getTracks().forEach((t) => t.stop());
         setScanFeedback({
           title: "Não foi possível preparar a câmera.",
           detail: "Atualize a página e tente novamente.",
           reason: "technical",
         });
+        setScanLoading(false);
         return;
       }
+      // Libera o stream temporário; QrScanner reabre com o modo correto
+      stream.getTracks().forEach((t) => t.stop());
 
       const scanner = new QrScanner(
         video,
@@ -328,8 +331,7 @@ export default function AbastecimentoPage() {
           highlightScanRegion: false,
           highlightCodeOutline: false,
           returnDetailedScanResult: true,
-          onDecodeError: () => {
-          },
+          onDecodeError: () => {},
         },
       );
 
