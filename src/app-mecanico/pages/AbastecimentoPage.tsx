@@ -45,6 +45,9 @@ interface MecInfo {
 }
 
 const CANONICAL_BASE_URL = "https://implantarhprpro.com";
+const supabaseRpc = supabase as unknown as {
+  rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string } | null }>;
+};
 
 export default function AbastecimentoPage() {
   const { mecanico } = useMecanicoApp();
@@ -363,7 +366,7 @@ export default function AbastecimentoPage() {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase.rpc("app_mecanico_validar_qr_posto" as any, {
+    const { data, error } = await supabaseRpc.rpc("app_mecanico_validar_qr_posto", {
       p_acesso_id: mecanico.acesso_id,
       p_codigo: cod.trim(),
     });
@@ -445,7 +448,7 @@ export default function AbastecimentoPage() {
     }
     setLoading(true);
     const { latitude, longitude } = await getBrowserLocation();
-    const { data, error } = await supabase.rpc("app_mecanico_registrar_abastecimento_posto" as any, {
+    const { data, error } = await supabaseRpc.rpc("app_mecanico_registrar_abastecimento_posto", {
       p_acesso_id: mecanico.acesso_id,
       p_posto_codigo: posto.codigo,
       p_valor: Number(valor),
