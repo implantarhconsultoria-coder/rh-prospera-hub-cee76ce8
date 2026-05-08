@@ -171,6 +171,12 @@ const ConferenciaDrawer: React.FC<{ importacao: Importacao; onClose: () => void 
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<string>('pendente_conferencia');
+  const [resumo, setResumo] = useState<any>(null);
+
+  const carregarResumo = useCallback(async () => {
+    const { data } = await supabase.rpc('dn4_resumo_importacao' as any, { p_importacao_id: importacao.id } as any);
+    setResumo(data);
+  }, [importacao.id]);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -179,9 +185,18 @@ const ConferenciaDrawer: React.FC<{ importacao: Importacao; onClose: () => void 
     const { data } = await q;
     setRows((data as any[]) || []);
     setLoading(false);
-  }, [tabela, importacao.id, filtro]);
+    carregarResumo();
+  }, [tabela, importacao.id, filtro, carregarResumo]);
 
   useEffect(() => { carregar(); }, [carregar]);
+
+  const marcarDuplicados = async () => {
+    const { data, error } = await supabase.rpc('dn4_marcar_duplicados' as any, { p_importacao_id: importacao.id } as any);
+    if (error) { toast.error(error.message); return; }
+    const d = data as any;
+    toast.success(`Duplicados marcados: ${(d?.clientes_ignorados||0)+(d?.representantes_ignorados||0)+(d?.equipamentos_ignorados||0)+(d?.historico_ignorados||0)} registros`);
+    carregar();
+  };
 
   const acao = async (acao: 'confirmar' | 'ignorar', ids: string[]) => {
     if (ids.length === 0) return;
