@@ -258,6 +258,26 @@ const ConferenciaDrawer: React.FC<{ importacao: Importacao; onClose: () => void 
           </div>
         </header>
 
+        {/* Painel de detalhes / reprocessar */}
+        <div className="px-4 py-3 border-b border-border bg-muted/10 space-y-2">
+          {importacao.mensagem && (
+            <div className={`text-sm ${STATUS_COLOR[importacao.status] || ''}`}>
+              <strong>Detalhe:</strong> {importacao.mensagem}
+            </div>
+          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground">Reprocessar como:</span>
+            <ReprocessarBox importacao={importacao} onDone={onClose} />
+          </div>
+          {importacao.texto_extraido && (
+            <details className="text-xs">
+              <summary className="cursor-pointer text-muted-foreground">Ver prévia do texto extraído ({importacao.texto_extraido.length} chars)</summary>
+              <pre className="mt-2 p-2 bg-muted/30 rounded max-h-48 overflow-auto whitespace-pre-wrap">{importacao.texto_extraido}</pre>
+            </details>
+          )}
+        </div>
+
+
         {resumo && (
           <div className="px-4 py-2 border-b border-border bg-muted/20 text-xs flex flex-wrap gap-3">
             <span><strong>Total:</strong> {resumo.total ?? 0}</span>
