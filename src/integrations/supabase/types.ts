@@ -14,6 +14,123 @@ export type Database = {
   }
   public: {
     Tables: {
+      abastecimentos: {
+        Row: {
+          acesso_externo_id: string | null
+          combustivel: string | null
+          competencia: string | null
+          created_at: string
+          data: string
+          empresa: string | null
+          endereco: string | null
+          filial: string | null
+          foto_bomba_url: string | null
+          foto_painel_url: string | null
+          funcionario_id: string | null
+          hora: string
+          id: string
+          km_atual: number | null
+          latitude: number | null
+          litros: number
+          longitude: number | null
+          mecanico_nome: string
+          observacao: string | null
+          placa: string | null
+          posto_cnpj: string | null
+          posto_endereco: string | null
+          posto_nome: string | null
+          preenchimento: string | null
+          qr_codigo: string | null
+          status: string
+          updated_at: string
+          vale_codigo: string | null
+          vale_id: string | null
+          valor: number
+          valor_por_litro: number | null
+        }
+        Insert: {
+          acesso_externo_id?: string | null
+          combustivel?: string | null
+          competencia?: string | null
+          created_at?: string
+          data?: string
+          empresa?: string | null
+          endereco?: string | null
+          filial?: string | null
+          foto_bomba_url?: string | null
+          foto_painel_url?: string | null
+          funcionario_id?: string | null
+          hora?: string
+          id?: string
+          km_atual?: number | null
+          latitude?: number | null
+          litros?: number
+          longitude?: number | null
+          mecanico_nome: string
+          observacao?: string | null
+          placa?: string | null
+          posto_cnpj?: string | null
+          posto_endereco?: string | null
+          posto_nome?: string | null
+          preenchimento?: string | null
+          qr_codigo?: string | null
+          status?: string
+          updated_at?: string
+          vale_codigo?: string | null
+          vale_id?: string | null
+          valor?: number
+          valor_por_litro?: number | null
+        }
+        Update: {
+          acesso_externo_id?: string | null
+          combustivel?: string | null
+          competencia?: string | null
+          created_at?: string
+          data?: string
+          empresa?: string | null
+          endereco?: string | null
+          filial?: string | null
+          foto_bomba_url?: string | null
+          foto_painel_url?: string | null
+          funcionario_id?: string | null
+          hora?: string
+          id?: string
+          km_atual?: number | null
+          latitude?: number | null
+          litros?: number
+          longitude?: number | null
+          mecanico_nome?: string
+          observacao?: string | null
+          placa?: string | null
+          posto_cnpj?: string | null
+          posto_endereco?: string | null
+          posto_nome?: string | null
+          preenchimento?: string | null
+          qr_codigo?: string | null
+          status?: string
+          updated_at?: string
+          vale_codigo?: string | null
+          vale_id?: string | null
+          valor?: number
+          valor_por_litro?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abastecimentos_acesso_externo_id_fkey"
+            columns: ["acesso_externo_id"]
+            isOneToOne: false
+            referencedRelation: "acessos_externos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abastecimentos_vale_id_fkey"
+            columns: ["vale_id"]
+            isOneToOne: false
+            referencedRelation: "vales_combustivel"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       acesso_excepcional: {
         Row: {
           aprovado_em: string | null
@@ -5154,6 +5271,74 @@ export type Database = {
         }
         Relationships: []
       }
+      vales_combustivel: {
+        Row: {
+          acesso_externo_id: string | null
+          codigo: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          empresa: string | null
+          filial: string | null
+          funcionario_id: string | null
+          id: string
+          mecanico_nome: string
+          observacao: string | null
+          placa: string | null
+          posto_cnpj: string | null
+          posto_endereco: string | null
+          posto_nome: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          acesso_externo_id?: string | null
+          codigo: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          empresa?: string | null
+          filial?: string | null
+          funcionario_id?: string | null
+          id?: string
+          mecanico_nome: string
+          observacao?: string | null
+          placa?: string | null
+          posto_cnpj?: string | null
+          posto_endereco?: string | null
+          posto_nome?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          acesso_externo_id?: string | null
+          codigo?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          empresa?: string | null
+          filial?: string | null
+          funcionario_id?: string | null
+          id?: string
+          mecanico_nome?: string
+          observacao?: string | null
+          placa?: string | null
+          posto_cnpj?: string | null
+          posto_endereco?: string | null
+          posto_nome?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vales_combustivel_acesso_externo_id_fkey"
+            columns: ["acesso_externo_id"]
+            isOneToOne: false
+            referencedRelation: "acessos_externos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       veiculos: {
         Row: {
           created_at: string
@@ -5294,6 +5479,31 @@ export type Database = {
           },
         ]
       }
+      vw_abastecimentos_mensal: {
+        Row: {
+          acesso_externo_id: string | null
+          competencia: string | null
+          empresa: string | null
+          filial: string | null
+          km_max: number | null
+          km_min: number | null
+          mecanico_nome: string | null
+          media_valor_litro: number | null
+          placa: string | null
+          qtd_abastecimentos: number | null
+          total_litros: number | null
+          total_valor: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abastecimentos_acesso_externo_id_fkey"
+            columns: ["acesso_externo_id"]
+            isOneToOne: false
+            referencedRelation: "acessos_externos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vw_faturamento_conferencia: {
         Row: {
           cliente_doc: string | null
@@ -5364,6 +5574,24 @@ export type Database = {
         Args: { p_acesso_id: string }
         Returns: Json
       }
+      admin_combustivel_qr_gerar: {
+        Args: { p_acesso_id: string; p_placa?: string }
+        Returns: Json
+      }
+      admin_combustivel_qr_toggle: {
+        Args: { p_bloquear: boolean; p_vale_id: string }
+        Returns: Json
+      }
+      admin_combustivel_relatorio_mensal: {
+        Args: {
+          p_acesso_id?: string
+          p_competencia: string
+          p_empresa?: string
+          p_filial?: string
+          p_placa?: string
+        }
+        Returns: Json
+      }
       app_mecanico_atualizar_chamado: {
         Args: {
           p_acao: string
@@ -5371,6 +5599,10 @@ export type Database = {
           p_chamado_id: string
           p_observacao?: string
         }
+        Returns: Json
+      }
+      app_mecanico_listar_abastecimentos: {
+        Args: { p_acesso_id: string }
         Returns: Json
       }
       app_mecanico_listar_chamados: {
@@ -5382,6 +5614,25 @@ export type Database = {
         Returns: Json
       }
       app_mecanico_registrar_abastecimento: {
+        Args: {
+          p_acesso_id: string
+          p_combustivel: string
+          p_endereco?: string
+          p_foto_bomba_url?: string
+          p_foto_painel_url?: string
+          p_km: number
+          p_latitude?: number
+          p_litros: number
+          p_longitude?: number
+          p_observacao?: string
+          p_placa?: string
+          p_posto_nome?: string
+          p_qr_codigo: string
+          p_valor: number
+        }
+        Returns: Json
+      }
+      app_mecanico_registrar_abastecimento_qr: {
         Args: {
           p_acesso_id: string
           p_combustivel: string
@@ -5426,6 +5677,10 @@ export type Database = {
       app_mecanico_status_dia: { Args: { p_acesso_id: string }; Returns: Json }
       app_mecanico_validar_acesso: {
         Args: { p_acesso_id: string }
+        Returns: Json
+      }
+      app_mecanico_validar_qr: {
+        Args: { p_acesso_id: string; p_codigo: string }
         Returns: Json
       }
       calc_inss: { Args: { p_base: number }; Returns: number }
