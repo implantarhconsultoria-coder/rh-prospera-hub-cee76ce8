@@ -206,15 +206,17 @@ export default function AbastecimentoPage() {
         </Card>
       )}
 
-      {step === "vale" && vale && (
+      {step === "vale" && posto && (
         <Card className="p-4 space-y-3">
           <div className="text-xs uppercase text-muted-foreground font-semibold">QR validado</div>
           <div className="space-y-1 text-sm">
-            <div><b>Mecânico:</b> {vale.mecanico_nome}</div>
-            <div><b>Empresa:</b> {vale.empresa || "—"}</div>
-            <div><b>Placa:</b> {vale.placa || "—"}</div>
-            <div><b>Posto:</b> {vale.posto_nome || "—"}</div>
-            <div className="text-xs text-muted-foreground">Código: {vale.codigo}</div>
+            <div><b>Mecânico:</b> {mecInfo?.nome}</div>
+            <div><b>Empresa:</b> {mecInfo?.empresa || "—"} {mecInfo?.filial ? `· ${mecInfo.filial}` : ""}</div>
+            <div><b>Posto:</b> {posto.nome}</div>
+            {posto.cnpj && <div className="text-xs text-muted-foreground">CNPJ: {posto.cnpj}</div>}
+            {posto.endereco && <div className="text-xs text-muted-foreground">{posto.endereco}</div>}
+            <div className="text-xs text-muted-foreground">Código: {posto.codigo}</div>
+            <div className="text-xs text-muted-foreground">{new Date().toLocaleString("pt-BR")}</div>
           </div>
           <Button className="w-full" onClick={() => setCamBomba(true)}>
             <Camera className="w-4 h-4 mr-2" /> Tirar foto da bomba
@@ -278,7 +280,7 @@ export default function AbastecimentoPage() {
             </div>
             <div className="col-span-2">
               <Label className="text-xs">Posto</Label>
-              <Input value={posto} onChange={(e) => setPosto(e.target.value)} />
+              <Input value={postoNome} onChange={(e) => setPostoNome(e.target.value)} disabled />
             </div>
             <div className="col-span-2">
               <Label className="text-xs">Observação</Label>
