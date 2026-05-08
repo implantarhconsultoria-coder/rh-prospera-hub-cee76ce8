@@ -558,6 +558,12 @@ export default function AbastecimentoPage() {
                 </div>
               </div>
               <div className="mt-3 space-y-2">
+                {(scanFeedback.reason === "blocked" || scanFeedback.reason === "permission") && (
+                  <Button type="button" className="w-full" onClick={iniciarScanner} disabled={scanLoading}>
+                    {scanLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />}
+                    Liberar câmera
+                  </Button>
+                )}
                 <Button type="button" variant="outline" className="w-full" onClick={iniciarScanner} disabled={scanLoading}>
                   {scanLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RotateCcw className="mr-2 h-4 w-4" />}
                   Tentar novamente
