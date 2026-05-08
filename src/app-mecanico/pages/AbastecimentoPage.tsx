@@ -121,7 +121,7 @@ export default function AbastecimentoPage() {
         return "Abra o App Mecânico pelo endereço seguro https://implantarhprpro.com para usar a câmera.";
       case "blocked":
       case "permission":
-        return "Libere a câmera nas permissões do navegador e toque em Tentar novamente.";
+        return "Toque no cadeado/ícone do site no navegador > Permissões > Câmera > Permitir. Depois toque em Tentar novamente.";
       case "no-camera":
         return "Use outro aparelho com câmera ou continue pelo envio da foto do QR / digitação manual.";
       case "unsupported":
