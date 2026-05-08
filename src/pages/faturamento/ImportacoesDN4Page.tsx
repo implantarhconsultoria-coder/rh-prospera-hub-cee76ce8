@@ -337,4 +337,37 @@ const ConferenciaDrawer: React.FC<{ importacao: Importacao; onClose: () => void 
   );
 };
 
+const ReprocessarBox: React.FC<{ importacao: Importacao; onDone: () => void }> = ({ importacao, onDone }) => {
+  const [tipo, setTipo] = useState<string>(importacao.tipo && importacao.tipo !== 'desconhecido' ? importacao.tipo : 'auto');
+  const [busy, setBusy] = useState(false);
+  const reprocessar = async () => {
+    setBusy(true);
+    try {
+      await supabase.from('importacoes_dn4' as any).update({
+        status: 'em_andamento', mensagem: null, total_lidos: 0, total_pendentes: 0, total_erros: 0,
+      } as any).eq('id', importacao.id);
+      const { error } = await supabase.functions.invoke('parse-dn4', {
+        body: { importacao_id: importacao.id, storage_path: importacao.storage_path, tipo_forcado: tipo === 'auto' ? null : tipo },
+      });
+      if (error) toast.error(error.message);
+      else toast.success('Reprocessado');
+      onDone();
+    } finally { setBusy(false); }
+  };
+  return (
+    <>
+      <select value={tipo} onChange={(e) => setTipo(e.target.value)} className="bg-background border border-border rounded px-2 py-1 text-sm">
+        <option value="auto">Detectar automaticamente</option>
+        <option value="cliente">Clientes</option>
+        <option value="representante">Representantes</option>
+        <option value="equipamento">Equipamentos / Patrimônios</option>
+        <option value="historico">Histórico de Locação</option>
+      </select>
+      <Button size="sm" variant="outline" onClick={reprocessar} disabled={busy}>
+        {busy ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RefreshCw className="w-3 h-3 mr-1" />} Reprocessar
+      </Button>
+    </>
+  );
+};
+
 export default ImportacoesDN4Page;
