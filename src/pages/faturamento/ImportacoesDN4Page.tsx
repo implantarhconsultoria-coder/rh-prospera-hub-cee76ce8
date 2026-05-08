@@ -225,20 +225,35 @@ const ConferenciaDrawer: React.FC<{ importacao: Importacao; onClose: () => void 
             <div className="font-semibold">{importacao.arquivo}</div>
             <div className="text-xs text-muted-foreground">{TIPO_LABEL[tipo]} • {STATUS_LABEL[importacao.status]}</div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <select value={filtro} onChange={(e) => setFiltro(e.target.value)} className="bg-background border border-border rounded px-2 py-1 text-sm">
               <option value="todos">Todos</option>
               <option value="pendente_conferencia">Pendentes</option>
               <option value="confirmado">Confirmados</option>
+              <option value="duplicado_ignorado">Duplicados ignorados</option>
               <option value="erro_leitura">Erros</option>
               <option value="ignorado">Ignorados</option>
             </select>
+            <Button variant="outline" onClick={marcarDuplicados}>
+              <Copy className="w-4 h-4 mr-1" /> Marcar duplicados
+            </Button>
             <Button onClick={() => acao('confirmar', rows.filter(r => r.status === 'pendente_conferencia').map(r => r.id))}>
               <CheckCircle2 className="w-4 h-4 mr-1" /> Confirmar todos válidos
             </Button>
             <Button variant="ghost" onClick={onClose}>Fechar</Button>
           </div>
         </header>
+
+        {resumo && (
+          <div className="px-4 py-2 border-b border-border bg-muted/20 text-xs flex flex-wrap gap-3">
+            <span><strong>Total:</strong> {resumo.total ?? 0}</span>
+            <span className="text-success"><strong>Confirmados:</strong> {resumo.confirmados ?? 0}</span>
+            <span className="text-warning"><strong>Pendentes:</strong> {resumo.pendentes_conferencia ?? 0}</span>
+            <span className="text-muted-foreground"><strong>Duplicados ignorados:</strong> {resumo.duplicados_ignorados ?? 0}</span>
+            <span className="text-destructive"><strong>Erros:</strong> {resumo.erros ?? 0}</span>
+            <span><strong>Ignorados manualmente:</strong> {resumo.ignorados ?? 0}</span>
+          </div>
+        )}
 
         <div className="flex-1 overflow-auto">
           {loading ? (
