@@ -1,8 +1,8 @@
 // @ts-nocheck
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { getDocument, GlobalWorkerOptions } from 'https://esm.sh/pdfjs-dist@4.0.379/legacy/build/pdf.mjs';
-
-// pdfjs sem worker
+// pdfjs via npm specifier (Deno) - sem canvas
+import * as pdfjs from 'npm:pdfjs-dist@4.0.379/legacy/build/pdf.mjs';
+const { getDocument, GlobalWorkerOptions } = pdfjs as any;
 // @ts-ignore
 GlobalWorkerOptions.workerSrc = '';
 
