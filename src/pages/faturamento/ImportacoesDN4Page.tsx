@@ -279,7 +279,8 @@ const ConferenciaDrawer: React.FC<{ importacao: Importacao; onClose: () => void 
                     ))}
                     <td className="p-2 text-xs">
                       {r.status === 'confirmado' && <span className="text-success">✓ confirmado</span>}
-                      {r.status === 'pendente_conferencia' && <span className="text-warning">pendente</span>}
+                      {r.status === 'pendente_conferencia' && <span className="text-warning" title={r.mensagem_erro || ''}>pendente {r.mensagem_erro ? `· ${r.mensagem_erro}` : ''}</span>}
+                      {r.status === 'duplicado_ignorado' && <span className="text-muted-foreground" title={r.mensagem_erro || ''}>duplicado</span>}
                       {r.status === 'erro_leitura' && <span className="text-destructive flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{r.mensagem_erro || 'erro'}</span>}
                       {r.status === 'ignorado' && <span className="text-muted-foreground">ignorado</span>}
                     </td>
