@@ -23,7 +23,8 @@ interface MecInfo { nome: string; empresa: string; filial: string; }
 export default function AbastecimentoPage() {
   const { mecanico } = useMecanicoApp();
   const [step, setStep] = useState<Step>("scan");
-  const [vale, setVale] = useState<Vale | null>(null);
+  const [posto, setPostoData] = useState<Posto | null>(null);
+  const [mecInfo, setMecInfo] = useState<MecInfo | null>(null);
   const [codigo, setCodigo] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -36,7 +37,7 @@ export default function AbastecimentoPage() {
   const [valor, setValor] = useState("");
   const [litros, setLitros] = useState("");
   const [combustivel, setCombustivel] = useState("Diesel S10");
-  const [posto, setPosto] = useState("");
+  const [postoNome, setPostoNome] = useState("");
   const [placa, setPlaca] = useState("");
   const [km, setKm] = useState("");
   const [obs, setObs] = useState("");
@@ -83,27 +84,25 @@ export default function AbastecimentoPage() {
   const validarQr = async (cod: string) => {
     if (!cod) { toast.error("Informe o código do QR"); return; }
     setLoading(true);
-    const { data, error } = await supabase.rpc("app_mecanico_validar_qr" as any, {
+    const { data, error } = await supabase.rpc("app_mecanico_validar_qr_posto" as any, {
       p_acesso_id: mecanico.acesso_id, p_codigo: cod,
     });
     setLoading(false);
     const r = data as any;
     if (error || !r?.ok) {
       const err = r?.error || error?.message || "qr_invalido";
-      const map: Record<string,string> = {
+      const map: Record<string, string> = {
         qr_nao_encontrado: "QR Code não encontrado.",
         qr_bloqueado: "QR Code bloqueado pelo administrador.",
-        qr_de_outro_mecanico: "Este QR pertence a outro mecânico.",
         acesso_nao_autorizado: "Acesso não autorizado.",
       };
       toast.error(map[err] || "Erro ao validar QR Code.");
       setStep("scan");
       return;
     }
-    const v: Vale = r.vale;
-    setVale(v);
-    setPlaca(v.placa || "");
-    setPosto(v.posto_nome || "");
+    setPostoData(r.posto);
+    setMecInfo(r.mecanico);
+    setPostoNome(r.posto?.nome || "");
     setStep("vale");
   };
 
@@ -112,7 +111,6 @@ export default function AbastecimentoPage() {
     try {
       const url = await uploadFoto("abastecimento-fotos", mecanico.acesso_id, "bomba", blob);
       setFotoBombaUrl(url);
-      // Tenta OCR
       setAnalisando(true);
       try {
         const dataUrl = await blobToDataUrl(blob);
@@ -144,20 +142,19 @@ export default function AbastecimentoPage() {
   };
 
   const finalizar = async () => {
-    if (!vale) return;
+    if (!posto) return;
     if (!fotoBombaUrl || !fotoPainelUrl) { toast.error("Fotos obrigatórias"); return; }
     if (!valor || !litros) { toast.error("Informe valor e litros"); return; }
     setLoading(true);
     const { latitude, longitude } = await getBrowserLocation();
-    const { data, error } = await supabase.rpc("app_mecanico_registrar_abastecimento_qr" as any, {
+    const { data, error } = await supabase.rpc("app_mecanico_registrar_abastecimento_posto" as any, {
       p_acesso_id: mecanico.acesso_id,
-      p_qr_codigo: vale.codigo,
+      p_posto_codigo: posto.codigo,
       p_valor: Number(valor),
       p_litros: Number(litros),
       p_combustivel: combustivel,
       p_km: km ? Number(km) : null,
       p_placa: placa || null,
-      p_posto_nome: posto || null,
       p_observacao: obs || null,
       p_foto_bomba_url: fotoBombaUrl,
       p_foto_painel_url: fotoPainelUrl,
@@ -174,7 +171,7 @@ export default function AbastecimentoPage() {
   };
 
   const reset = () => {
-    setVale(null); setCodigo(""); setFotoBombaUrl(null); setFotoPainelUrl(null);
+    setPostoData(null); setMecInfo(null); setCodigo(""); setFotoBombaUrl(null); setFotoPainelUrl(null);
     setValor(""); setLitros(""); setKm(""); setObs(""); setStep("scan");
   };
 
