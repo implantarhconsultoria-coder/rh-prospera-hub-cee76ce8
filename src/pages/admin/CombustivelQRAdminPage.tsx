@@ -8,20 +8,41 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Fuel, QrCode, Lock, Unlock, Plus, Printer, FileSpreadsheet, Pencil, Download, History, Loader2 } from "lucide-react";
+import {
+  Fuel, QrCode, Lock, Unlock, Plus, Printer, FileSpreadsheet, Pencil,
+  Download, History, Loader2, Building2, BarChart3, Settings, Filter
+} from "lucide-react";
 import QRCode from "qrcode";
 
 interface Posto {
   id: string; codigo: string; nome: string;
   cnpj: string | null; endereco: string | null; telefone: string | null;
-  status: string;
+  observacao: string | null; status: string;
 }
 
-const empty = { id: "", nome: "", cnpj: "", endereco: "", telefone: "" };
+interface Abast {
+  id: string; data: string; hora: string;
+  empresa: string | null; filial: string | null;
+  mecanico_nome: string; placa: string | null;
+  posto_nome: string | null; posto_id: string | null;
+  combustivel: string | null; valor: number; litros: number;
+  valor_por_litro: number | null; km_atual: number | null;
+  foto_bomba_url: string | null; foto_painel_url: string | null;
+  status: string; observacao: string | null;
+  qr_codigo: string | null;
+}
+
+const EMPRESAS_PADRAO = [
+  "TOPAC MATRIZ", "TOPAC FILIAL PRAIA GRANDE", "TOPAC FILIAL GOIÂNIA", "LMT", "ALQUI OBRAS"
+];
+
+const empty = { id: "", nome: "", cnpj: "", endereco: "", telefone: "", observacao: "" };
 
 export default function CombustivelQRAdminPage() {
   const [postos, setPostos] = useState<Posto[]>([]);
+  const [abastecimentos, setAbastecimentos] = useState<Abast[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [editAberto, setEditAberto] = useState(false);
@@ -30,29 +51,37 @@ export default function CombustivelQRAdminPage() {
   const [qrAberto, setQrAberto] = useState<Posto | null>(null);
   const [qrUrl, setQrUrl] = useState("");
 
-  const [histAberto, setHistAberto] = useState<Posto | null>(null);
-  const [hist, setHist] = useState<any[]>([]);
-  const [histLoading, setHistLoading] = useState(false);
+  const [editAbast, setEditAbast] = useState<Abast | null>(null);
 
-  // relatório
+  // Filtros
   const [comp, setComp] = useState(new Date().toISOString().slice(0, 7));
-  const [empresaF, setEmpresaF] = useState("");
-  const [relat, setRelat] = useState<any>(null);
-  const [carRel, setCarRel] = useState(false);
+  const [fEmp, setFEmp] = useState("todas");
+  const [fPosto, setFPosto] = useState("todos");
+  const [fStatus, setFStatus] = useState("todos");
+  const [fBusca, setFBusca] = useState("");
 
   const carregar = async () => {
     setLoading(true);
-    const { data } = await supabase.from("postos_combustivel" as any)
-      .select("id,codigo,nome,cnpj,endereco,telefone,status")
-      .is("deleted_at", null).order("nome");
-    setPostos((data as any) || []);
+    const [pRes, aRes] = await Promise.all([
+      supabase.from("postos_combustivel" as any)
+        .select("*").is("deleted_at", null).order("nome"),
+      supabase.from("abastecimentos" as any)
+        .select("*").order("data", { ascending: false }).order("hora", { ascending: false }).limit(2000),
+    ]);
+    setPostos(((pRes.data as any) || []) as Posto[]);
+    setAbastecimentos(((aRes.data as any) || []) as Abast[]);
     setLoading(false);
   };
   useEffect(() => { carregar(); }, []);
 
+  /* ==================== POSTOS / QR ==================== */
   const novo = () => { setEdit(empty); setEditAberto(true); };
   const editar = (p: Posto) => {
-    setEdit({ id: p.id, nome: p.nome, cnpj: p.cnpj || "", endereco: p.endereco || "", telefone: p.telefone || "" });
+    setEdit({
+      id: p.id, nome: p.nome, cnpj: p.cnpj || "",
+      endereco: p.endereco || "", telefone: p.telefone || "",
+      observacao: p.observacao || "",
+    });
     setEditAberto(true);
   };
   const salvar = async () => {
@@ -63,10 +92,13 @@ export default function CombustivelQRAdminPage() {
     });
     const r = data as any;
     if (error || !r?.ok) { toast.error(r?.error || error?.message || "Erro"); return; }
-    toast.success(edit.id ? "Posto atualizado" : "Posto criado com QR Code único");
+    // observação (atualização leve direta)
+    if (edit.id && edit.observacao !== undefined) {
+      await supabase.from("postos_combustivel" as any).update({ observacao: edit.observacao }).eq("id", edit.id);
+    }
+    toast.success(edit.id ? "Posto atualizado" : "Posto criado com QR único");
     setEditAberto(false); carregar();
   };
-
   const toggle = async (p: Posto) => {
     const bloquear = p.status === "ativo";
     const { data, error } = await supabase.rpc("admin_posto_combustivel_toggle" as any, {
@@ -77,19 +109,16 @@ export default function CombustivelQRAdminPage() {
     toast.success(bloquear ? "QR bloqueado" : "QR liberado");
     carregar();
   };
-
   const verQr = async (p: Posto) => {
     setQrAberto(p);
     const url = await QRCode.toDataURL(p.codigo, { width: 480, margin: 2 });
     setQrUrl(url);
   };
-
   const baixarQr = () => {
     if (!qrUrl || !qrAberto) return;
     const a = document.createElement("a");
     a.href = qrUrl; a.download = `qr-${qrAberto.codigo}.png`; a.click();
   };
-
   const imprimirQr = () => {
     if (!qrAberto || !qrUrl) return;
     const w = window.open("", "_blank"); if (!w) return;
@@ -101,42 +130,127 @@ export default function CombustivelQRAdminPage() {
         ${qrAberto.telefone ? `<div style="font-size:12px;color:#444">Tel: ${qrAberto.telefone}</div>` : ''}
         <img src="${qrUrl}" style="margin:20px 0;width:340px;height:340px" />
         <div style="font-family:monospace">${qrAberto.codigo}</div>
-        <div style="font-size:11px;color:#666;margin-top:8px">QR Code único e vitalício de abastecimento</div>
+        <div style="font-size:11px;color:#666;margin-top:8px">QR único e vitalício de abastecimento</div>
       </body></html>`);
     w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
   };
 
-  const verHistorico = async (p: Posto) => {
-    setHistAberto(p); setHistLoading(true); setHist([]);
-    const { data } = await supabase.rpc("admin_posto_combustivel_historico" as any, { p_posto_id: p.id });
-    const r = data as any;
-    if (r?.ok) setHist(r.abastecimentos || []);
-    setHistLoading(false);
-  };
+  /* ==================== FILTROS ==================== */
+  const empresasUsadas = useMemo(() => {
+    const s = new Set<string>(EMPRESAS_PADRAO);
+    abastecimentos.forEach(a => a.empresa && s.add(a.empresa));
+    return Array.from(s).sort();
+  }, [abastecimentos]);
 
-  const gerarRelatorio = async () => {
-    setCarRel(true);
-    const { data, error } = await supabase.rpc("admin_combustivel_relatorio_mensal" as any, {
-      p_competencia: comp, p_empresa: empresaF || null,
-      p_filial: null, p_acesso_id: null, p_placa: null,
+  const filtrados = useMemo(() => {
+    return abastecimentos.filter(a => {
+      if (comp && !(a.data || "").startsWith(comp)) return false;
+      if (fEmp !== "todas" && (a.empresa || "") !== fEmp) return false;
+      if (fPosto !== "todos" && a.posto_id !== fPosto) return false;
+      if (fStatus !== "todos" && a.status !== fStatus) return false;
+      if (fBusca) {
+        const q = fBusca.toLowerCase();
+        const hay = `${a.mecanico_nome} ${a.placa || ""} ${a.posto_nome || ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
     });
-    setCarRel(false);
-    const r = data as any;
-    if (error || !r?.ok) { toast.error("Erro ao gerar"); return; }
-    setRelat(r);
-  };
+  }, [abastecimentos, comp, fEmp, fPosto, fStatus, fBusca]);
+
+  const totais = useMemo(() => {
+    const litros = filtrados.reduce((s, a) => s + Number(a.litros || 0), 0);
+    const valor = filtrados.reduce((s, a) => s + Number(a.valor || 0), 0);
+    return { qtd: filtrados.length, litros, valor, media: litros > 0 ? valor / litros : 0 };
+  }, [filtrados]);
+
+  /* ==================== EMPRESAS ==================== */
+  const porEmpresa = useMemo(() => {
+    const map = new Map<string, { qtd: number; litros: number; valor: number; mecanicos: Set<string>; veiculos: Set<string> }>();
+    filtrados.forEach(a => {
+      const k = a.empresa || "(sem empresa)";
+      if (!map.has(k)) map.set(k, { qtd: 0, litros: 0, valor: 0, mecanicos: new Set(), veiculos: new Set() });
+      const o = map.get(k)!;
+      o.qtd++; o.litros += Number(a.litros || 0); o.valor += Number(a.valor || 0);
+      if (a.mecanico_nome) o.mecanicos.add(a.mecanico_nome);
+      if (a.placa) o.veiculos.add(a.placa);
+    });
+    return Array.from(map.entries()).map(([empresa, v]) => ({
+      empresa, qtd: v.qtd, litros: v.litros, valor: v.valor,
+      mecanicos: v.mecanicos.size, veiculos: v.veiculos.size,
+    })).sort((a, b) => b.valor - a.valor);
+  }, [filtrados]);
+
+  /* ==================== RELATÓRIO MENSAL ==================== */
+  const relatorio = useMemo(() => {
+    const map = new Map<string, any>();
+    filtrados.forEach(a => {
+      const k = `${a.empresa || ""}|${a.mecanico_nome}|${a.placa || ""}`;
+      if (!map.has(k)) {
+        map.set(k, {
+          empresa: a.empresa || "-", mecanico: a.mecanico_nome,
+          placa: a.placa || "-", qtd: 0, litros: 0, valor: 0,
+          km_min: Infinity, km_max: -Infinity, postos: new Set<string>(),
+        });
+      }
+      const o = map.get(k)!;
+      o.qtd++; o.litros += Number(a.litros || 0); o.valor += Number(a.valor || 0);
+      if (a.km_atual != null) {
+        o.km_min = Math.min(o.km_min, Number(a.km_atual));
+        o.km_max = Math.max(o.km_max, Number(a.km_atual));
+      }
+      if (a.posto_nome) o.postos.add(a.posto_nome);
+    });
+    return Array.from(map.values()).map(o => {
+      const km_rodado = (o.km_max > -Infinity && o.km_min < Infinity) ? Math.max(0, o.km_max - o.km_min) : 0;
+      return {
+        ...o,
+        km_inicial: o.km_min === Infinity ? null : o.km_min,
+        km_final: o.km_max === -Infinity ? null : o.km_max,
+        km_rodado,
+        media_litro: o.litros > 0 ? o.valor / o.litros : 0,
+        custo_km: km_rodado > 0 ? o.valor / km_rodado : 0,
+        postos: Array.from(o.postos).join(", "),
+      };
+    }).sort((a, b) => b.valor - a.valor);
+  }, [filtrados]);
 
   const exportarCsv = () => {
-    if (!relat?.linhas?.length) return;
-    const head = ["Mecânico", "Empresa", "Filial", "Placa", "Qtd", "Litros", "Valor", "R$/L"];
-    const rows = relat.linhas.map((l: any) => [
-      l.mecanico_nome, l.empresa || "", l.filial || "", l.placa || "",
-      l.qtd_abastecimentos, l.total_litros, l.total_valor, l.media_valor_litro,
+    if (!relatorio.length) return;
+    const head = ["Empresa", "Mecânico", "Placa", "Qtd", "Litros", "Valor", "R$/L", "KM Inicial", "KM Final", "KM Rodado", "Custo/KM", "Postos"];
+    const rows = relatorio.map(l => [
+      l.empresa, l.mecanico, l.placa, l.qtd,
+      l.litros.toFixed(2), l.valor.toFixed(2), l.media_litro.toFixed(3),
+      l.km_inicial ?? "", l.km_final ?? "", l.km_rodado, l.custo_km.toFixed(3), l.postos,
     ]);
     const csv = [head, ...rows].map(r => r.map((c: any) => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob); a.download = `combustivel-${comp}.csv`; a.click();
+  };
+
+  /* ==================== EDIÇÃO DE ABASTECIMENTO ==================== */
+  const salvarAbast = async () => {
+    if (!editAbast) return;
+    const { error } = await supabase.from("abastecimentos" as any).update({
+      valor: editAbast.valor, litros: editAbast.litros,
+      km_atual: editAbast.km_atual, combustivel: editAbast.combustivel,
+      placa: editAbast.placa, observacao: editAbast.observacao,
+      status: editAbast.status,
+    }).eq("id", editAbast.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Abastecimento atualizado");
+    setEditAbast(null); carregar();
+  };
+  const cancelarAbast = async () => {
+    if (!editAbast) return;
+    const motivo = window.prompt("Motivo do cancelamento:");
+    if (!motivo) return;
+    const { error } = await supabase.from("abastecimentos" as any).update({
+      status: "cancelado", observacao: `[CANCELADO] ${motivo} | ${editAbast.observacao || ""}`,
+    }).eq("id", editAbast.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Abastecimento cancelado");
+    setEditAbast(null); carregar();
   };
 
   return (
@@ -145,20 +259,72 @@ export default function CombustivelQRAdminPage() {
         <div className="flex items-center gap-3">
           <Fuel className="w-7 h-7 text-amber-600" />
           <div>
-            <h1 className="text-2xl font-bold">Combustível / QR Code do Posto</h1>
-            <p className="text-sm text-muted-foreground">QR único e vitalício por posto. Qualquer mecânico logado pode usar.</p>
+            <h1 className="text-2xl font-bold">Abastecimento QRCode</h1>
+            <p className="text-sm text-muted-foreground">QR Codes de postos, abastecimentos da frota e custo por empresa.</p>
           </div>
         </div>
         <Button onClick={novo}><Plus className="w-4 h-4 mr-1" /> Novo posto</Button>
       </div>
 
-      <Tabs defaultValue="postos">
-        <TabsList>
-          <TabsTrigger value="postos">Postos / QR</TabsTrigger>
-          <TabsTrigger value="rel">Relatório Mensal</TabsTrigger>
+      {/* Filtros globais */}
+      <Card>
+        <CardContent className="pt-4">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 items-end">
+            <div>
+              <Label className="text-xs flex items-center gap-1"><Filter className="w-3 h-3" /> Mês</Label>
+              <Input type="month" value={comp} onChange={e => setComp(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs">Empresa</Label>
+              <Select value={fEmp} onValueChange={setFEmp}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas</SelectItem>
+                  {empresasUsadas.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Posto</Label>
+              <Select value={fPosto} onValueChange={setFPosto}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {postos.map(p => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Status</Label>
+              <Select value={fStatus} onValueChange={setFStatus}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="concluido">Concluído</SelectItem>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="cancelado">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="md:col-span-2">
+              <Label className="text-xs">Buscar (mecânico, placa, posto)</Label>
+              <Input value={fBusca} onChange={e => setFBusca(e.target.value)} placeholder="Buscar..." />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Tabs defaultValue="qrcodes">
+        <TabsList className="grid grid-cols-5 w-full md:w-auto">
+          <TabsTrigger value="qrcodes"><QrCode className="w-4 h-4 mr-1" /> QR Codes</TabsTrigger>
+          <TabsTrigger value="abast"><Fuel className="w-4 h-4 mr-1" /> Abastecimentos</TabsTrigger>
+          <TabsTrigger value="empresas"><Building2 className="w-4 h-4 mr-1" /> Empresas</TabsTrigger>
+          <TabsTrigger value="rel"><BarChart3 className="w-4 h-4 mr-1" /> Relatório</TabsTrigger>
+          <TabsTrigger value="cfg"><Settings className="w-4 h-4 mr-1" /> Configurações</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="postos">
+        {/* ============== QR CODES ============== */}
+        <TabsContent value="qrcodes">
           <Card>
             <CardHeader><CardTitle>Postos cadastrados ({postos.length})</CardTitle></CardHeader>
             <CardContent>
@@ -191,7 +357,6 @@ export default function CombustivelQRAdminPage() {
                         </TableCell>
                         <TableCell className="text-right space-x-1">
                           <Button size="sm" variant="ghost" onClick={() => verQr(p)} title="Ver / imprimir QR"><QrCode className="w-4 h-4" /></Button>
-                          <Button size="sm" variant="ghost" onClick={() => verHistorico(p)} title="Histórico"><History className="w-4 h-4" /></Button>
                           <Button size="sm" variant="ghost" onClick={() => editar(p)} title="Editar"><Pencil className="w-4 h-4" /></Button>
                           <Button size="sm" variant="ghost" onClick={() => toggle(p)} title={p.status === 'ativo' ? 'Bloquear' : 'Liberar'}>
                             {p.status === 'ativo' ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
@@ -206,59 +371,169 @@ export default function CombustivelQRAdminPage() {
           </Card>
         </TabsContent>
 
+        {/* ============== ABASTECIMENTOS ============== */}
+        <TabsContent value="abast">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Abastecimentos ({filtrados.length})</span>
+                <span className="text-sm font-normal text-muted-foreground">
+                  {totais.litros.toFixed(2)} L · R$ {totais.valor.toFixed(2)}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? <div className="py-8 flex justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>
+                : filtrados.length === 0 ? <p className="text-sm text-muted-foreground py-6 text-center">Nenhum abastecimento no filtro.</p> : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader><TableRow>
+                        <TableHead>Data</TableHead><TableHead>Empresa</TableHead><TableHead>Mecânico</TableHead>
+                        <TableHead>Placa</TableHead><TableHead>Posto</TableHead><TableHead>Comb.</TableHead>
+                        <TableHead className="text-right">Litros</TableHead><TableHead className="text-right">Valor</TableHead>
+                        <TableHead className="text-right">KM</TableHead><TableHead>Status</TableHead><TableHead></TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                        {filtrados.map(a => (
+                          <TableRow key={a.id}>
+                            <TableCell className="text-xs whitespace-nowrap">{a.data} {String(a.hora).slice(0, 5)}</TableCell>
+                            <TableCell className="text-xs">{a.empresa || '-'}</TableCell>
+                            <TableCell className="text-sm">{a.mecanico_nome}</TableCell>
+                            <TableCell className="text-xs">{a.placa || '-'}</TableCell>
+                            <TableCell className="text-xs">{a.posto_nome || '-'}</TableCell>
+                            <TableCell className="text-xs">{a.combustivel || '-'}</TableCell>
+                            <TableCell className="text-right text-xs">{Number(a.litros).toFixed(2)}</TableCell>
+                            <TableCell className="text-right text-xs">R$ {Number(a.valor).toFixed(2)}</TableCell>
+                            <TableCell className="text-right text-xs">{a.km_atual ?? '-'}</TableCell>
+                            <TableCell>
+                              {a.status === 'concluido' && <Badge className="bg-green-500/10 text-green-700 border-green-500/20">OK</Badge>}
+                              {a.status === 'pendente' && <Badge variant="secondary">Pendente</Badge>}
+                              {a.status === 'cancelado' && <Badge variant="destructive">Cancelado</Badge>}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button size="sm" variant="ghost" onClick={() => setEditAbast({ ...a })}><Pencil className="w-4 h-4" /></Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ============== EMPRESAS ============== */}
+        <TabsContent value="empresas">
+          <Card>
+            <CardHeader><CardTitle>Custo por Empresa — {comp}</CardTitle></CardHeader>
+            <CardContent>
+              {porEmpresa.length === 0 ? <p className="text-sm text-muted-foreground py-6 text-center">Sem dados no período.</p> : (
+                <Table>
+                  <TableHeader><TableRow>
+                    <TableHead>Empresa</TableHead>
+                    <TableHead className="text-right">Mecânicos</TableHead>
+                    <TableHead className="text-right">Veículos</TableHead>
+                    <TableHead className="text-right">Abast.</TableHead>
+                    <TableHead className="text-right">Litros</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>
+                    {porEmpresa.map(e => (
+                      <TableRow key={e.empresa}>
+                        <TableCell className="font-medium">{e.empresa}</TableCell>
+                        <TableCell className="text-right">{e.mecanicos}</TableCell>
+                        <TableCell className="text-right">{e.veiculos}</TableCell>
+                        <TableCell className="text-right">{e.qtd}</TableCell>
+                        <TableCell className="text-right">{e.litros.toFixed(2)}</TableCell>
+                        <TableCell className="text-right font-semibold">R$ {e.valor.toFixed(2)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ============== RELATÓRIO ============== */}
         <TabsContent value="rel">
           <Card>
-            <CardHeader><CardTitle>Relatório Mensal de Combustível</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <div>
-                  <Label className="text-xs">Competência</Label>
-                  <Input type="month" value={comp} onChange={e => setComp(e.target.value)} />
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between flex-wrap gap-2">
+                <span>Relatório Mensal — {comp}</span>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={exportarCsv} disabled={!relatorio.length}><FileSpreadsheet className="w-4 h-4 mr-1" /> CSV</Button>
+                  <Button variant="outline" size="sm" onClick={() => window.print()} disabled={!relatorio.length}><Printer className="w-4 h-4 mr-1" /> Imprimir</Button>
                 </div>
-                <div>
-                  <Label className="text-xs">Empresa (opcional)</Label>
-                  <Input value={empresaF} onChange={e => setEmpresaF(e.target.value)} placeholder="ex: TOPAC MATRIZ" />
-                </div>
-                <div className="flex items-end gap-2 md:col-span-2">
-                  <Button onClick={gerarRelatorio} disabled={carRel}>{carRel && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}Gerar</Button>
-                  <Button variant="outline" onClick={exportarCsv} disabled={!relat?.linhas?.length}><FileSpreadsheet className="w-4 h-4 mr-1" /> CSV</Button>
-                  <Button variant="outline" onClick={() => window.print()} disabled={!relat?.linhas?.length}><Printer className="w-4 h-4 mr-1" /> Imprimir</Button>
-                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <Card className="p-3"><div className="text-xs text-muted-foreground">Abastecimentos</div><div className="text-xl font-bold">{totais.qtd}</div></Card>
+                <Card className="p-3"><div className="text-xs text-muted-foreground">Litros totais</div><div className="text-xl font-bold">{totais.litros.toFixed(2)}</div></Card>
+                <Card className="p-3"><div className="text-xs text-muted-foreground">Valor total</div><div className="text-xl font-bold">R$ {totais.valor.toFixed(2)}</div></Card>
+                <Card className="p-3"><div className="text-xs text-muted-foreground">Média R$/L</div><div className="text-xl font-bold">{totais.media.toFixed(3)}</div></Card>
               </div>
-
-              {relat && (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-3 gap-3 text-sm">
-                    <Card className="p-3"><div className="text-xs text-muted-foreground">Abastecimentos</div><div className="text-xl font-bold">{relat.totais?.qtd || 0}</div></Card>
-                    <Card className="p-3"><div className="text-xs text-muted-foreground">Litros</div><div className="text-xl font-bold">{Number(relat.totais?.litros || 0).toFixed(2)}</div></Card>
-                    <Card className="p-3"><div className="text-xs text-muted-foreground">Valor</div><div className="text-xl font-bold">R$ {Number(relat.totais?.valor || 0).toFixed(2)}</div></Card>
-                  </div>
+              {relatorio.length === 0 ? <p className="text-sm text-muted-foreground py-6 text-center">Sem dados no período.</p> : (
+                <div className="overflow-x-auto">
                   <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Mecânico</TableHead><TableHead>Empresa</TableHead><TableHead>Placa</TableHead>
-                        <TableHead className="text-right">Qtd</TableHead>
-                        <TableHead className="text-right">Litros</TableHead>
-                        <TableHead className="text-right">Valor</TableHead>
-                        <TableHead className="text-right">R$/L</TableHead>
-                      </TableRow>
-                    </TableHeader>
+                    <TableHeader><TableRow>
+                      <TableHead>Empresa</TableHead><TableHead>Mecânico</TableHead><TableHead>Placa</TableHead>
+                      <TableHead className="text-right">Qtd</TableHead>
+                      <TableHead className="text-right">Litros</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                      <TableHead className="text-right">R$/L</TableHead>
+                      <TableHead className="text-right">KM ini</TableHead>
+                      <TableHead className="text-right">KM fim</TableHead>
+                      <TableHead className="text-right">Rodado</TableHead>
+                      <TableHead className="text-right">R$/KM</TableHead>
+                      <TableHead>Postos</TableHead>
+                    </TableRow></TableHeader>
                     <TableBody>
-                      {relat.linhas.map((l: any, i: number) => (
+                      {relatorio.map((l, i) => (
                         <TableRow key={i}>
-                          <TableCell>{l.mecanico_nome}</TableCell>
-                          <TableCell>{l.empresa || '-'}</TableCell>
-                          <TableCell>{l.placa || '-'}</TableCell>
-                          <TableCell className="text-right">{l.qtd_abastecimentos}</TableCell>
-                          <TableCell className="text-right">{Number(l.total_litros).toFixed(2)}</TableCell>
-                          <TableCell className="text-right">R$ {Number(l.total_valor).toFixed(2)}</TableCell>
-                          <TableCell className="text-right">{Number(l.media_valor_litro).toFixed(3)}</TableCell>
+                          <TableCell className="text-xs">{l.empresa}</TableCell>
+                          <TableCell className="text-sm">{l.mecanico}</TableCell>
+                          <TableCell className="text-xs">{l.placa}</TableCell>
+                          <TableCell className="text-right text-xs">{l.qtd}</TableCell>
+                          <TableCell className="text-right text-xs">{l.litros.toFixed(2)}</TableCell>
+                          <TableCell className="text-right text-xs font-semibold">R$ {l.valor.toFixed(2)}</TableCell>
+                          <TableCell className="text-right text-xs">{l.media_litro.toFixed(3)}</TableCell>
+                          <TableCell className="text-right text-xs">{l.km_inicial ?? '-'}</TableCell>
+                          <TableCell className="text-right text-xs">{l.km_final ?? '-'}</TableCell>
+                          <TableCell className="text-right text-xs">{l.km_rodado || '-'}</TableCell>
+                          <TableCell className="text-right text-xs">{l.custo_km > 0 ? l.custo_km.toFixed(3) : '-'}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{l.postos}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ============== CONFIGURAÇÕES ============== */}
+        <TabsContent value="cfg">
+          <Card>
+            <CardHeader><CardTitle>Configurações</CardTitle></CardHeader>
+            <CardContent className="space-y-4 text-sm text-muted-foreground">
+              <div>
+                <strong className="text-foreground">QR Code</strong>: cada posto possui 1 QR único, vitalício, que não expira automaticamente.
+                Pode ser usado por qualquer mecânico logado no App Mecânico. O sistema registra quem usou, em qual veículo e em qual empresa.
+              </div>
+              <div>
+                <strong className="text-foreground">Empresas reconhecidas</strong>:
+                <ul className="list-disc pl-6 mt-1">
+                  {EMPRESAS_PADRAO.map(e => <li key={e}>{e}</li>)}
+                </ul>
+              </div>
+              <div>
+                <strong className="text-foreground">Integração</strong>: o App Mecânico lê o QR do posto, captura foto da bomba e do KM,
+                identifica a empresa do mecânico logado e salva o abastecimento aqui.
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -273,6 +548,7 @@ export default function CombustivelQRAdminPage() {
             <div><Label>CNPJ</Label><Input value={edit.cnpj} onChange={e => setEdit({ ...edit, cnpj: e.target.value })} /></div>
             <div><Label>Endereço</Label><Input value={edit.endereco} onChange={e => setEdit({ ...edit, endereco: e.target.value })} /></div>
             <div><Label>Telefone</Label><Input value={edit.telefone} onChange={e => setEdit({ ...edit, telefone: e.target.value })} /></div>
+            <div><Label>Observação</Label><Input value={edit.observacao} onChange={e => setEdit({ ...edit, observacao: e.target.value })} /></div>
             <Button onClick={salvar} className="w-full">Salvar</Button>
           </div>
         </DialogContent>
@@ -291,35 +567,44 @@ export default function CombustivelQRAdminPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Histórico */}
-      <Dialog open={!!histAberto} onOpenChange={o => !o && setHistAberto(null)}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Histórico — {histAberto?.nome}</DialogTitle></DialogHeader>
-          {histLoading ? <div className="py-8 flex justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>
-            : hist.length === 0 ? <p className="text-sm text-muted-foreground py-4 text-center">Nenhum abastecimento.</p> : (
-              <Table>
-                <TableHeader><TableRow>
-                  <TableHead>Data</TableHead><TableHead>Mecânico</TableHead><TableHead>Empresa</TableHead>
-                  <TableHead>Placa</TableHead><TableHead>Litros</TableHead><TableHead>Valor</TableHead><TableHead>Fotos</TableHead>
-                </TableRow></TableHeader>
-                <TableBody>
-                  {hist.map(h => (
-                    <TableRow key={h.id}>
-                      <TableCell className="text-xs">{h.data} {String(h.hora).slice(0, 5)}</TableCell>
-                      <TableCell className="text-sm">{h.mecanico_nome}</TableCell>
-                      <TableCell className="text-xs">{h.empresa || '-'}</TableCell>
-                      <TableCell className="text-xs">{h.placa || '-'}</TableCell>
-                      <TableCell className="text-xs">{Number(h.litros).toFixed(2)}</TableCell>
-                      <TableCell className="text-xs">R$ {Number(h.valor).toFixed(2)}</TableCell>
-                      <TableCell className="space-x-1">
-                        {h.foto_bomba_url && <a href={h.foto_bomba_url} target="_blank" rel="noreferrer"><img src={h.foto_bomba_url} className="inline-block w-10 h-10 object-cover rounded" /></a>}
-                        {h.foto_painel_url && <a href={h.foto_painel_url} target="_blank" rel="noreferrer"><img src={h.foto_painel_url} className="inline-block w-10 h-10 object-cover rounded" /></a>}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+      {/* Editar abastecimento */}
+      <Dialog open={!!editAbast} onOpenChange={o => !o && setEditAbast(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Abastecimento</DialogTitle></DialogHeader>
+          {editAbast && (
+            <div className="space-y-3">
+              <div className="text-xs text-muted-foreground">
+                {editAbast.mecanico_nome} · {editAbast.empresa || '-'} · {editAbast.data} {String(editAbast.hora).slice(0, 5)}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Placa</Label><Input value={editAbast.placa || ""} onChange={e => setEditAbast({ ...editAbast, placa: e.target.value })} /></div>
+                <div><Label>Combustível</Label><Input value={editAbast.combustivel || ""} onChange={e => setEditAbast({ ...editAbast, combustivel: e.target.value })} /></div>
+                <div><Label>Valor (R$)</Label><Input type="number" step="0.01" value={editAbast.valor} onChange={e => setEditAbast({ ...editAbast, valor: Number(e.target.value) })} /></div>
+                <div><Label>Litros</Label><Input type="number" step="0.001" value={editAbast.litros} onChange={e => setEditAbast({ ...editAbast, litros: Number(e.target.value) })} /></div>
+                <div><Label>KM</Label><Input type="number" value={editAbast.km_atual ?? ""} onChange={e => setEditAbast({ ...editAbast, km_atual: e.target.value ? Number(e.target.value) : null })} /></div>
+                <div>
+                  <Label>Status</Label>
+                  <Select value={editAbast.status} onValueChange={v => setEditAbast({ ...editAbast, status: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="concluido">Concluído</SelectItem>
+                      <SelectItem value="pendente">Pendente</SelectItem>
+                      <SelectItem value="cancelado">Cancelado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div><Label>Observação</Label><Input value={editAbast.observacao || ""} onChange={e => setEditAbast({ ...editAbast, observacao: e.target.value })} /></div>
+              <div className="flex gap-2 pt-2">
+                {editAbast.foto_bomba_url && <a href={editAbast.foto_bomba_url} target="_blank" rel="noreferrer"><img src={editAbast.foto_bomba_url} className="w-16 h-16 object-cover rounded" /></a>}
+                {editAbast.foto_painel_url && <a href={editAbast.foto_painel_url} target="_blank" rel="noreferrer"><img src={editAbast.foto_painel_url} className="w-16 h-16 object-cover rounded" /></a>}
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={salvarAbast} className="flex-1">Salvar</Button>
+                {editAbast.status !== "cancelado" && <Button variant="destructive" onClick={cancelarAbast}>Cancelar abast.</Button>}
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
