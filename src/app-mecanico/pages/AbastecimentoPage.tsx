@@ -270,6 +270,11 @@ export default function AbastecimentoPage() {
   const iniciarScanner = async () => {
     setScanFeedback(null);
 
+    if (typeof window !== "undefined" && window.location.hostname !== "localhost" && !isCanonicalHost) {
+      window.location.assign(canonicalUrl);
+      return;
+    }
+
     if (!secureContext) {
       setScanFeedback(await resolveCameraError());
       return;
