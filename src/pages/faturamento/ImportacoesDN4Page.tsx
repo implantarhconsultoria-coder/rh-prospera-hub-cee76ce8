@@ -72,6 +72,7 @@ const ImportacoesDN4Page: React.FC = () => {
     const { data, error } = await supabase
       .from("importacoes_dn4" as any)
       .select("*")
+      .eq("excluido", false)
       .order("iniciado_em", { ascending: false })
       .limit(50);
 
@@ -205,10 +206,17 @@ const ImportacoesDN4Page: React.FC = () => {
 
     if (!confirmar) return;
 
-    const { error } = await supabase.from("importacoes_dados").delete().eq("id", i.id);
+    const { error } = await supabase
+      .from("importacoes_dn4")
+      .update({
+        excluido: true,
+        excluido_em: new Date().toISOString(),
+        motivo_exclusao: "Excluído manualmente pela tela de importação",
+      })
+      .eq("id", i.id);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(error.message || "Erro ao excluir importação.");
       return;
     }
 
