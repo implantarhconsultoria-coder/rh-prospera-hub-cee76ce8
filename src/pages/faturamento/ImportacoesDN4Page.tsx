@@ -120,32 +120,43 @@ const ImportacoesDN4Page: React.FC = () => {
     if (files.length === 0) return;
     setUploading(true);
     try {
-      for (const file of files) {
-        const path = `${Date.now()}_${file.name.replace(/[^\w.-]+/g, "_")}`;
-        const { error: upErr } = await supabase.storage.from("dn4-imports").upload(path, file);
-        if (upErr) {
-          toast.error(`Upload ${file.name}: ${upErr.message}`);
-          continue;
-        }
+     for (const file of files) {
+  const path = `${Date.now()}-${file.name.replace(/[^\w.-]+/g, "_")}`;
+  const tipoArquivo = detectarTipoArquivo(file.name);
 
-        const { data: ses } = await supabase.auth.getUser();
-        const { data: imp, error: insErr } = await supabase
-          .from("importacoes_dn4" as any)
-          .insert({
-            arquivo: file.name,
-            storage_path: path,
-            usuario_id: ses?.user?.id,
-            usuario_nome: ses?.user?.email,
-            status: "em_andamento",
-          } as any)
-          .select()
-          .single();
-        if (insErr || !imp) {
-          toast.error(insErr?.message || "Erro ao criar importação");
-          continue;
-        }
+  const { error: upErr } = await supabase.storage
+    .from("dn4-imports")
+    .upload(path, file);
 
-        const { data: parseData, error: fnErr } = await supabase.functions.invoke("parse-dn4", {
+  if (upErr) {
+    toast.error(`Upload ${file.name}: ${upErr.message}`);
+    continue;
+  }
+
+  const { data: ses } = await supabase.auth.getUser();
+
+  const { data: imp, error: insErr } = await supabase
+    .from("importacoes_dn4" as any)
+    .insert({
+      arquivo: file.name,
+      storage_path: path,
+      arquivo_path: path,
+      tipo_arquivo: tipoArquivo,
+      usuario_id: ses?.user?.id,
+      usuario_nome: ses?.user?.email,
+      status: "em_andamento",
+    } as any)
+    .select()
+    .single();
+  }
+ if (insErr || !imp) {
+  toast.error(insErr?.message || "Erro ao criar importação");
+  continue;
+}
+ const funcaoImportacao =
+  tipoArquivo === "excel" || tipoArquivo === "csv" ? "parse-planilha-faturamento" : "parse-dn4";
+
+const { data: parseData, error: fnErr } = await supabase.functions.invoke(funcaoImportacao, {
           body: {
             importacao_id: (imp as any).id,
             storage_path: path,
@@ -269,7 +280,8 @@ const ImportacoesDN4Page: React.FC = () => {
           <label className="inline-flex">
             <input
               type="file"
-              accept="application/pdf"
+accept=".pdf,.xlsx,.xls,.csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+            
               multiple
               className="hidden"
               onChange={onUpload}
