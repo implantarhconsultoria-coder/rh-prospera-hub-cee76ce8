@@ -60,6 +60,13 @@ const TIPO_LABEL: Record<string, string> = {
   desconhecido: "Não identificado",
 };
 
+const detectarTipoArquivo = (nome: string): string => {
+  const ext = nome.split('.').pop()?.toLowerCase() || '';
+  if (ext === 'pdf') return 'pdf';
+  if (['xls', 'xlsx', 'csv'].includes(ext)) return ext === 'csv' ? 'csv' : 'excel';
+  return 'pdf';
+};
+
 const ImportacoesDN4Page: React.FC = () => {
   const [imports, setImports] = useState<Importacao[]>([]);
   const [loading, setLoading] = useState(true);
