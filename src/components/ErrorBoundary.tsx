@@ -47,7 +47,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
             <AlertTriangle className="w-7 h-7 text-destructive" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground">Algo deu errado nesta tela</h2>
+            <h2 className="text-lg font-bold text-foreground">Ocorreu um erro ao carregar esta tela.</h2>
             <p className="text-sm text-muted-foreground mt-1">
               A operação foi concluída no servidor, mas a tela não conseguiu renderizar.
               Seus dados estão seguros.
